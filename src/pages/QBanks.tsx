@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QBank } from "../types/quiz";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,9 @@ const QBanks = ({ qbanks }: QBanksProps) => {
   const [newQBankName, setNewQBankName] = useState("");
   const [newQBankDescription, setNewQBankDescription] = useState("");
   const [showNewQBankDialog, setShowNewQBankDialog] = useState(false);
+  const [editingQBankId, setEditingQBankId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [editingDescription, setEditingDescription] = useState("");
 
   const handleCreateQBank = () => {
     if (!newQBankName.trim() || !newQBankDescription.trim()) {
@@ -58,6 +61,33 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       toast({
         title: "Success",
         description: "Question bank deleted successfully",
+      });
+    }
+  };
+
+  const startEditing = (qbank: QBank) => {
+    setEditingQBankId(qbank.id);
+    setEditingName(qbank.name);
+    setEditingDescription(qbank.description);
+  };
+
+  const handleSaveEdit = (qbankId: string) => {
+    const qbank = qbanks.find((q) => q.id === qbankId);
+    if (qbank) {
+      if (!editingName.trim() || !editingDescription.trim()) {
+        toast({
+          title: "Error",
+          description: "Name and description cannot be empty",
+          variant: "destructive",
+        });
+        return;
+      }
+      qbank.name = editingName;
+      qbank.description = editingDescription;
+      setEditingQBankId(null);
+      toast({
+        title: "Success",
+        description: "Question bank updated successfully",
       });
     }
   };
@@ -113,24 +143,63 @@ const QBanks = ({ qbanks }: QBanksProps) => {
                 }`}
               >
                 <div className="flex justify-between items-start">
-                  <div
-                    className="flex-1"
-                    onClick={() => setSelectedQBank(qbank)}
-                  >
-                    <h3 className="font-bold">{qbank.name}</h3>
-                    <p className="text-sm text-gray-600">{qbank.description}</p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      {qbank.questions.length} questions
-                    </p>
+                  <div className="flex-1">
+                    {editingQBankId === qbank.id ? (
+                      <div className="space-y-2">
+                        <Input
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          className="font-bold"
+                        />
+                        <Input
+                          value={editingDescription}
+                          onChange={(e) => setEditingDescription(e.target.value)}
+                          className="text-sm text-gray-600"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => handleSaveEdit(qbank.id)}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingQBankId(null)}
+                          className="ml-2"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <div onClick={() => setSelectedQBank(qbank)}>
+                        <h3 className="font-bold">{qbank.name}</h3>
+                        <p className="text-sm text-gray-600">
+                          {qbank.description}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-2">
+                          {qbank.questions.length} questions
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-destructive hover:text-destructive/90"
-                    onClick={() => handleDeleteQBank(qbank.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => startEditing(qbank)}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive/90"
+                      onClick={() => handleDeleteQBank(qbank.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -139,7 +208,9 @@ const QBanks = ({ qbanks }: QBanksProps) => {
 
         {selectedQBank && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">Questions in {selectedQBank.name}</h2>
+            <h2 className="text-xl font-semibold">
+              Questions in {selectedQBank.name}
+            </h2>
             <div className="space-y-4">
               {selectedQBank.questions.map((question) => (
                 <div
