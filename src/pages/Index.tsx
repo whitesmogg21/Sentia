@@ -1,11 +1,12 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { questions } from "../data/questions";
+import { qbanks } from "../data/questions";
 import QuizOption from "../components/QuizOption";
 import ProgressBar from "../components/ProgressBar";
 import ScoreCard from "../components/ScoreCard";
-import { Question } from "../types/quiz";
+import Dashboard from "../components/Dashboard";
+import { Question, QuizHistory } from "../types/quiz";
 
 const Index = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -13,8 +14,26 @@ const Index = () => {
   const [showScore, setShowScore] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
+  const [inQuiz, setInQuiz] = useState(false);
+  const [currentQuestions, setCurrentQuestions] = useState<Question[]>([]);
+  const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
 
-  const currentQuestion: Question = questions[currentQuestionIndex];
+  const handleStartQuiz = (qbankId: string, questionCount: number) => {
+    const selectedQBank = qbanks.find((qb) => qb.id === qbankId);
+    if (!selectedQBank) return;
+
+    const shuffledQuestions = [...selectedQBank.questions]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, questionCount);
+
+    setCurrentQuestions(shuffledQuestions);
+    setCurrentQuestionIndex(0);
+    setScore(0);
+    setShowScore(false);
+    setSelectedAnswer(null);
+    setIsAnswered(false);
+    setInQuiz(true);
+  };
 
   const handleAnswerClick = (optionIndex: number) => {
     if (isAnswered) return;
@@ -22,12 +41,20 @@ const Index = () => {
     setSelectedAnswer(optionIndex);
     setIsAnswered(true);
 
-    if (optionIndex === currentQuestion.correctAnswer) {
+    if (optionIndex === currentQuestions[currentQuestionIndex].correctAnswer) {
       setScore((prev) => prev + 1);
     }
 
     setTimeout(() => {
-      if (currentQuestionIndex === questions.length - 1) {
+      if (currentQuestionIndex === currentQuestions.length - 1) {
+        const newQuizHistory: QuizHistory = {
+          id: Date.now().toString(),
+          date: new Date().toLocaleDateString(),
+          score: score + (optionIndex === currentQuestions[currentQuestionIndex].correctAnswer ? 1 : 0),
+          totalQuestions: currentQuestions.length,
+          qbankId: currentQuestions[0].qbankId,
+        };
+        setQuizHistory((prev) => [...prev, newQuizHistory]);
         setShowScore(true);
       } else {
         setCurrentQuestionIndex((prev) => prev + 1);
@@ -38,6 +65,7 @@ const Index = () => {
   };
 
   const handleRestart = () => {
+    setInQuiz(false);
     setCurrentQuestionIndex(0);
     setScore(0);
     setShowScore(false);
@@ -45,14 +73,26 @@ const Index = () => {
     setIsAnswered(false);
   };
 
-  if (showScore) {
-    return <ScoreCard score={score} total={questions.length} onRestart={handleRestart} />;
+  if (!inQuiz) {
+    return (
+      <Dashboard
+        qbanks={qbanks}
+        quizHistory={quizHistory}
+        onStartQuiz={handleStartQuiz}
+      />
+    );
   }
+
+  if (showScore) {
+    return <ScoreCard score={score} total={currentQuestions.length} onRestart={handleRestart} />;
+  }
+
+  const currentQuestion = currentQuestions[currentQuestionIndex];
 
   return (
     <div className="min-h-screen bg-background p-6 flex flex-col items-center justify-center">
       <div className="w-full max-w-2xl mx-auto space-y-8">
-        <ProgressBar current={currentQuestionIndex + 1} total={questions.length} />
+        <ProgressBar current={currentQuestionIndex + 1} total={currentQuestions.length} />
         
         <motion.div
           key={currentQuestionIndex}
@@ -82,7 +122,7 @@ const Index = () => {
         </motion.div>
         
         <div className="text-center text-sm text-gray-500">
-          Question {currentQuestionIndex + 1} of {questions.length}
+          Question {currentQuestionIndex + 1} of {currentQuestions.length}
         </div>
       </div>
     </div>
