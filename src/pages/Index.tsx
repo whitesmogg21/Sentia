@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { qbanks } from "../data/questions";
@@ -8,7 +7,12 @@ import ScoreCard from "../components/ScoreCard";
 import Dashboard from "../components/Dashboard";
 import { Question, QuizHistory } from "../types/quiz";
 
-const Index = () => {
+interface IndexProps {
+  quizHistory?: QuizHistory[];
+  onQuizComplete?: (history: QuizHistory) => void;
+}
+
+const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [showScore, setShowScore] = useState(false);
@@ -16,7 +20,6 @@ const Index = () => {
   const [isAnswered, setIsAnswered] = useState(false);
   const [inQuiz, setInQuiz] = useState(false);
   const [currentQuestions, setCurrentQuestions] = useState<Question[]>([]);
-  const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
 
   const handleStartQuiz = (qbankId: string, questionCount: number) => {
     const selectedQBank = qbanks.find((qb) => qb.id === qbankId);
@@ -54,7 +57,7 @@ const Index = () => {
           totalQuestions: currentQuestions.length,
           qbankId: currentQuestions[0].qbankId,
         };
-        setQuizHistory((prev) => [...prev, newQuizHistory]);
+        onQuizComplete?.(newQuizHistory);
         setShowScore(true);
       } else {
         setCurrentQuestionIndex((prev) => prev + 1);
