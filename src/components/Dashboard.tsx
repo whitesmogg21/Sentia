@@ -8,21 +8,24 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
+import { Slider } from "./ui/slider";
 
 interface DashboardProps {
   qbanks: QBank[];
   quizHistory: QuizHistory[];
-  onStartQuiz: (qbankId: string, questionCount: number, tutorMode: boolean) => void;
+  onStartQuiz: (qbankId: string, questionCount: number, tutorMode: boolean, timerEnabled: boolean, timeLimit: number) => void;
 }
 
 const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   const [selectedQBank, setSelectedQBank] = useState<string>("");
   const [questionCount, setQuestionCount] = useState<number>(5);
   const [tutorMode, setTutorMode] = useState(false);
+  const [timerEnabled, setTimerEnabled] = useState(false);
+  const [timeLimit, setTimeLimit] = useState(60); // seconds
 
   const handleStartQuiz = () => {
     if (selectedQBank && questionCount > 0) {
-      onStartQuiz(selectedQBank, questionCount, tutorMode);
+      onStartQuiz(selectedQBank, questionCount, tutorMode, timerEnabled, timeLimit);
     }
   };
 
@@ -106,6 +109,29 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
               />
               <Label htmlFor="tutor-mode">Enable Tutor Mode</Label>
             </div>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="timer-mode"
+                  checked={timerEnabled}
+                  onCheckedChange={setTimerEnabled}
+                />
+                <Label htmlFor="timer-mode">Enable Timer</Label>
+              </div>
+              {timerEnabled && (
+                <div className="space-y-2">
+                  <Label>Time per Question (seconds): {timeLimit}</Label>
+                  <Slider
+                    value={[timeLimit]}
+                    onValueChange={(value) => setTimeLimit(value[0])}
+                    min={10}
+                    max={300}
+                    step={10}
+                    className="w-full"
+                  />
+                </div>
+              )}
+            </div>
             <Button
               onClick={handleStartQuiz}
               disabled={!selectedQBank || questionCount <= 0}
@@ -121,4 +147,3 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 };
 
 export default Dashboard;
-

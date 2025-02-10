@@ -9,7 +9,8 @@ import Dashboard from "../components/Dashboard";
 import { Question, QuizHistory } from "../types/quiz";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Image, Video, Audio, AlertCircle } from "lucide-react";
+import { Image, Timer, Play, Pause, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 
 interface IndexProps {
   quizHistory?: QuizHistory[];
@@ -26,8 +27,12 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
   const [currentQuestions, setCurrentQuestions] = useState<Question[]>([]);
   const [tutorMode, setTutorMode] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [timerEnabled, setTimerEnabled] = useState(false);
+  const [timePerQuestion, setTimePerQuestion] = useState(60); // seconds
+  const [questionTimer, setQuestionTimer] = useState<NodeJS.Timeout | null>(null);
 
-  const handleStartQuiz = (qbankId: string, questionCount: number, isTutorMode: boolean) => {
+  const handleStartQuiz = (qbankId: string, questionCount: number, isTutorMode: boolean, withTimer: boolean, timeLimit: number) => {
     const selectedQBank = qbanks.find((qb) => qb.id === qbankId);
     if (!selectedQBank) return;
 
@@ -42,22 +47,52 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
     setSelectedAnswer(null);
     setIsAnswered(false);
     setTutorMode(isTutorMode);
+    setTimerEnabled(withTimer);
+    setTimePerQuestion(timeLimit);
     setInQuiz(true);
+    setIsPaused(false);
+
+    if (withTimer) {
+      startQuestionTimer();
+    }
+  };
+
+  const startQuestionTimer = () => {
+    if (questionTimer) {
+      clearTimeout(questionTimer);
+    }
+    
+    const timer = setTimeout(() => {
+      if (!isAnswered && !isPaused) {
+        handleAnswerTimeout();
+      }
+    }, timePerQuestion * 1000);
+    
+    setQuestionTimer(timer);
+  };
+
+  const handleAnswerTimeout = () => {
+    setIsAnswered(true);
+    if (tutorMode) {
+      setShowExplanation(true);
+    } else {
+      proceedToNextQuestion(-1); // -1 indicates timeout/no answer
+    }
   };
 
   const handleAnswerClick = (optionIndex: number) => {
-    if (isAnswered) return;
+    if (isAnswered || isPaused) return;
     
     setSelectedAnswer(optionIndex);
     setIsAnswered(true);
 
     if (optionIndex === currentQuestions[currentQuestionIndex].correctAnswer) {
       setScore((prev) => prev + 1);
-    } else if (tutorMode) {
-      setShowExplanation(true);
     }
 
-    if (!tutorMode) {
+    if (tutorMode) {
+      setShowExplanation(true);
+    } else {
       proceedToNextQuestion(optionIndex);
     }
   };
@@ -77,6 +112,28 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
       setCurrentQuestionIndex((prev) => prev + 1);
       setSelectedAnswer(null);
       setIsAnswered(false);
+      if (timerEnabled) {
+        startQuestionTimer();
+      }
+    }
+  };
+
+  const handleQuit = () => {
+    const newQuizHistory: QuizHistory = {
+      id: Date.now().toString(),
+      date: new Date().toLocaleDateString(),
+      score,
+      totalQuestions: currentQuestions.length,
+      qbankId: currentQuestions[0].qbankId,
+    };
+    onQuizComplete?.(newQuizHistory);
+    handleRestart();
+  };
+
+  const handlePause = () => {
+    setIsPaused((prev) => !prev);
+    if (questionTimer) {
+      clearTimeout(questionTimer);
     }
   };
 
@@ -86,6 +143,9 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
   };
 
   const handleRestart = () => {
+    if (questionTimer) {
+      clearTimeout(questionTimer);
+    }
     setInQuiz(false);
     setCurrentQuestionIndex(0);
     setScore(0);
@@ -93,6 +153,7 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
     setSelectedAnswer(null);
     setIsAnswered(false);
     setTutorMode(false);
+    setIsPaused(false);
   };
 
   const renderMedia = (media?: Question['media']) => {
@@ -129,10 +190,30 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
   const currentQuestion = currentQuestions[currentQuestionIndex];
 
   return (
-    <div className="min-h-screen bg-background p-6 flex flex-col items-center justify-center">
-      <div className="w-full max-w-2xl mx-auto space-y-8">
+    <div className="min-h-screen bg-background p-6">
+      <div className="flex justify-between items-center mb-4">
         <ProgressBar current={currentQuestionIndex + 1} total={currentQuestions.length} />
-        
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handlePause}
+            className="w-10 h-10"
+          >
+            {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleQuit}
+            className="w-10 h-10"
+          >
+            <XCircle className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <motion.div
           key={currentQuestionIndex}
           initial={{ opacity: 0, x: 20 }}
@@ -156,40 +237,47 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
                     : undefined
                 }
                 onClick={() => handleAnswerClick(index)}
-                disabled={isAnswered}
+                disabled={isAnswered || isPaused}
               />
             ))}
           </div>
 
           {isAnswered && currentQuestion.media?.showWith === 'answer' && renderMedia(currentQuestion.media)}
         </motion.div>
-        
-        <div className="text-center text-sm text-gray-500">
-          Question {currentQuestionIndex + 1} of {currentQuestions.length}
-        </div>
-      </div>
 
-      <Dialog open={showExplanation} onOpenChange={setShowExplanation}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
-              Explanation
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-lg mb-4">
+        {showExplanation && (
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-white p-8 rounded-2xl shadow-lg"
+          >
+            <h3 className="text-xl font-bold mb-4">Explanation</h3>
+            <p className="text-lg mb-6">
               {currentQuestion.explanation || "The correct answer was: " + currentQuestion.options[currentQuestion.correctAnswer]}
             </p>
-            <Button onClick={handleContinue} className="w-full">
-              Continue to Next Question
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+            
+            <div className="flex justify-between mt-auto">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
+                disabled={currentQuestionIndex === 0}
+              >
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Previous
+              </Button>
+              
+              <Button onClick={handleContinue}>
+                {currentQuestionIndex === currentQuestions.length - 1 ? "Finish" : "Next"}
+                {currentQuestionIndex !== currentQuestions.length - 1 && (
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                )}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 };
 
 export default Index;
-
