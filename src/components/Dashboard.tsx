@@ -6,20 +6,23 @@ import { motion } from "framer-motion";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import { Switch } from "./ui/switch";
+import { Label } from "./ui/label";
 
 interface DashboardProps {
   qbanks: QBank[];
   quizHistory: QuizHistory[];
-  onStartQuiz: (qbankId: string, questionCount: number) => void;
+  onStartQuiz: (qbankId: string, questionCount: number, tutorMode: boolean) => void;
 }
 
 const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   const [selectedQBank, setSelectedQBank] = useState<string>("");
   const [questionCount, setQuestionCount] = useState<number>(5);
+  const [tutorMode, setTutorMode] = useState(false);
 
   const handleStartQuiz = () => {
     if (selectedQBank && questionCount > 0) {
-      onStartQuiz(selectedQBank, questionCount);
+      onStartQuiz(selectedQBank, questionCount, tutorMode);
     }
   };
 
@@ -83,9 +86,9 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           <h2 className="text-xl font-bold">Quiz Configuration</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <Label className="block text-sm font-medium mb-2">
                 Number of Questions
-              </label>
+              </Label>
               <Input
                 type="number"
                 min={1}
@@ -95,12 +98,20 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
                 className="w-full"
               />
             </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="tutor-mode"
+                checked={tutorMode}
+                onCheckedChange={setTutorMode}
+              />
+              <Label htmlFor="tutor-mode">Enable Tutor Mode</Label>
+            </div>
             <Button
               onClick={handleStartQuiz}
               disabled={!selectedQBank || questionCount <= 0}
               className="w-full"
             >
-              Create Quiz
+              Start Quiz
             </Button>
           </div>
         </motion.div>
@@ -110,3 +121,4 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 };
 
 export default Dashboard;
+
