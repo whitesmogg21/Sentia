@@ -21,13 +21,20 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   const [questionCount, setQuestionCount] = useState<number>(5);
   const [tutorMode, setTutorMode] = useState(false);
   const [timerEnabled, setTimerEnabled] = useState(false);
-  const [timeLimit, setTimeLimit] = useState(60); // seconds
+  const [timeLimit, setTimeLimit] = useState(60);
 
   const handleStartQuiz = () => {
     if (selectedQBank && questionCount > 0) {
       onStartQuiz(selectedQBank, questionCount, tutorMode, timerEnabled, timeLimit);
     }
   };
+
+  // Transform quiz history data to percentage scores
+  const chartData = quizHistory.map((quiz, index) => ({
+    quizNumber: index + 1,
+    score: (quiz.score / quiz.totalQuestions) * 100,
+    date: quiz.date,
+  }));
 
   return (
     <div className="container mx-auto p-6 space-y-8">
@@ -38,11 +45,20 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       >
         <h2 className="text-2xl font-bold mb-4">Performance History</h2>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={quizHistory}>
+          <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
+            <XAxis 
+              dataKey="quizNumber" 
+              label={{ value: 'Quiz Number', position: 'bottom' }}
+            />
+            <YAxis 
+              label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }}
+              domain={[0, 100]}
+            />
+            <Tooltip 
+              formatter={(value: number) => [`${value.toFixed(1)}%`, 'Score']}
+              labelFormatter={(label) => `Quiz ${label}`}
+            />
             <Line
               type="monotone"
               dataKey="score"

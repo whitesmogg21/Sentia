@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { qbanks } from "../data/questions";
@@ -173,6 +172,19 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
     }
   };
 
+  const handleQuizNavigation = (direction: 'prev' | 'next') => {
+    if (direction === 'prev' && currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(prev => prev - 1);
+      setSelectedAnswer(null);
+      setIsAnswered(false);
+      if (timerEnabled) {
+        startQuestionTimer();
+      }
+    } else if (direction === 'next' && currentQuestionIndex < currentQuestions.length - 1) {
+      proceedToNextQuestion(selectedAnswer || -1);
+    }
+  };
+
   if (!inQuiz) {
     return (
       <Dashboard
@@ -194,6 +206,24 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
       <div className="flex justify-between items-center mb-4">
         <ProgressBar current={currentQuestionIndex + 1} total={currentQuestions.length} />
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleQuizNavigation('prev')}
+            disabled={currentQuestionIndex === 0}
+            className="w-10 h-10"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => handleQuizNavigation('next')}
+            disabled={currentQuestionIndex === currentQuestions.length - 1 || !isAnswered}
+            className="w-10 h-10"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
           <Button
             variant="outline"
             size="icon"
