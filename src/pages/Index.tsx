@@ -203,44 +203,8 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
 
   return (
     <div className="min-h-screen bg-background p-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="mb-4">
         <ProgressBar current={currentQuestionIndex + 1} total={currentQuestions.length} />
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handleQuizNavigation('prev')}
-            disabled={currentQuestionIndex === 0}
-            className="w-10 h-10"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => handleQuizNavigation('next')}
-            disabled={currentQuestionIndex === currentQuestions.length - 1 || !isAnswered}
-            className="w-10 h-10"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handlePause}
-            className="w-10 h-10"
-          >
-            {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleQuit}
-            className="w-10 h-10"
-          >
-            <XCircle className="h-4 w-4" />
-          </Button>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -285,26 +249,61 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
             <p className="text-lg mb-6">
               {currentQuestion.explanation || "The correct answer was: " + currentQuestion.options[currentQuestion.correctAnswer]}
             </p>
-            
-            <div className="flex justify-between mt-auto">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))}
-                disabled={currentQuestionIndex === 0}
-              >
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                Previous
-              </Button>
-              
-              <Button onClick={handleContinue}>
-                {currentQuestionIndex === currentQuestions.length - 1 ? "Finish" : "Next"}
-                {currentQuestionIndex !== currentQuestions.length - 1 && (
-                  <ChevronRight className="h-4 w-4 ml-2" />
-                )}
-              </Button>
-            </div>
           </motion.div>
         )}
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handleQuizNavigation('prev')}
+              disabled={currentQuestionIndex === 0}
+              className="flex items-center gap-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleQuizNavigation('next')}
+              disabled={currentQuestionIndex === currentQuestions.length - 1 || !isAnswered}
+              className="flex items-center gap-2"
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handlePause}
+              className="flex items-center gap-2"
+            >
+              {isPaused ? (
+                <>
+                  <Play className="h-4 w-4" />
+                  Resume
+                </>
+              ) : (
+                <>
+                  <Pause className="h-4 w-4" />
+                  Pause
+                </>
+              )}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleQuit}
+              className="flex items-center gap-2"
+            >
+              <XCircle className="h-4 w-4" />
+              End Quiz
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
