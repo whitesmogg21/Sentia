@@ -1,15 +1,12 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { qbanks } from "../data/questions";
-import QuizOption from "../components/QuizOption";
+import { Question, QuizHistory } from "../types/quiz";
+import Dashboard from "../components/Dashboard";
 import ProgressBar from "../components/ProgressBar";
 import ScoreCard from "../components/ScoreCard";
-import Dashboard from "../components/Dashboard";
-import { Question, QuizHistory } from "../types/quiz";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Image, Timer, Play, Pause, XCircle, ChevronLeft, ChevronRight } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
+import QuestionView from "@/components/quiz/QuestionView";
+import ExplanationView from "@/components/quiz/ExplanationView";
+import QuizController from "@/components/quiz/QuizController";
 
 interface IndexProps {
   quizHistory?: QuizHistory[];
@@ -208,103 +205,28 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <motion.div
-          key={currentQuestionIndex}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          className="bg-white p-8 rounded-2xl shadow-lg"
-        >
-          {currentQuestion.media?.showWith === 'question' && renderMedia(currentQuestion.media)}
-          
-          <h2 className="text-2xl font-bold mb-6">{currentQuestion.question}</h2>
-          
-          <div className="space-y-4">
-            {currentQuestion.options.map((option, index) => (
-              <QuizOption
-                key={index}
-                option={option}
-                selected={selectedAnswer === index}
-                correct={
-                  isAnswered
-                    ? index === currentQuestion.correctAnswer
-                    : undefined
-                }
-                onClick={() => handleAnswerClick(index)}
-                disabled={isAnswered || isPaused}
-              />
-            ))}
-          </div>
-
-          {isAnswered && currentQuestion.media?.showWith === 'answer' && renderMedia(currentQuestion.media)}
-        </motion.div>
+        <QuestionView
+          question={currentQuestion}
+          selectedAnswer={selectedAnswer}
+          isAnswered={isAnswered}
+          isPaused={isPaused}
+          onAnswerClick={handleAnswerClick}
+        />
 
         {showExplanation && (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-white p-8 rounded-2xl shadow-lg"
-          >
-            <h3 className="text-xl font-bold mb-4">Explanation</h3>
-            <p className="text-lg mb-6">
-              {currentQuestion.explanation || "The correct answer was: " + currentQuestion.options[currentQuestion.correctAnswer]}
-            </p>
-          </motion.div>
+          <ExplanationView question={currentQuestion} />
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => handleQuizNavigation('prev')}
-              disabled={currentQuestionIndex === 0}
-              className="flex items-center gap-2"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleQuizNavigation('next')}
-              disabled={currentQuestionIndex === currentQuestions.length - 1 || !isAnswered}
-              className="flex items-center gap-2"
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={handlePause}
-              className="flex items-center gap-2"
-            >
-              {isPaused ? (
-                <>
-                  <Play className="h-4 w-4" />
-                  Resume
-                </>
-              ) : (
-                <>
-                  <Pause className="h-4 w-4" />
-                  Pause
-                </>
-              )}
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleQuit}
-              className="flex items-center gap-2"
-            >
-              <XCircle className="h-4 w-4" />
-              End Quiz
-            </Button>
-          </div>
-        </div>
-      </div>
+      <QuizController
+        currentQuestionIndex={currentQuestionIndex}
+        totalQuestions={currentQuestions.length}
+        isAnswered={isAnswered}
+        isPaused={isPaused}
+        onNavigate={handleQuizNavigation}
+        onPause={handlePause}
+        onQuit={handleQuit}
+      />
     </div>
   );
 };
