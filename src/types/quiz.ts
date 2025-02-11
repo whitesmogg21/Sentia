@@ -5,6 +5,12 @@ export interface Question {
   options: string[];
   correctAnswer: number;
   qbankId: string;
+  media?: {
+    type: 'image' | 'audio' | 'video';
+    url: string;
+    showWith: 'question' | 'answer';
+  };
+  explanation?: string;
 }
 
 export interface QuizState {
@@ -12,6 +18,7 @@ export interface QuizState {
   score: number;
   showScore: boolean;
   questions: Question[];
+  tutorMode: boolean;
 }
 
 export interface QuizHistory {
@@ -28,3 +35,4 @@ export interface QBank {
   description: string;
   questions: Question[];
 }
+
