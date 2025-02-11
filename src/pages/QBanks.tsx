@@ -1,9 +1,9 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { QBank } from "../types/quiz";
+import { QBank, Question } from "../types/quiz";
 import { Trash2, Edit2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,17 @@ const QBanks = ({ qbanks }: QBanksProps) => {
   const [editingQBankId, setEditingQBankId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [editingDescription, setEditingDescription] = useState("");
+  const [newQuestion, setNewQuestion] = useState({
+    question: "",
+    options: ["", "", "", ""],
+    correctAnswer: 0,
+    explanation: "",
+    media: {
+      type: "" as "image" | "audio" | "video" | "",
+      url: "",
+      showWith: "question" as "question" | "answer"
+    }
+  });
 
   const handleCreateQBank = () => {
     if (!newQBankName.trim() || !newQBankDescription.trim()) {
@@ -88,6 +99,56 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       toast({
         title: "Success",
         description: "Question bank updated successfully",
+      });
+    }
+  };
+
+  const handleAddQuestion = () => {
+    if (selectedQBank) {
+      if (!newQuestion.question.trim() || newQuestion.options.some(opt => !opt.trim())) {
+        toast({
+          title: "Error",
+          description: "Please fill in all required fields",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const question: Question = {
+        id: Date.now(),
+        question: newQuestion.question,
+        options: newQuestion.options,
+        correctAnswer: newQuestion.correctAnswer,
+        qbankId: selectedQBank.id,
+      };
+
+      if (newQuestion.explanation.trim()) {
+        question.explanation = newQuestion.explanation;
+      }
+
+      if (newQuestion.media.type && newQuestion.media.url) {
+        question.media = {
+          type: newQuestion.media.type,
+          url: newQuestion.media.url,
+          showWith: newQuestion.media.showWith,
+        };
+      }
+
+      selectedQBank.questions.push(question);
+      setNewQuestion({
+        question: "",
+        options: ["", "", "", ""],
+        correctAnswer: 0,
+        explanation: "",
+        media: {
+          type: "",
+          url: "",
+          showWith: "question"
+        }
+      });
+      toast({
+        title: "Success",
+        description: "Question added successfully",
       });
     }
   };
@@ -218,6 +279,13 @@ const QBanks = ({ qbanks }: QBanksProps) => {
                   className="p-4 rounded-lg border border-gray-200"
                 >
                   <p className="font-medium">{question.question}</p>
+                  {question.media && (
+                    <div className="mt-2">
+                      <p className="text-sm text-gray-500">
+                        Has {question.media.type} (shown with {question.media.showWith})
+                      </p>
+                    </div>
+                  )}
                   <div className="mt-2 space-y-1">
                     {question.options.map((option, index) => (
                       <p
@@ -232,26 +300,115 @@ const QBanks = ({ qbanks }: QBanksProps) => {
                       </p>
                     ))}
                   </div>
+                  {question.explanation && (
+                    <p className="mt-2 text-sm text-gray-500">
+                      Has explanation
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
 
             <div className="space-y-4">
               <h3 className="font-semibold">Add New Question</h3>
-              <Input placeholder="Question text" />
+              <Input
+                placeholder="Question text"
+                value={newQuestion.question}
+                onChange={(e) =>
+                  setNewQuestion({ ...newQuestion, question: e.target.value })
+                }
+              />
               <div className="grid gap-2">
-                <Input placeholder="Option 1" />
-                <Input placeholder="Option 2" />
-                <Input placeholder="Option 3" />
-                <Input placeholder="Option 4" />
+                {newQuestion.options.map((option, index) => (
+                  <Input
+                    key={index}
+                    placeholder={`Option ${index + 1}`}
+                    value={option}
+                    onChange={(e) => {
+                      const newOptions = [...newQuestion.options];
+                      newOptions[index] = e.target.value;
+                      setNewQuestion({ ...newQuestion, options: newOptions });
+                    }}
+                  />
+                ))}
               </div>
               <Input
                 type="number"
                 min={0}
                 max={3}
                 placeholder="Correct answer (0-3)"
+                value={newQuestion.correctAnswer}
+                onChange={(e) =>
+                  setNewQuestion({
+                    ...newQuestion,
+                    correctAnswer: Number(e.target.value),
+                  })
+                }
               />
-              <Button className="w-full">Add Question</Button>
+              <div className="space-y-2">
+                <Label>Media (Optional)</Label>
+                <select
+                  className="w-full p-2 border rounded"
+                  value={newQuestion.media.type}
+                  onChange={(e) =>
+                    setNewQuestion({
+                      ...newQuestion,
+                      media: {
+                        ...newQuestion.media,
+                        type: e.target.value as "image" | "audio" | "video" | "",
+                      },
+                    })
+                  }
+                >
+                  <option value="">No media</option>
+                  <option value="image">Image</option>
+                  <option value="audio">Audio</option>
+                  <option value="video">Video</option>
+                </select>
+                {newQuestion.media.type && (
+                  <>
+                    <Input
+                      placeholder="Media URL"
+                      value={newQuestion.media.url}
+                      onChange={(e) =>
+                        setNewQuestion({
+                          ...newQuestion,
+                          media: { ...newQuestion.media, url: e.target.value },
+                        })
+                      }
+                    />
+                    <select
+                      className="w-full p-2 border rounded"
+                      value={newQuestion.media.showWith}
+                      onChange={(e) =>
+                        setNewQuestion({
+                          ...newQuestion,
+                          media: {
+                            ...newQuestion.media,
+                            showWith: e.target.value as "question" | "answer",
+                          },
+                        })
+                      }
+                    >
+                      <option value="question">Show with question</option>
+                      <option value="answer">Show with answer</option>
+                    </select>
+                  </>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Explanation (Optional)</Label>
+                <Input
+                  placeholder="Explanation for incorrect answers"
+                  value={newQuestion.explanation}
+                  onChange={(e) =>
+                    setNewQuestion({ ...newQuestion, explanation: e.target.value })
+                  }
+                />
+              </div>
+              <Button onClick={handleAddQuestion} className="w-full">
+                Add Question
+              </Button>
             </div>
           </div>
         )}

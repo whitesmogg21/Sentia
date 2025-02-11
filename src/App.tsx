@@ -14,11 +14,20 @@ import NotFound from "./pages/NotFound";
 import { useState } from "react";
 import { QuizHistory } from "./types/quiz";
 import { qbanks } from "./data/questions";
+import { toast } from "@/components/ui/use-toast";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
+
+  const handleQuizComplete = (history: QuizHistory) => {
+    setQuizHistory((prev) => [...prev, history]);
+    toast({
+      title: "Quiz completed!",
+      description: `You scored ${history.score} out of ${history.totalQuestions}`,
+    });
+  };
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -31,7 +40,15 @@ const App = () => {
               <AppSidebar />
               <main className="flex-1">
                 <Routes>
-                  <Route path="/" element={<Index />} />
+                  <Route
+                    path="/"
+                    element={
+                      <Index
+                        quizHistory={quizHistory}
+                        onQuizComplete={handleQuizComplete}
+                      />
+                    }
+                  />
                   <Route
                     path="/performance"
                     element={<Performance quizHistory={quizHistory} />}
@@ -53,3 +70,4 @@ const App = () => {
 };
 
 export default App;
+
