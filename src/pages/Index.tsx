@@ -7,6 +7,14 @@ import ScoreCard from "../components/ScoreCard";
 import QuestionView from "@/components/quiz/QuestionView";
 import ExplanationView from "@/components/quiz/ExplanationView";
 import QuizController from "@/components/quiz/QuizController";
+import { Button } from "@/components/ui/button";
+import { Bookmark } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface IndexProps {
   quizHistory?: QuizHistory[];
@@ -29,6 +37,9 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timePerQuestion, setTimePerQuestion] = useState(60); // seconds
   const [questionTimer, setQuestionTimer] = useState<NodeJS.Timeout | null>(null);
+  const [showQuitDialog, setShowQuitDialog] = useState(false);
+  const [questionAnswers, setQuestionAnswers] = useState<Array<'correct' | 'incorrect' | null>>([]);
+  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<boolean[]>([]);
 
   const handleStartQuiz = (qbankId: string, questionCount: number, isTutorMode: boolean, withTimer: boolean, timeLimit: number) => {
     const selectedQBank = qbanks.find((qb) => qb.id === qbankId);
@@ -50,6 +61,8 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     setInQuiz(true);
     setIsPaused(false);
     onQuizStart?.();
+    setQuestionAnswers(new Array(questionCount).fill(null));
+    setBookmarkedQuestions(new Array(questionCount).fill(false));
 
     if (withTimer) {
       startQuestionTimer();
@@ -71,21 +84,21 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
   };
 
   const handleAnswerTimeout = () => {
-    setIsAnswered(true);
-    if (tutorMode) {
-      setShowExplanation(true);
-    } else {
-      proceedToNextQuestion(-1); // -1 indicates timeout/no answer
-    }
+    handleQuit();
   };
 
   const handleAnswerClick = (optionIndex: number) => {
-    if (isAnswered || isPaused) return;
+    if (isAnswered || isPaused || questionAnswers[currentQuestionIndex] !== null) return;
     
     setSelectedAnswer(optionIndex);
     setIsAnswered(true);
 
-    if (optionIndex === currentQuestions[currentQuestionIndex].correctAnswer) {
+    const isCorrect = optionIndex === currentQuestions[currentQuestionIndex].correctAnswer;
+    const newAnswers = [...questionAnswers];
+    newAnswers[currentQuestionIndex] = isCorrect ? 'correct' : 'incorrect';
+    setQuestionAnswers(newAnswers);
+
+    if (isCorrect) {
       setScore((prev) => prev + 1);
     }
 
@@ -97,17 +110,23 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
   };
 
   const proceedToNextQuestion = (optionIndex: number) => {
-    if (currentQuestionIndex === currentQuestions.length - 1) {
+    const isLastQuestion = currentQuestionIndex === currentQuestions.length - 1;
+    const allQuestionsAnswered = !questionAnswers.includes(null);
+
+    if (isLastQuestion && allQuestionsAnswered) {
       const newQuizHistory: QuizHistory = {
         id: Date.now().toString(),
         date: new Date().toLocaleDateString(),
-        score: score + (optionIndex === currentQuestions[currentQuestionIndex].correctAnswer ? 1 : 0),
+        score,
         totalQuestions: currentQuestions.length,
         qbankId: currentQuestions[0].qbankId,
       };
       onQuizComplete?.(newQuizHistory);
       setShowScore(true);
-    } else {
+      return;
+    }
+
+    if (!isLastQuestion) {
       setCurrentQuestionIndex((prev) => prev + 1);
       setSelectedAnswer(null);
       setIsAnswered(false);
@@ -177,13 +196,55 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     if (direction === 'prev' && currentQuestionIndex > 0) {
       setCurrentQuestionIndex(prev => prev - 1);
       setSelectedAnswer(null);
-      setIsAnswered(false);
+      setIsAnswered(questionAnswers[currentQuestionIndex - 1] !== null);
       if (timerEnabled) {
         startQuestionTimer();
       }
-    } else if (direction === 'next' && currentQuestionIndex < currentQuestions.length - 1) {
-      proceedToNextQuestion(selectedAnswer || -1);
+    } else if (direction === 'next') {
+      const isLastQuestion = currentQuestionIndex === currentQuestions.length - 1;
+      const allQuestionsAnswered = !questionAnswers.includes(null);
+
+      if (isLastQuestion && allQuestionsAnswered) {
+        const newQuizHistory: QuizHistory = {
+          id: Date.now().toString(),
+          date: new Date().toLocaleDateString(),
+          score,
+          totalQuestions: currentQuestions.length,
+          qbankId: currentQuestions[0].qbankId,
+        };
+        onQuizComplete?.(newQuizHistory);
+        setShowScore(true);
+        return;
+      }
+
+      if (!isLastQuestion) {
+        setCurrentQuestionIndex(prev => prev + 1);
+        setSelectedAnswer(null);
+        setIsAnswered(questionAnswers[currentQuestionIndex + 1] !== null);
+        if (timerEnabled) {
+          startQuestionTimer();
+        }
+      }
     }
+  };
+
+  const handleQuitClick = () => {
+    setShowQuitDialog(true);
+  };
+
+  const handleQuitConfirm = () => {
+    setShowQuitDialog(false);
+    handleQuit();
+  };
+
+  const handleQuitCancel = () => {
+    setShowQuitDialog(false);
+  };
+
+  const handleBookmarkToggle = () => {
+    const newBookmarks = [...bookmarkedQuestions];
+    newBookmarks[currentQuestionIndex] = !newBookmarks[currentQuestionIndex];
+    setBookmarkedQuestions(newBookmarks);
   };
 
   if (!inQuiz) {
@@ -204,39 +265,103 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
 
   return (
     <div className="fixed inset-0 bg-background">
-      <div className="container mx-auto p-6 h-full flex flex-col">
-        <div className="mb-4">
-          <ProgressBar current={currentQuestionIndex + 1} total={currentQuestions.length} />
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 gap-6">
-            <QuestionView
-              question={currentQuestion}
-              selectedAnswer={selectedAnswer}
-              isAnswered={isAnswered}
-              isPaused={isPaused}
-              onAnswerClick={handleAnswerClick}
-            />
-
-            {isAnswered && showExplanation && (
-              <ExplanationView question={currentQuestion} />
-            )}
+      <div className="container mx-auto p-6 h-full flex">
+        <div className="w-20 mr-4 overflow-y-auto flex-shrink-0 bg-gray-100 rounded-lg">
+          <div className="p-2 space-y-2">
+            {questionAnswers.map((status, index) => (
+              <div
+                key={index}
+                className={`
+                  relative w-full aspect-square rounded-lg flex items-center justify-center font-medium
+                  ${status === 'correct' ? 'bg-green-500 text-white' : ''}
+                  ${status === 'incorrect' ? 'bg-red-500 text-white' : ''}
+                  ${status === null ? 'bg-white border border-gray-200' : ''}
+                `}
+              >
+                {bookmarkedQuestions[index] && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full" />
+                )}
+                {index + 1}
+              </div>
+            ))}
           </div>
         </div>
 
-        <QuizController
-          currentQuestionIndex={currentQuestionIndex}
-          totalQuestions={currentQuestions.length}
-          isAnswered={isAnswered}
-          isPaused={isPaused}
-          onNavigate={handleQuizNavigation}
-          onPause={handlePause}
-          onQuit={handleQuit}
-          timerEnabled={timerEnabled}
-          timeLimit={timePerQuestion}
-          onTimeUp={handleAnswerTimeout}
-        />
+        <div className="flex-1 flex flex-col">
+          <div className="mb-4">
+            <ProgressBar current={currentQuestionIndex + 1} total={currentQuestions.length} />
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-1 gap-6">
+              <div className="flex justify-end">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        onClick={handleBookmarkToggle}
+                        className={`p-2 ${bookmarkedQuestions[currentQuestionIndex] ? 'text-yellow-500' : 'text-gray-400'}`}
+                      >
+                        <Bookmark className="h-6 w-6" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{bookmarkedQuestions[currentQuestionIndex] ? 'Remove bookmark' : 'Bookmark this question'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+
+              <QuestionView
+                question={currentQuestion}
+                selectedAnswer={selectedAnswer}
+                isAnswered={isAnswered}
+                isPaused={isPaused}
+                onAnswerClick={handleAnswerClick}
+              />
+
+              {isAnswered && showExplanation && (
+                <ExplanationView question={currentQuestion} />
+              )}
+            </div>
+          </div>
+
+          <QuizController
+            currentQuestionIndex={currentQuestionIndex}
+            totalQuestions={currentQuestions.length}
+            isAnswered={isAnswered}
+            isPaused={isPaused}
+            onNavigate={handleQuizNavigation}
+            onPause={handlePause}
+            onQuit={handleQuitClick}
+            timerEnabled={timerEnabled}
+            timeLimit={timePerQuestion}
+            onTimeUp={handleAnswerTimeout}
+          />
+        </div>
+
+        {showQuitDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="bg-white p-6 rounded-lg shadow-lg">
+              <p className="mb-4">Do you really want to end the quiz? This action is permanent.</p>
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={handleQuitCancel}
+                  className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                >
+                  No
+                </button>
+                <button
+                  onClick={handleQuitConfirm}
+                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                  Yes
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

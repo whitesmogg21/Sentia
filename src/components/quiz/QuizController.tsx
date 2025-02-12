@@ -55,7 +55,7 @@ const QuizController = ({
           <Button
             variant="outline"
             onClick={() => onNavigate('next')}
-            disabled={currentQuestionIndex === totalQuestions - 1 || !isAnswered}
+            disabled={currentQuestionIndex === totalQuestions - 1}
             className="flex items-center gap-2"
           >
             Next
