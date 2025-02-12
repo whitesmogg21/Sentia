@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Play, Pause, XCircle } from "lucide-react";
 import Timer from "./Timer";
@@ -46,7 +47,7 @@ const QuizController = ({
           <Button
             variant="outline"
             onClick={() => onNavigate('prev')}
-            disabled={currentQuestionIndex === 0}
+            disabled={currentQuestionIndex === 0 || timerEnabled}
             className="flex items-center gap-2"
           >
             <ChevronLeft className="h-4 w-4" />

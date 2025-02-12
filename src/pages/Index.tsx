@@ -28,7 +28,6 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
   const [isPaused, setIsPaused] = useState(false);
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timePerQuestion, setTimePerQuestion] = useState(60); // seconds
-  const [questionTimer, setQuestionTimer] = useState<NodeJS.Timeout | null>(null);
 
   const handleStartQuiz = (qbankId: string, questionCount: number, isTutorMode: boolean, withTimer: boolean, timeLimit: number) => {
     const selectedQBank = qbanks.find((qb) => qb.id === qbankId);
@@ -50,24 +49,6 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     setInQuiz(true);
     setIsPaused(false);
     onQuizStart?.();
-
-    if (withTimer) {
-      startQuestionTimer();
-    }
-  };
-
-  const startQuestionTimer = () => {
-    if (questionTimer) {
-      clearTimeout(questionTimer);
-    }
-    
-    const timer = setTimeout(() => {
-      if (!isAnswered && !isPaused) {
-        handleAnswerTimeout();
-      }
-    }, timePerQuestion * 1000);
-    
-    setQuestionTimer(timer);
   };
 
   const handleAnswerTimeout = () => {
@@ -111,9 +92,6 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
       setCurrentQuestionIndex((prev) => prev + 1);
       setSelectedAnswer(null);
       setIsAnswered(false);
-      if (timerEnabled) {
-        startQuestionTimer();
-      }
     }
   };
 
@@ -131,9 +109,6 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
 
   const handlePause = () => {
     setIsPaused((prev) => !prev);
-    if (questionTimer) {
-      clearTimeout(questionTimer);
-    }
   };
 
   const handleContinue = () => {
@@ -142,9 +117,6 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
   };
 
   const handleRestart = () => {
-    if (questionTimer) {
-      clearTimeout(questionTimer);
-    }
     setInQuiz(false);
     setCurrentQuestionIndex(0);
     setScore(0);
@@ -154,6 +126,16 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     setTutorMode(false);
     setIsPaused(false);
     onQuizEnd?.();
+  };
+
+  const handleQuizNavigation = (direction: 'prev' | 'next') => {
+    if (direction === 'prev' && currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(prev => prev - 1);
+      setSelectedAnswer(null);
+      setIsAnswered(false);
+    } else if (direction === 'next' && currentQuestionIndex < currentQuestions.length - 1) {
+      proceedToNextQuestion(selectedAnswer || -1);
+    }
   };
 
   const renderMedia = (media?: Question['media']) => {
@@ -170,19 +152,6 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
         return <audio src={media.url} controls className="w-full mb-4" />;
       default:
         return null;
-    }
-  };
-
-  const handleQuizNavigation = (direction: 'prev' | 'next') => {
-    if (direction === 'prev' && currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
-      setSelectedAnswer(null);
-      setIsAnswered(false);
-      if (timerEnabled) {
-        startQuestionTimer();
-      }
-    } else if (direction === 'next' && currentQuestionIndex < currentQuestions.length - 1) {
-      proceedToNextQuestion(selectedAnswer || -1);
     }
   };
 
