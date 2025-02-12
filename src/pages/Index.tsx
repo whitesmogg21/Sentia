@@ -1,5 +1,6 @@
 
 import { QuizHistory } from "../types/quiz";
+import { qbanks } from "../data/questions";
 import Dashboard from "../components/Dashboard";
 import ScoreCard from "../components/ScoreCard";
 import QuizContent from "@/components/quiz/QuizContent";
