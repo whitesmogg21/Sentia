@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,6 +19,7 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
+  const [inQuiz, setInQuiz] = useState(false);
 
   const handleQuizComplete = (history: QuizHistory) => {
     setQuizHistory((prev) => [...prev, history]);
@@ -29,6 +29,9 @@ const App = () => {
     });
   };
 
+  const handleQuizStart = () => setInQuiz(true);
+  const handleQuizEnd = () => setInQuiz(false);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -37,7 +40,7 @@ const App = () => {
         <BrowserRouter>
           <SidebarProvider>
             <div className="min-h-screen flex w-full">
-              <AppSidebar />
+              {!inQuiz && <AppSidebar />}
               <main className="flex-1">
                 <Routes>
                   <Route
@@ -46,6 +49,8 @@ const App = () => {
                       <Index
                         quizHistory={quizHistory}
                         onQuizComplete={handleQuizComplete}
+                        onQuizStart={handleQuizStart}
+                        onQuizEnd={handleQuizEnd}
                       />
                     }
                   />

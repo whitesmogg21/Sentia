@@ -11,9 +11,11 @@ import QuizController from "@/components/quiz/QuizController";
 interface IndexProps {
   quizHistory?: QuizHistory[];
   onQuizComplete?: (history: QuizHistory) => void;
+  onQuizStart?: () => void;
+  onQuizEnd?: () => void;
 }
 
-const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
+const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: IndexProps) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [showScore, setShowScore] = useState(false);
@@ -47,6 +49,7 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
     setTimePerQuestion(timeLimit);
     setInQuiz(true);
     setIsPaused(false);
+    onQuizStart?.();
 
     if (withTimer) {
       startQuestionTimer();
@@ -150,6 +153,7 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
     setIsAnswered(false);
     setTutorMode(false);
     setIsPaused(false);
+    onQuizEnd?.();
   };
 
   const renderMedia = (media?: Question['media']) => {
@@ -199,34 +203,41 @@ const Index = ({ quizHistory = [], onQuizComplete }: IndexProps) => {
   const currentQuestion = currentQuestions[currentQuestionIndex];
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="mb-4">
-        <ProgressBar current={currentQuestionIndex + 1} total={currentQuestions.length} />
-      </div>
+    <div className="fixed inset-0 bg-background">
+      <div className="container mx-auto p-6 h-full flex flex-col">
+        <div className="mb-4">
+          <ProgressBar current={currentQuestionIndex + 1} total={currentQuestions.length} />
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <QuestionView
-          question={currentQuestion}
-          selectedAnswer={selectedAnswer}
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-1 gap-6">
+            <QuestionView
+              question={currentQuestion}
+              selectedAnswer={selectedAnswer}
+              isAnswered={isAnswered}
+              isPaused={isPaused}
+              onAnswerClick={handleAnswerClick}
+            />
+
+            {isAnswered && showExplanation && (
+              <ExplanationView question={currentQuestion} />
+            )}
+          </div>
+        </div>
+
+        <QuizController
+          currentQuestionIndex={currentQuestionIndex}
+          totalQuestions={currentQuestions.length}
           isAnswered={isAnswered}
           isPaused={isPaused}
-          onAnswerClick={handleAnswerClick}
+          onNavigate={handleQuizNavigation}
+          onPause={handlePause}
+          onQuit={handleQuit}
+          timerEnabled={timerEnabled}
+          timeLimit={timePerQuestion}
+          onTimeUp={handleAnswerTimeout}
         />
-
-        {showExplanation && (
-          <ExplanationView question={currentQuestion} />
-        )}
       </div>
-
-      <QuizController
-        currentQuestionIndex={currentQuestionIndex}
-        totalQuestions={currentQuestions.length}
-        isAnswered={isAnswered}
-        isPaused={isPaused}
-        onNavigate={handleQuizNavigation}
-        onPause={handlePause}
-        onQuit={handleQuit}
-      />
     </div>
   );
 };

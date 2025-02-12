@@ -4,7 +4,6 @@ import { VitePWA } from 'vite-plugin-pwa';
 import path from "path";
 
 export default defineConfig(({ mode }) => ({
-  base: '/playful-puzzles/',
   server: {
     host: "::",
     port: 8080,
