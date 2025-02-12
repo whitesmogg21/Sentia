@@ -10,6 +10,7 @@ interface TimerProps {
 const Timer = ({ timeLimit, isPaused, onTimeUp }: TimerProps) => {
   const [timeLeft, setTimeLeft] = useState(timeLimit);
 
+  // Reset timer when timeLimit changes
   useEffect(() => {
     setTimeLeft(timeLimit);
   }, [timeLimit]);
@@ -40,4 +41,4 @@ const Timer = ({ timeLimit, isPaused, onTimeUp }: TimerProps) => {
   );
 };
 
-export default Timer; 
+export default Timer;
