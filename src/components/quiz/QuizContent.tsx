@@ -4,6 +4,7 @@ import QuestionView from "./QuestionView";
 import ExplanationView from "./ExplanationView";
 import QuizController from "./QuizController";
 import ProgressBar from "../ProgressBar";
+import QuestionsSidebar from "./QuestionsSidebar";
 
 interface QuizContentProps {
   currentQuestion: Question;
@@ -38,9 +39,26 @@ const QuizContent = ({
   onQuit,
   onTimeUp
 }: QuizContentProps) => {
+  // Track answered questions
+  const [answeredQuestions, setAnsweredQuestions] = React.useState<Array<{ questionIndex: number; isCorrect: boolean }>>([]);
+
+  // Update answered questions when an answer is selected
+  const handleAnswerClick = (index: number) => {
+    if (!isAnswered) {
+      setAnsweredQuestions(prev => [
+        ...prev.filter(q => q.questionIndex !== currentQuestionIndex),
+        {
+          questionIndex: currentQuestionIndex,
+          isCorrect: index === currentQuestion.correctAnswer
+        }
+      ]);
+      onAnswerClick(index);
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-background">
-      <div className="container mx-auto p-6 h-full flex flex-col">
+      <div className="container mx-auto p-6 h-full flex flex-col mr-[200px]">
         <div className="mb-4">
           <ProgressBar current={currentQuestionIndex + 1} total={totalQuestions} />
         </div>
@@ -52,7 +70,7 @@ const QuizContent = ({
               selectedAnswer={selectedAnswer}
               isAnswered={isAnswered}
               isPaused={isPaused}
-              onAnswerClick={onAnswerClick}
+              onAnswerClick={handleAnswerClick}
             />
 
             {isAnswered && showExplanation && (
@@ -74,6 +92,12 @@ const QuizContent = ({
           onTimeUp={onTimeUp}
         />
       </div>
+
+      <QuestionsSidebar
+        totalQuestions={totalQuestions}
+        currentQuestionIndex={currentQuestionIndex}
+        answeredQuestions={answeredQuestions}
+      />
     </div>
   );
 };
