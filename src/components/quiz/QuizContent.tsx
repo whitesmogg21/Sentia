@@ -6,6 +6,16 @@ import ExplanationView from "./ExplanationView";
 import QuizController from "./QuizController";
 import ProgressBar from "../ProgressBar";
 import QuestionsSidebar from "./QuestionsSidebar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface QuizContentProps {
   currentQuestion: Question;
@@ -40,10 +50,9 @@ const QuizContent = ({
   onQuit,
   onTimeUp
 }: QuizContentProps) => {
-  // Track answered questions
+  const [showQuitDialog, setShowQuitDialog] = React.useState(false);
   const [answeredQuestions, setAnsweredQuestions] = React.useState<Array<{ questionIndex: number; isCorrect: boolean }>>([]);
 
-  // Update answered questions when an answer is selected
   const handleAnswerClick = (index: number) => {
     if (!isAnswered) {
       setAnsweredQuestions(prev => [
@@ -57,13 +66,21 @@ const QuizContent = ({
     }
   };
 
-  // Handle sidebar question click
   const handleQuestionClick = (index: number) => {
     if (index > currentQuestionIndex) {
       onNavigate('next');
     } else if (index < currentQuestionIndex) {
       onNavigate('prev');
     }
+  };
+
+  const handleQuitAttempt = () => {
+    setShowQuitDialog(true);
+  };
+
+  const handleConfirmQuit = () => {
+    setShowQuitDialog(false);
+    onQuit();
   };
 
   return (
@@ -96,7 +113,7 @@ const QuizContent = ({
           isPaused={isPaused}
           onNavigate={onNavigate}
           onPause={onPause}
-          onQuit={onQuit}
+          onQuit={handleQuitAttempt}
           timerEnabled={timerEnabled}
           timeLimit={timePerQuestion}
           onTimeUp={onTimeUp}
@@ -109,6 +126,23 @@ const QuizContent = ({
         answeredQuestions={answeredQuestions}
         onQuestionClick={handleQuestionClick}
       />
+
+      <AlertDialog open={showQuitDialog} onOpenChange={setShowQuitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>End Quiz</AlertDialogTitle>
+            <AlertDialogDescription>
+              Do you really want to end the quiz? This action is permanent.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, continue quiz</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmQuit}>
+              Yes, end quiz
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
