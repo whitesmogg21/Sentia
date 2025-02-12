@@ -57,9 +57,18 @@ const QuizContent = ({
     }
   };
 
+  // Handle sidebar question click
+  const handleQuestionClick = (index: number) => {
+    if (index > currentQuestionIndex) {
+      onNavigate('next');
+    } else if (index < currentQuestionIndex) {
+      onNavigate('prev');
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-background">
-      <div className="container mx-auto p-6 h-full flex flex-col mr-[200px]">
+      <div className="ml-[160px] container mx-auto p-6 h-full flex flex-col">
         <div className="mb-4">
           <ProgressBar current={currentQuestionIndex + 1} total={totalQuestions} />
         </div>
@@ -98,6 +107,7 @@ const QuizContent = ({
         totalQuestions={totalQuestions}
         currentQuestionIndex={currentQuestionIndex}
         answeredQuestions={answeredQuestions}
+        onQuestionClick={handleQuestionClick}
       />
     </div>
   );
