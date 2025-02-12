@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { Question } from "@/types/quiz";
 import QuestionView from "./QuestionView";
 import ExplanationView from "./ExplanationView";
