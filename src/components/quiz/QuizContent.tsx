@@ -27,11 +27,13 @@ interface QuizContentProps {
   showExplanation: boolean;
   timerEnabled: boolean;
   timePerQuestion: number;
+  isMarked: boolean;
   onAnswerClick: (index: number) => void;
   onNavigate: (direction: 'prev' | 'next') => void;
   onPause: () => void;
   onQuit: () => void;
   onTimeUp: () => void;
+  onToggleMark: () => void;
 }
 
 const QuizContent = ({
@@ -44,11 +46,13 @@ const QuizContent = ({
   showExplanation,
   timerEnabled,
   timePerQuestion,
+  isMarked,
   onAnswerClick,
   onNavigate,
   onPause,
   onQuit,
-  onTimeUp
+  onTimeUp,
+  onToggleMark
 }: QuizContentProps) => {
   const [showQuitDialog, setShowQuitDialog] = React.useState(false);
   const [answeredQuestions, setAnsweredQuestions] = React.useState<Array<{ questionIndex: number; isCorrect: boolean }>>([]);
@@ -67,18 +71,16 @@ const QuizContent = ({
   };
 
   const handleQuestionClick = (index: number) => {
-    if (index > currentQuestionIndex) {
-      onNavigate('next');
-    } else if (index < currentQuestionIndex) {
-      onNavigate('prev');
+    if (!timerEnabled) {
+      if (index > currentQuestionIndex) {
+        onNavigate('next');
+      } else if (index < currentQuestionIndex) {
+        onNavigate('prev');
+      }
     }
   };
 
-  const handleQuitAttempt = () => {
-    setShowQuitDialog(true);
-  };
-
-  const handleConfirmQuit = () => {
+  const handleQuizComplete = () => {
     setShowQuitDialog(false);
     onQuit();
   };
@@ -111,12 +113,14 @@ const QuizContent = ({
           totalQuestions={totalQuestions}
           isAnswered={isAnswered}
           isPaused={isPaused}
-          onNavigate={onNavigate}
-          onPause={onPause}
-          onQuit={handleQuitAttempt}
+          isMarked={isMarked}
           timerEnabled={timerEnabled}
           timeLimit={timePerQuestion}
           onTimeUp={onTimeUp}
+          onNavigate={onNavigate}
+          onPause={onPause}
+          onQuit={() => setShowQuitDialog(true)}
+          onToggleMark={onToggleMark}
         />
       </div>
 
@@ -137,7 +141,7 @@ const QuizContent = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>No, continue quiz</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmQuit}>
+            <AlertDialogAction onClick={handleQuizComplete}>
               Yes, end quiz
             </AlertDialogAction>
           </AlertDialogFooter>

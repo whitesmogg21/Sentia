@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { QBank, QuizHistory, QuestionFilter } from "../types/quiz";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -42,7 +41,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     omitted: false,
   });
 
-  // Calculate metrics
+  // Calculate metrics with null checks
   const metrics = useMemo(() => {
     const totalQuestions = qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0);
     const attemptedQuestions = new Set();
@@ -52,16 +51,18 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     const omittedQuestions = new Set();
 
     quizHistory.forEach(quiz => {
-      quiz.questionAttempts.forEach(attempt => {
-        attemptedQuestions.add(attempt.questionId);
-        if (attempt.selectedAnswer === null) {
-          omittedQuestions.add(attempt.questionId);
-        } else if (attempt.isCorrect) {
-          correctQuestions.add(attempt.questionId);
-        } else {
-          incorrectQuestions.add(attempt.questionId);
-        }
-      });
+      if (quiz.questionAttempts) {  // Add null check here
+        quiz.questionAttempts.forEach(attempt => {
+          attemptedQuestions.add(attempt.questionId);
+          if (attempt.selectedAnswer === null) {
+            omittedQuestions.add(attempt.questionId);
+          } else if (attempt.isCorrect) {
+            correctQuestions.add(attempt.questionId);
+          } else {
+            incorrectQuestions.add(attempt.questionId);
+          }
+        });
+      }
     });
 
     qbanks.forEach(qbank => {
