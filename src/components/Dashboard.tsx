@@ -9,11 +9,20 @@ import { Card } from "./ui/card";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import { Slider } from "./ui/slider";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface DashboardProps {
   qbanks: QBank[];
   quizHistory: QuizHistory[];
   onStartQuiz: (qbankId: string, questionCount: number, tutorMode: boolean, timerEnabled: boolean, timeLimit: number) => void;
+}
+
+interface CategoryStats {
+  label: string;
+  count: number;
+  color: string;
+  bgColor: string;
 }
 
 const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
@@ -22,12 +31,52 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   const [tutorMode, setTutorMode] = useState(false);
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timeLimit, setTimeLimit] = useState(60);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const handleStartQuiz = () => {
     if (selectedQBank && questionCount > 0) {
       onStartQuiz(selectedQBank, questionCount, tutorMode, timerEnabled, timeLimit);
     }
   };
+
+  // Calculate statistics from quiz history
+  const totalQuestions = qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0);
+  const totalAnswered = quizHistory.reduce((acc, quiz) => acc + quiz.totalQuestions, 0);
+  const totalCorrect = quizHistory.reduce((acc, quiz) => acc + quiz.score, 0);
+  const totalIncorrect = totalAnswered - totalCorrect;
+
+  const categories: CategoryStats[] = [
+    {
+      label: "Unused",
+      count: totalQuestions - totalAnswered,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+    },
+    {
+      label: "Incorrect",
+      count: totalIncorrect,
+      color: "text-red-600",
+      bgColor: "bg-red-50",
+    },
+    {
+      label: "Marked",
+      count: 76, // This would need to be connected to actual marking functionality
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-50",
+    },
+    {
+      label: "Omitted",
+      count: 35, // This would need to be connected to actual omission tracking
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+    },
+    {
+      label: "Correct",
+      count: totalCorrect,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+    },
+  ];
 
   // Transform quiz history data to percentage scores
   const chartData = quizHistory.map((quiz, index) => ({
@@ -41,32 +90,61 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full h-[400px] bg-white rounded-2xl shadow-lg p-6"
+        className="space-y-6"
       >
-        <h2 className="text-2xl font-bold mb-4">Performance History</h2>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="quizNumber" 
-              label={{ value: 'Quiz Number', position: 'bottom' }}
-            />
-            <YAxis 
-              label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }}
-              domain={[0, 100]}
-            />
-            <Tooltip 
-              formatter={(value: number) => [`${value.toFixed(1)}%`, 'Score']}
-              labelFormatter={(label) => `Quiz ${label}`}
-            />
-            <Line
-              type="monotone"
-              dataKey="score"
-              stroke="#8884d8"
-              activeDot={{ r: 8 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="flex flex-wrap gap-2">
+          {categories.map((category) => (
+            <button
+              key={category.label}
+              onClick={() => setSelectedCategory(category.label)}
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 rounded-full transition-all",
+                category.bgColor,
+                category.color,
+                selectedCategory === category.label && "ring-2 ring-offset-2",
+                "hover:opacity-90"
+              )}
+            >
+              <Check 
+                className={cn(
+                  "w-4 h-4",
+                  selectedCategory === category.label ? "opacity-100" : "opacity-0"
+                )}
+              />
+              <span className="font-medium">{category.label}</span>
+              <span className="px-2 py-0.5 bg-white rounded-full text-sm">
+                {category.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <div className="w-full h-[400px] bg-white rounded-2xl shadow-lg p-6">
+          <h2 className="text-2xl font-bold mb-4">Performance History</h2>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="quizNumber" 
+                label={{ value: 'Quiz Number', position: 'bottom' }}
+              />
+              <YAxis 
+                label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }}
+                domain={[0, 100]}
+              />
+              <Tooltip 
+                formatter={(value: number) => [`${value.toFixed(1)}%`, 'Score']}
+                labelFormatter={(label) => `Quiz ${label}`}
+              />
+              <Line
+                type="monotone"
+                dataKey="score"
+                stroke="#8884d8"
+                activeDot={{ r: 8 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </motion.div>
 
       <div className="grid md:grid-cols-2 gap-6">
