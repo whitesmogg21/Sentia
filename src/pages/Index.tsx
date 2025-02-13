@@ -26,15 +26,13 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     isPaused,
     timerEnabled,
     timePerQuestion,
-    isMarked,
     handleStartQuiz,
     handleAnswerTimeout,
     handleAnswerClick,
     handleQuit,
     handlePause,
     handleRestart,
-    handleQuizNavigation,
-    handleToggleMark
+    handleQuizNavigation
   } = useQuiz({ onQuizComplete, onQuizStart, onQuizEnd });
 
   if (!inQuiz) {
@@ -62,13 +60,11 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
       showExplanation={showExplanation}
       timerEnabled={timerEnabled}
       timePerQuestion={timePerQuestion}
-      isMarked={isMarked}
       onAnswerClick={handleAnswerClick}
       onNavigate={handleQuizNavigation}
       onPause={handlePause}
       onQuit={handleQuit}
       onTimeUp={handleAnswerTimeout}
-      onToggleMark={handleToggleMark}
     />
   );
 };
