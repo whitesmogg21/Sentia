@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { QBank, QuizHistory } from "../types/quiz";
+import { useState, useMemo } from "react";
+import { QBank, QuizHistory, QuestionFilter } from "../types/quiz";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { motion } from "framer-motion";
 import { Input } from "./ui/input";
@@ -9,8 +9,9 @@ import { Card } from "./ui/card";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import { Slider } from "./ui/slider";
-import { Check } from "lucide-react";
+import { Check, Flag } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/components/ui/use-toast";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -23,6 +24,7 @@ interface CategoryStats {
   count: number;
   color: string;
   bgColor: string;
+  key: keyof QuestionFilter;
 }
 
 const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
@@ -31,54 +33,151 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   const [tutorMode, setTutorMode] = useState(false);
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timeLimit, setTimeLimit] = useState(60);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [filters, setFilters] = useState<QuestionFilter>({
+    unused: false,
+    used: false,
+    incorrect: false,
+    correct: false,
+    marked: false,
+    omitted: false,
+  });
 
-  const handleStartQuiz = () => {
-    if (selectedQBank && questionCount > 0) {
-      onStartQuiz(selectedQBank, questionCount, tutorMode, timerEnabled, timeLimit);
-    }
-  };
+  // Calculate metrics
+  const metrics = useMemo(() => {
+    const totalQuestions = qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0);
+    const attemptedQuestions = new Set();
+    const correctQuestions = new Set();
+    const incorrectQuestions = new Set();
+    const markedQuestions = new Set();
+    const omittedQuestions = new Set();
 
-  // Calculate statistics from quiz history
-  const totalQuestions = qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0);
-  const totalAnswered = quizHistory.reduce((acc, quiz) => acc + quiz.totalQuestions, 0);
-  const totalCorrect = quizHistory.reduce((acc, quiz) => acc + quiz.score, 0);
-  const totalIncorrect = totalAnswered - totalCorrect;
+    quizHistory.forEach(quiz => {
+      quiz.questionAttempts.forEach(attempt => {
+        attemptedQuestions.add(attempt.questionId);
+        if (attempt.selectedAnswer === null) {
+          omittedQuestions.add(attempt.questionId);
+        } else if (attempt.isCorrect) {
+          correctQuestions.add(attempt.questionId);
+        } else {
+          incorrectQuestions.add(attempt.questionId);
+        }
+      });
+    });
+
+    qbanks.forEach(qbank => {
+      qbank.questions.forEach(question => {
+        if (question.isMarked) {
+          markedQuestions.add(question.id);
+        }
+      });
+    });
+
+    return {
+      unused: totalQuestions - attemptedQuestions.size,
+      used: attemptedQuestions.size,
+      correct: correctQuestions.size,
+      incorrect: incorrectQuestions.size,
+      marked: markedQuestions.size,
+      omitted: omittedQuestions.size,
+    };
+  }, [qbanks, quizHistory]);
 
   const categories: CategoryStats[] = [
     {
       label: "Unused",
-      count: totalQuestions - totalAnswered,
+      count: metrics.unused,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
+      key: "unused"
+    },
+    {
+      label: "Used",
+      count: metrics.used,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      key: "used"
     },
     {
       label: "Incorrect",
-      count: totalIncorrect,
+      count: metrics.incorrect,
       color: "text-red-600",
       bgColor: "bg-red-50",
-    },
-    {
-      label: "Marked",
-      count: 76, // This would need to be connected to actual marking functionality
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-50",
-    },
-    {
-      label: "Omitted",
-      count: 35, // This would need to be connected to actual omission tracking
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
+      key: "incorrect"
     },
     {
       label: "Correct",
-      count: totalCorrect,
+      count: metrics.correct,
       color: "text-green-600",
       bgColor: "bg-green-50",
+      key: "correct"
+    },
+    {
+      label: "Marked",
+      count: metrics.marked,
+      color: "text-yellow-600",
+      bgColor: "bg-yellow-50",
+      key: "marked"
+    },
+    {
+      label: "Omitted",
+      count: metrics.omitted,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+      key: "omitted"
     },
   ];
 
-  // Transform quiz history data to percentage scores
+  // Filter questions based on selected categories
+  const filteredQBanks = useMemo(() => {
+    if (!Object.values(filters).some(Boolean)) return qbanks;
+
+    return qbanks.map(qbank => ({
+      ...qbank,
+      questions: qbank.questions.filter(question => {
+        const isUsed = quizHistory.some(quiz => 
+          quiz.questionAttempts.some(attempt => attempt.questionId === question.id)
+        );
+        const attempts = quizHistory.flatMap(quiz => 
+          quiz.questionAttempts.filter(attempt => attempt.questionId === question.id)
+        );
+        const isCorrect = attempts.some(attempt => attempt.isCorrect);
+        const isIncorrect = attempts.some(attempt => !attempt.isCorrect);
+        const isOmitted = attempts.some(attempt => attempt.selectedAnswer === null);
+
+        return (
+          (filters.unused && !isUsed) ||
+          (filters.used && isUsed) ||
+          (filters.correct && isCorrect) ||
+          (filters.incorrect && isIncorrect) ||
+          (filters.marked && question.isMarked) ||
+          (filters.omitted && isOmitted)
+        );
+      })
+    })).filter(qbank => qbank.questions.length > 0);
+  }, [qbanks, quizHistory, filters]);
+
+  const handleStartQuiz = () => {
+    if (selectedQBank && questionCount > 0) {
+      if (questionCount > filteredQBanks.find(qb => qb.id === selectedQBank)?.questions.length!) {
+        toast({
+          title: "Invalid Question Count",
+          description: "The selected number of questions exceeds the available questions in the filtered set.",
+          variant: "destructive"
+        });
+        return;
+      }
+      onStartQuiz(selectedQBank, questionCount, tutorMode, timerEnabled, timeLimit);
+    }
+  };
+
+  const toggleFilter = (key: keyof QuestionFilter) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  // Transform quiz history data for the chart
   const chartData = quizHistory.map((quiz, index) => ({
     quizNumber: index + 1,
     score: (quiz.score / quiz.totalQuestions) * 100,
@@ -96,19 +195,19 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           {categories.map((category) => (
             <button
               key={category.label}
-              onClick={() => setSelectedCategory(category.label)}
+              onClick={() => toggleFilter(category.key)}
               className={cn(
                 "flex items-center gap-2 px-3 py-2 rounded-full transition-all",
                 category.bgColor,
                 category.color,
-                selectedCategory === category.label && "ring-2 ring-offset-2",
+                filters[category.key] && "ring-2 ring-offset-2",
                 "hover:opacity-90"
               )}
             >
               <Check 
                 className={cn(
                   "w-4 h-4",
-                  selectedCategory === category.label ? "opacity-100" : "opacity-0"
+                  filters[category.key] ? "opacity-100" : "opacity-0"
                 )}
               />
               <span className="font-medium">{category.label}</span>
@@ -155,7 +254,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         >
           <h2 className="text-xl font-bold">Available Question Banks</h2>
           <div className="grid gap-4">
-            {qbanks.map((qbank) => (
+            {filteredQBanks.map((qbank) => (
               <Card
                 key={qbank.id}
                 className={`p-4 cursor-pointer transition-colors ${

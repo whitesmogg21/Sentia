@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Play, Pause, XCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Pause, XCircle, Flag } from "lucide-react";
 import Timer from "./Timer";
 
 interface QuizControllerProps {
@@ -8,12 +8,14 @@ interface QuizControllerProps {
   totalQuestions: number;
   isAnswered: boolean;
   isPaused: boolean;
+  isMarked: boolean;
   timerEnabled: boolean;
   timeLimit: number;
   onTimeUp: () => void;
   onNavigate: (direction: 'prev' | 'next') => void;
   onPause: () => void;
   onQuit: () => void;
+  onToggleMark: () => void;
 }
 
 const QuizController = ({
@@ -21,17 +23,18 @@ const QuizController = ({
   totalQuestions,
   isAnswered,
   isPaused,
+  isMarked,
   timerEnabled,
   timeLimit,
   onTimeUp,
   onNavigate,
   onPause,
-  onQuit
+  onQuit,
+  onToggleMark
 }: QuizControllerProps) => {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
       <div className="container mx-auto flex items-center justify-between">
-        {/* Timer */}
         <div className="w-32">
           {timerEnabled && (
             <Timer
@@ -42,7 +45,6 @@ const QuizController = ({
           )}
         </div>
         
-        {/* Navigation buttons */}
         <div className="flex justify-center gap-2">
           <Button
             variant="outline"
@@ -55,6 +57,14 @@ const QuizController = ({
           </Button>
           <Button
             variant="outline"
+            onClick={onToggleMark}
+            className={`flex items-center gap-2 ${isMarked ? 'bg-yellow-100 border-yellow-400' : ''}`}
+          >
+            <Flag className={`h-4 w-4 ${isMarked ? 'fill-yellow-500' : ''}`} />
+            {isMarked ? 'Marked' : 'Mark'}
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => onNavigate('next')}
             disabled={currentQuestionIndex === totalQuestions - 1 || !isAnswered}
             className="flex items-center gap-2"
@@ -64,7 +74,6 @@ const QuizController = ({
           </Button>
         </div>
         
-        {/* Control buttons */}
         <div className="flex gap-2 w-32 justify-end">
           <Button
             variant="outline"
