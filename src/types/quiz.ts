@@ -57,3 +57,13 @@ export interface QuestionFilter {
   marked: boolean;
   omitted: boolean;
 }
+
+export type QuestionCategory = 'unused' | 'correct' | 'incorrect' | 'omitted';
+
+export interface QuestionMetrics {
+  unused: number;
+  correct: number;
+  incorrect: number;
+  omitted: number;
+  marked: number;
+}

@@ -22,7 +22,8 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   const [isPaused, setIsPaused] = useState(false);
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timePerQuestion, setTimePerQuestion] = useState(60);
-  const [isMarked, setIsMarked] = useState(false);
+
+  const getCurrentQuestion = () => currentQuestions[currentQuestionIndex];
 
   const handleStartQuiz = (qbankId: string, questionCount: number, isTutorMode: boolean, withTimer: boolean, timeLimit: number) => {
     const selectedQBank = qbanks.find((qb) => qb.id === qbankId);
@@ -43,26 +44,47 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     setTimePerQuestion(timeLimit);
     setInQuiz(true);
     setIsPaused(false);
-    setIsMarked(false);
     onQuizStart?.();
   };
 
   const handleAnswerTimeout = () => {
+    if (!getCurrentQuestion()) return;
+    
+    const currentQuestion = getCurrentQuestion();
+    currentQuestion.attempts = currentQuestion.attempts || [];
+    currentQuestion.attempts.push({
+      date: new Date().toISOString(),
+      selectedAnswer: null,
+      isCorrect: false
+    });
+    
     setIsAnswered(true);
     if (tutorMode) {
       setShowExplanation(true);
     } else {
-      proceedToNextQuestion(-1);
+      proceedToNextQuestion(null);
     }
   };
 
   const handleAnswerClick = (optionIndex: number) => {
     if (isAnswered || isPaused) return;
     
+    const currentQuestion = getCurrentQuestion();
+    if (!currentQuestion) return;
+
+    const isCorrect = optionIndex === currentQuestion.correctAnswer;
+    
+    currentQuestion.attempts = currentQuestion.attempts || [];
+    currentQuestion.attempts.push({
+      date: new Date().toISOString(),
+      selectedAnswer: optionIndex,
+      isCorrect
+    });
+
     setSelectedAnswer(optionIndex);
     setIsAnswered(true);
 
-    if (optionIndex === currentQuestions[currentQuestionIndex].correctAnswer) {
+    if (isCorrect) {
       setScore((prev) => prev + 1);
     }
 
@@ -73,20 +95,23 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     }
   };
 
-  const proceedToNextQuestion = (optionIndex: number) => {
+  const proceedToNextQuestion = (optionIndex: number | null) => {
+    const currentQuestion = getCurrentQuestion();
+    if (!currentQuestion) return;
+
     const attempts = [{
-      questionId: currentQuestions[currentQuestionIndex].id,
+      questionId: currentQuestion.id,
       selectedAnswer: optionIndex,
-      isCorrect: optionIndex === currentQuestions[currentQuestionIndex].correctAnswer,
+      isCorrect: optionIndex === currentQuestion.correctAnswer,
     }];
 
     if (currentQuestionIndex === currentQuestions.length - 1) {
       const newQuizHistory: QuizHistory = {
         id: Date.now().toString(),
         date: new Date().toLocaleDateString(),
-        score: score + (optionIndex === currentQuestions[currentQuestionIndex].correctAnswer ? 1 : 0),
+        score: score + (optionIndex === currentQuestion.correctAnswer ? 1 : 0),
         totalQuestions: currentQuestions.length,
-        qbankId: currentQuestions[0].qbankId,
+        qbankId: currentQuestion.qbankId,
         questionAttempts: attempts
       };
       onQuizComplete?.(newQuizHistory);
@@ -95,15 +120,21 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
       setCurrentQuestionIndex((prev) => prev + 1);
       setSelectedAnswer(null);
       setIsAnswered(false);
-      setIsMarked(false);
     }
   };
 
   const handleToggleMark = () => {
-    setIsMarked(prev => !prev);
-    if (currentQuestions[currentQuestionIndex]) {
-      currentQuestions[currentQuestionIndex].isMarked = !currentQuestions[currentQuestionIndex].isMarked;
-    }
+    const currentQuestion = getCurrentQuestion();
+    if (!currentQuestion) return;
+    
+    setCurrentQuestions(prev => {
+      const newQuestions = [...prev];
+      newQuestions[currentQuestionIndex] = {
+        ...currentQuestion,
+        isMarked: !currentQuestion.isMarked
+      };
+      return newQuestions;
+    });
   };
 
   const handleQuit = () => {
@@ -131,7 +162,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
 
   const handleContinue = () => {
     setShowExplanation(false);
-    proceedToNextQuestion(selectedAnswer || 0);
+    proceedToNextQuestion(selectedAnswer);
   };
 
   const handleRestart = () => {
@@ -143,7 +174,6 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     setIsAnswered(false);
     setTutorMode(false);
     setIsPaused(false);
-    setIsMarked(false);
     onQuizEnd?.();
   };
 
@@ -153,7 +183,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
       setSelectedAnswer(null);
       setIsAnswered(false);
     } else if (direction === 'next' && currentQuestionIndex < currentQuestions.length - 1) {
-      proceedToNextQuestion(selectedAnswer || -1);
+      proceedToNextQuestion(selectedAnswer);
     }
   };
 
@@ -170,7 +200,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     isPaused,
     timerEnabled,
     timePerQuestion,
-    isMarked,
+    isMarked: getCurrentQuestion()?.isMarked || false,
     handleStartQuiz,
     handleAnswerTimeout,
     handleAnswerClick,
