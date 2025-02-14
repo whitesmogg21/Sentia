@@ -15,22 +15,22 @@ const Timer = ({ timeLimit, isPaused, onTimeUp }: TimerProps) => {
     setTimeLeft(timeLimit);
   }, [timeLimit]);
 
-  useEffect(() => {
-    if (!isPaused && timeLeft > 0) {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            onTimeUp();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+useEffect(() => {
+  if (!isPaused) {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          onTimeUp();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-      return () => clearInterval(timer);
-    }
-  }, [isPaused, timeLeft, onTimeUp]);
+    return () => clearInterval(timer);
+  }
+}, [isPaused, onTimeUp]); // ✅ Removed `timeLimit` to prevent unnecessary resets
 
   return (
     <div className="flex items-center gap-2 text-lg font-medium">
