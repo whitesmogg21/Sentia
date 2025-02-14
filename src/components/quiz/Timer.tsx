@@ -16,7 +16,7 @@ const Timer = ({ timeLimit, isPaused, onTimeUp }: TimerProps) => {
 }, [timeLimit, isPaused]); // ✅ Also watch `isPaused` in case the quiz is resumed
 
 useEffect(() => {
-  if (!isPaused) {
+  if (!isPaused && timeLeft > 0) { // ✅ Ensure the countdown only starts if timeLeft is > 0
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -30,7 +30,7 @@ useEffect(() => {
 
     return () => clearInterval(timer);
   }
-}, [isPaused, onTimeUp]); // ✅ Removed `timeLimit` to prevent unnecessary resets
+}, [isPaused, timeLeft, onTimeUp]); // ✅ Added `timeLeft` to ensure proper updates
 
   return (
     <div className="flex items-center gap-2 text-lg font-medium">
