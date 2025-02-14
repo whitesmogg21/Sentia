@@ -166,8 +166,10 @@ const handleAnswerTimeout = () => {
     setIsAnswered(false);
     setShowExplanation(false);
 
-    // ✅ Reset the timer for the next question
-    setTimePerQuestion(60); // Change this value if your default timer limit is different
+    // ✅ Only reset the timer if timer is enabled
+    if (timerEnabled) {
+      setTimePerQuestion(60); // Change this value if your default timer limit is different
+    }
   }
 };
 
@@ -214,7 +216,9 @@ const handleAnswerTimeout = () => {
       proceedToNextQuestion(selectedAnswer);
     }
   };
-
+const handleToggleMark = () => {
+  // TODO: Implement marking functionality if needed
+};
   return {
     currentQuestionIndex,
     score,
