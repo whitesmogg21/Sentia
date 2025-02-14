@@ -12,6 +12,7 @@ import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import CircularProgress from "./CircularProgress";
+import { useNavigate } from "react-router-dom";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -28,7 +29,8 @@ interface CategoryStats {
 }
 
 const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
-  const [selectedQBank, setSelectedQBank] = useState<string>("");
+  const navigate = useNavigate();
+  const [selectedQBank, setSelectedQBank] = useState<QBank | null>(null);
   const [questionCount, setQuestionCount] = useState<number>(5);
   const [tutorMode, setTutorMode] = useState(false);
   const [timerEnabled, setTimerEnabled] = useState(false);
@@ -42,7 +44,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     omitted: false,
   });
 
-  // Calculate metrics with updated categorization logic
   const metrics = useMemo(() => {
     const seenQuestionIds = new Set<number>();
     const correctQuestionIds = new Set<number>();
@@ -50,7 +51,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     const omittedQuestionIds = new Set<number>();
     const markedQuestionIds = new Set<number>();
     
-    // Process quiz history to track seen and answered questions
     quizHistory.forEach(quiz => {
       quiz.questionAttempts.forEach(attempt => {
         seenQuestionIds.add(attempt.questionId);
@@ -66,15 +66,12 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       });
     });
 
-    // Get total available questions
     const totalQuestions = qbanks.reduce((acc, qbank) => 
       acc + qbank.questions.length, 0);
 
-    // Calculate unused questions (never seen)
     const unusedCount = qbanks.reduce((acc, qbank) => 
       acc + qbank.questions.filter(q => !seenQuestionIds.has(q.id)).length, 0);
 
-    // Track marked questions from the last quiz state
     if (quizHistory.length > 0) {
       const lastQuiz = quizHistory[quizHistory.length - 1];
       qbanks.forEach(qbank => {
@@ -96,7 +93,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     };
   }, [qbanks, quizHistory]);
 
-  // Calculate overall accuracy for the circular progress
   const overallAccuracy = useMemo(() => {
     const totalAttempted = metrics.correct + metrics.incorrect;
     return totalAttempted > 0 ? (metrics.correct / totalAttempted) * 100 : 0;
@@ -147,14 +143,12 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     },
   ];
 
-  // Transform quiz history data for the chart
   const chartData = quizHistory.map((quiz, index) => ({
     quizNumber: index + 1,
     score: (quiz.score / quiz.totalQuestions) * 100,
     date: quiz.date,
   }));
 
-  // Filter questions based on selected categories
   const filteredQBanks = useMemo(() => {
     if (!Object.values(filters).some(Boolean)) return qbanks;
 
@@ -201,6 +195,14 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       ...prev,
       [key]: !prev[key]
     }));
+  };
+
+  const handleQBankSelection = () => {
+    navigate('/qbanks');
+  };
+
+  const handleUnlockQBank = () => {
+    setSelectedQBank(null);
   };
 
   return (
@@ -278,23 +280,26 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         >
           <h2 className="text-xl font-bold">Available Question Banks</h2>
           <div className="grid gap-4">
-            {filteredQBanks.map((qbank) => (
-              <Card
-                key={qbank.id}
-                className={`p-4 cursor-pointer transition-colors ${
-                  selectedQBank === qbank.id
-                    ? "border-primary border-2"
-                    : "hover:border-primary/50"
-                }`}
-                onClick={() => setSelectedQBank(qbank.id)}
-              >
-                <h3 className="font-bold">{qbank.name}</h3>
-                <p className="text-sm text-gray-600">{qbank.description}</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  {qbank.questions.length} questions available
-                </p>
-              </Card>
-            ))}
+            <Card
+              className={`p-4 cursor-pointer transition-colors ${
+                selectedQBank ? "border-primary border-2" : "hover:border-primary/50"
+              }`}
+              onClick={selectedQBank ? handleUnlockQBank : handleQBankSelection}
+              onDoubleClick={selectedQBank ? handleUnlockQBank : undefined}
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-bold">
+                    {selectedQBank ? selectedQBank.name : "Select QBank"}
+                  </h3>
+                  {selectedQBank && (
+                    <p className="text-sm text-gray-600">
+                      {selectedQBank.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </Card>
           </div>
         </motion.div>
 
