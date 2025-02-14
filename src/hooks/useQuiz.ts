@@ -23,6 +23,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   const [isPaused, setIsPaused] = useState(false);
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timePerQuestion, setTimePerQuestion] = useState(60);
+  const [initialTimeLimit, setInitialTimeLimit] = useState(60); // ✅ Stores user-selected time limit
 
   const getCurrentQuestion = () => currentQuestions[currentQuestionIndex];
 
@@ -63,6 +64,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     setTutorMode(isTutorMode);
     setTimerEnabled(withTimer);
     setTimePerQuestion(timeLimit);
+    setInitialTimeLimit(timeLimit); // ✅ Store the user's chosen time limit
     setInQuiz(true);
     setIsPaused(false);
     onQuizStart?.();
@@ -168,8 +170,8 @@ const handleAnswerTimeout = () => {
 
     // ✅ Only reset the timer if timer is enabled
     if (timerEnabled) {
-      setTimePerQuestion(60); // Change this value if your default timer limit is different
-    }
+  setTimePerQuestion(initialTimeLimit); // ✅ Resets to the user's chosen time
+}
   }
 };
 
