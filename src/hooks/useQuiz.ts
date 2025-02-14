@@ -170,8 +170,8 @@ const handleAnswerTimeout = () => {
 
     // ✅ Only reset the timer if timer is enabled
     if (timerEnabled) {
-  setTimePerQuestion(0); // ✅ Reset first to force state update
-  setTimeout(() => setTimePerQuestion(initialTimeLimit), 10); // ✅ Then set to the correct value
+  setTimePerQuestion(prev => (prev === 0 ? initialTimeLimit : 0)); // ✅ Ensure a reset before updating
+  setTimeout(() => setTimePerQuestion(initialTimeLimit), 5); // ✅ Apply correct time
 }
   }
 };
