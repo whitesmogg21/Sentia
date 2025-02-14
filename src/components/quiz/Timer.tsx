@@ -12,8 +12,8 @@ const Timer = ({ timeLimit, isPaused, onTimeUp }: TimerProps) => {
 
   // Reset timer when timeLimit changes
   useEffect(() => {
-    setTimeLeft(timeLimit);
-  }, [timeLimit]);
+  setTimeLeft(timeLimit);
+}, [timeLimit, isPaused]); // ✅ Also watch `isPaused` in case the quiz is resumed
 
 useEffect(() => {
   if (!isPaused) {
