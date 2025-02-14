@@ -68,28 +68,27 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     onQuizStart?.();
   };
 
-  const handleAnswerTimeout = () => {
-    const currentQuestion = getCurrentQuestion();
-    if (!currentQuestion) return;
+const handleAnswerTimeout = () => {
+  const currentQuestion = getCurrentQuestion();
+  if (!currentQuestion) return;
 
-    setCurrentQuestions(prev => {
-      const newQuestions = [...prev];
-      const question = newQuestions[currentQuestionIndex];
-      question.attempts = [...(question.attempts || []), {
+  setCurrentQuestions(prev => {
+    const newQuestions = [...prev];
+    const question = newQuestions[currentQuestionIndex];
+    question.attempts = [
+      ...(question.attempts || []),
+      {
         date: new Date().toISOString(),
-        selectedAnswer: null,
-        isCorrect: false
-      }];
-      return newQuestions;
-    });
+        selectedAnswer: null,  // No answer selected
+        isCorrect: false       // Marked as incorrect
+      }
+    ];
+    return newQuestions;
+  });
 
-    setIsAnswered(true);
-    if (tutorMode) {
-      setShowExplanation(true);
-    } else {
-      proceedToNextQuestion(null);
-    }
-  };
+  // ✅ Move to next question and reset timer
+  proceedToNextQuestion(null);
+};
 
   const handleAnswerClick = (optionIndex: number) => {
     if (isAnswered || isPaused) return;
