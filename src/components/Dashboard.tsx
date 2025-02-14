@@ -178,7 +178,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 
   const handleStartQuiz = () => {
     if (selectedQBank && questionCount > 0) {
-      if (questionCount > filteredQBanks.find(qb => qb.id === selectedQBank)?.questions.length!) {
+      if (questionCount > filteredQBanks.find(qb => qb.id === selectedQBank.id)?.questions.length!) {
         toast({
           title: "Invalid Question Count",
           description: "The selected number of questions exceeds the available questions in the filtered set.",
@@ -186,7 +186,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         });
         return;
       }
-      onStartQuiz(selectedQBank, questionCount, tutorMode, timerEnabled, timeLimit);
+      onStartQuiz(selectedQBank.id, questionCount, tutorMode, timerEnabled, timeLimit);
     }
   };
 
