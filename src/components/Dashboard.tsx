@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { QBank, QuizHistory, QuestionFilter } from "../types/quiz";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { motion } from "framer-motion";
@@ -43,6 +43,17 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     marked: false,
     omitted: false,
   });
+
+  useEffect(() => {
+    const storedQBank = localStorage.getItem('selectedQBank');
+    if (storedQBank) {
+      const qbankData = JSON.parse(storedQBank);
+      const foundQBank = qbanks.find(qb => qb.id === qbankData.id);
+      if (foundQBank) {
+        setSelectedQBank(foundQBank);
+      }
+    }
+  }, [qbanks]);
 
   const metrics = useMemo(() => {
     const seenQuestionIds = new Set<number>();
@@ -203,6 +214,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 
   const handleUnlockQBank = () => {
     setSelectedQBank(null);
+    localStorage.removeItem('selectedQBank'); // Clear from localStorage when unlocking
   };
 
   return (
