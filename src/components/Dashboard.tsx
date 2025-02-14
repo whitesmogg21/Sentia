@@ -8,9 +8,10 @@ import { Card } from "./ui/card";
 import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import { Slider } from "./ui/slider";
-import { Check, Flag } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
+import CircularProgress from "./CircularProgress";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -41,47 +42,65 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     omitted: false,
   });
 
-  // Calculate metrics with null checks
+  // Calculate metrics with updated categorization logic
   const metrics = useMemo(() => {
-    const totalQuestions = qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0);
-    const attemptedQuestions = new Set();
-    const correctQuestions = new Set();
-    const incorrectQuestions = new Set();
-    const markedQuestions = new Set();
-    const omittedQuestions = new Set();
-
+    const seenQuestionIds = new Set<number>();
+    const correctQuestionIds = new Set<number>();
+    const incorrectQuestionIds = new Set<number>();
+    const omittedQuestionIds = new Set<number>();
+    const markedQuestionIds = new Set<number>();
+    
+    // Process quiz history to track seen and answered questions
     quizHistory.forEach(quiz => {
-      if (quiz.questionAttempts) {  // Add null check here
-        quiz.questionAttempts.forEach(attempt => {
-          attemptedQuestions.add(attempt.questionId);
-          if (attempt.selectedAnswer === null) {
-            omittedQuestions.add(attempt.questionId);
-          } else if (attempt.isCorrect) {
-            correctQuestions.add(attempt.questionId);
-          } else {
-            incorrectQuestions.add(attempt.questionId);
-          }
-        });
-      }
-    });
-
-    qbanks.forEach(qbank => {
-      qbank.questions.forEach(question => {
-        if (question.isMarked) {
-          markedQuestions.add(question.id);
+      quiz.questionAttempts.forEach(attempt => {
+        seenQuestionIds.add(attempt.questionId);
+        
+        if (attempt.selectedAnswer === null) {
+          incorrectQuestionIds.add(attempt.questionId);
+          omittedQuestionIds.add(attempt.questionId);
+        } else if (attempt.isCorrect) {
+          correctQuestionIds.add(attempt.questionId);
+        } else {
+          incorrectQuestionIds.add(attempt.questionId);
         }
       });
     });
 
+    // Get total available questions
+    const totalQuestions = qbanks.reduce((acc, qbank) => 
+      acc + qbank.questions.length, 0);
+
+    // Calculate unused questions (never seen)
+    const unusedCount = qbanks.reduce((acc, qbank) => 
+      acc + qbank.questions.filter(q => !seenQuestionIds.has(q.id)).length, 0);
+
+    // Track marked questions from the last quiz state
+    if (quizHistory.length > 0) {
+      const lastQuiz = quizHistory[quizHistory.length - 1];
+      qbanks.forEach(qbank => {
+        qbank.questions.forEach(question => {
+          if (question.isMarked) {
+            markedQuestionIds.add(question.id);
+          }
+        });
+      });
+    }
+
     return {
-      unused: totalQuestions - attemptedQuestions.size,
-      used: attemptedQuestions.size,
-      correct: correctQuestions.size,
-      incorrect: incorrectQuestions.size,
-      marked: markedQuestions.size,
-      omitted: omittedQuestions.size,
+      unused: unusedCount,
+      used: seenQuestionIds.size,
+      correct: correctQuestionIds.size,
+      incorrect: incorrectQuestionIds.size,
+      marked: markedQuestionIds.size,
+      omitted: omittedQuestionIds.size,
     };
   }, [qbanks, quizHistory]);
+
+  // Calculate overall accuracy for the circular progress
+  const overallAccuracy = useMemo(() => {
+    const totalAttempted = metrics.correct + metrics.incorrect;
+    return totalAttempted > 0 ? (metrics.correct / totalAttempted) * 100 : 0;
+  }, [metrics]);
 
   const categories: CategoryStats[] = [
     {
@@ -128,6 +147,13 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     },
   ];
 
+  // Transform quiz history data for the chart
+  const chartData = quizHistory.map((quiz, index) => ({
+    quizNumber: index + 1,
+    score: (quiz.score / quiz.totalQuestions) * 100,
+    date: quiz.date,
+  }));
+
   // Filter questions based on selected categories
   const filteredQBanks = useMemo(() => {
     if (!Object.values(filters).some(Boolean)) return qbanks;
@@ -135,12 +161,11 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     return qbanks.map(qbank => ({
       ...qbank,
       questions: qbank.questions.filter(question => {
-        const isUsed = quizHistory.some(quiz => 
-          quiz.questionAttempts.some(attempt => attempt.questionId === question.id)
-        );
         const attempts = quizHistory.flatMap(quiz => 
           quiz.questionAttempts.filter(attempt => attempt.questionId === question.id)
         );
+        
+        const isUsed = attempts.length > 0;
         const isCorrect = attempts.some(attempt => attempt.isCorrect);
         const isIncorrect = attempts.some(attempt => !attempt.isCorrect);
         const isOmitted = attempts.some(attempt => attempt.selectedAnswer === null);
@@ -178,13 +203,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     }));
   };
 
-  // Transform quiz history data for the chart
-  const chartData = quizHistory.map((quiz, index) => ({
-    quizNumber: index + 1,
-    score: (quiz.score / quiz.totalQuestions) * 100,
-    date: quiz.date,
-  }));
-
   return (
     <div className="container mx-auto p-6 space-y-8">
       <motion.div
@@ -219,31 +237,36 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           ))}
         </div>
 
-        <div className="w-full h-[400px] bg-white rounded-2xl shadow-lg p-6">
-          <h2 className="text-2xl font-bold mb-4">Performance History</h2>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="quizNumber" 
-                label={{ value: 'Quiz Number', position: 'bottom' }}
-              />
-              <YAxis 
-                label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }}
-                domain={[0, 100]}
-              />
-              <Tooltip 
-                formatter={(value: number) => [`${value.toFixed(1)}%`, 'Score']}
-                labelFormatter={(label) => `Quiz ${label}`}
-              />
-              <Line
-                type="monotone"
-                dataKey="score"
-                stroke="#8884d8"
-                activeDot={{ r: 8 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 flex items-center justify-center">
+            <CircularProgress percentage={overallAccuracy} />
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg p-6 h-[400px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="quizNumber" 
+                  label={{ value: 'Quiz Number', position: 'bottom' }}
+                />
+                <YAxis 
+                  label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }}
+                  domain={[0, 100]}
+                />
+                <Tooltip 
+                  formatter={(value: number) => [`${value.toFixed(1)}%`, 'Score']}
+                  labelFormatter={(label) => `Quiz ${label}`}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="score"
+                  stroke="#8884d8"
+                  activeDot={{ r: 8 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </motion.div>
 
