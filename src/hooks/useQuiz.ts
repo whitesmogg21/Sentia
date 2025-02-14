@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Question, QuizHistory } from "@/types/quiz";
 import { qbanks } from "@/data/questions";
@@ -23,7 +22,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   const [isPaused, setIsPaused] = useState(false);
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timePerQuestion, setTimePerQuestion] = useState(60);
-  const [initialTimeLimit, setInitialTimeLimit] = useState(60); // ✅ Stores user-selected time limit
+  const [initialTimeLimit, setInitialTimeLimit] = useState(60);
 
   const getCurrentQuestion = () => currentQuestions[currentQuestionIndex];
 
@@ -64,33 +63,32 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     setTutorMode(isTutorMode);
     setTimerEnabled(withTimer);
     setTimePerQuestion(timeLimit);
-    setInitialTimeLimit(timeLimit); // ✅ Store the user's chosen time limit
+    setInitialTimeLimit(timeLimit);
     setInQuiz(true);
     setIsPaused(false);
     onQuizStart?.();
   };
 
-const handleAnswerTimeout = () => {
-  const currentQuestion = getCurrentQuestion();
-  if (!currentQuestion) return;
+  const handleAnswerTimeout = () => {
+    const currentQuestion = getCurrentQuestion();
+    if (!currentQuestion) return;
 
-  setCurrentQuestions(prev => {
-    const newQuestions = [...prev];
-    const question = newQuestions[currentQuestionIndex];
-    question.attempts = [
-      ...(question.attempts || []),
-      {
-        date: new Date().toISOString(),
-        selectedAnswer: null,  // No answer selected
-        isCorrect: false       // Marked as incorrect
-      }
-    ];
-    return newQuestions;
-  });
+    setCurrentQuestions(prev => {
+      const newQuestions = [...prev];
+      const question = newQuestions[currentQuestionIndex];
+      question.attempts = [
+        ...(question.attempts || []),
+        {
+          date: new Date().toISOString(),
+          selectedAnswer: null,
+          isCorrect: false
+        }
+      ];
+      return newQuestions;
+    });
 
-  // ✅ Move to next question and reset timer
-  proceedToNextQuestion(null);
-};
+    proceedToNextQuestion(null);
+  };
 
   const handleAnswerClick = (optionIndex: number) => {
     if (isAnswered || isPaused) return;
@@ -126,55 +124,33 @@ const handleAnswerTimeout = () => {
   };
 
   const proceedToNextQuestion = (optionIndex: number | null) => {
-  const currentQuestion = getCurrentQuestion();
-  if (!currentQuestion) return;
-
-  // ✅ Mark current question as incorrect if user didn't answer
-  if (optionIndex === null) {
-    setCurrentQuestions(prev => {
-      const newQuestions = [...prev];
-      newQuestions[currentQuestionIndex].attempts = [
-        ...(newQuestions[currentQuestionIndex].attempts || []),
-        {
-          date: new Date().toISOString(),
-          selectedAnswer: null,
-          isCorrect: false  // Marked as incorrect
-        }
-      ];
-      return newQuestions;
-    });
-  }
-
-  if (currentQuestionIndex === currentQuestions.length - 1) {
-    // ✅ If it's the last question, end the quiz
-    const newQuizHistory: QuizHistory = {
-      id: Date.now().toString(),
-      date: new Date().toLocaleDateString(),
-      score: score + (optionIndex === currentQuestion.correctAnswer ? 1 : 0),
-      totalQuestions: currentQuestions.length,
-      qbankId: currentQuestion.qbankId,
-      questionAttempts: currentQuestions.map((q, index) => ({
-        questionId: q.id,
-        selectedAnswer: index === currentQuestionIndex ? optionIndex : null,
-        isCorrect: index === currentQuestionIndex ? optionIndex === q.correctAnswer : false,
-      }))
-    };
-    onQuizComplete?.(newQuizHistory);
-    setShowScore(true);
-  } else {
-    // ✅ Move to the next question
-    setCurrentQuestionIndex(prev => prev + 1);
-    setSelectedAnswer(null);
-    setIsAnswered(false);
-    setShowExplanation(false);
-
-    // ✅ Only reset the timer if timer is enabled
-    if (timerEnabled) {
-  setTimePerQuestion(0); // ✅ Reset first to force state update
-  setTimeout(() => setTimePerQuestion(initialTimeLimit), 10); // ✅ Then set to the correct value
-}
-  }
-};
+    if (currentQuestionIndex === currentQuestions.length - 1) {
+      const newQuizHistory: QuizHistory = {
+        id: Date.now().toString(),
+        date: new Date().toLocaleDateString(),
+        score: score + (optionIndex === getCurrentQuestion()?.correctAnswer ? 1 : 0),
+        totalQuestions: currentQuestions.length,
+        qbankId: currentQuestions[0].qbankId,
+        questionAttempts: currentQuestions.map((q, index) => ({
+          questionId: q.id,
+          selectedAnswer: index === currentQuestionIndex ? optionIndex : null,
+          isCorrect: index === currentQuestionIndex ? optionIndex === q.correctAnswer : false,
+        }))
+      };
+      onQuizComplete?.(newQuizHistory);
+      setShowScore(true);
+    } else {
+      setCurrentQuestionIndex(prev => prev + 1);
+      setSelectedAnswer(null);
+      setIsAnswered(false);
+      setShowExplanation(false);
+      
+      if (timerEnabled) {
+        setTimePerQuestion(0);
+        setTimeout(() => setTimePerQuestion(initialTimeLimit), 10);
+      }
+    }
+  };
 
   const handleQuit = () => {
     const newQuizHistory: QuizHistory = {
@@ -219,9 +195,11 @@ const handleAnswerTimeout = () => {
       proceedToNextQuestion(selectedAnswer);
     }
   };
-const handleToggleMark = () => {
-  // TODO: Implement marking functionality if needed
-};
+
+  const handleToggleMark = () => {
+    // TODO: Implement marking functionality if needed
+  };
+
   return {
     currentQuestionIndex,
     score,

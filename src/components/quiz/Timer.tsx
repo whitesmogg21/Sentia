@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 interface TimerProps {
   timeLimit: number;
@@ -10,27 +10,34 @@ interface TimerProps {
 const Timer = ({ timeLimit, isPaused, onTimeUp }: TimerProps) => {
   const [timeLeft, setTimeLeft] = useState(timeLimit);
 
-  // Reset timer when timeLimit changes
+  // Reset timer when timeLimit changes or component mounts
   useEffect(() => {
-  setTimeLeft(timeLimit);
-}, [timeLimit, isPaused]); // ✅ Also watch `isPaused` in case the quiz is resumed
+    setTimeLeft(timeLimit);
+  }, [timeLimit]);
 
-useEffect(() => {
-  if (!isPaused && timeLeft > 0) {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          onTimeUp();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+  // Handle countdown
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
 
-    return () => clearInterval(timer);
-  }
-}, [isPaused, onTimeUp, timeLimit]); // ✅ Added `timeLimit` so timer resets properly
+    if (!isPaused && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            onTimeUp();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, [isPaused, timeLeft, onTimeUp]);
 
   return (
     <div className="flex items-center gap-2 text-lg font-medium">
