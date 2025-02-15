@@ -106,9 +106,29 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       date: quiz.date,
     })), [quizHistory]);
 
+  const filteredQuestions = useMemo(() => {
+    if (!selectedQBank) return [];
+    
+    return selectedQBank.questions.filter(question => {
+      if (!Object.values(filters).some(v => v)) return true;
+      
+      const hasBeenAttempted = question.attempts && question.attempts.length > 0;
+      const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
+      
+      return (
+        (filters.unused && !hasBeenAttempted) ||
+        (filters.used && hasBeenAttempted) ||
+        (filters.correct && lastAttempt?.isCorrect) ||
+        (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
+        (filters.flagged && question.isMarked) ||
+        (filters.omitted && lastAttempt?.selectedAnswer === null)
+      );
+    });
+  }, [selectedQBank, filters]);
+
   const handleStartQuiz = () => {
     if (selectedQBank && questionCount > 0) {
-      if (questionCount > filteredQBanks.find(qb => qb.id === selectedQBank.id)?.questions.length!) {
+      if (questionCount > filteredQuestions.length) {
         toast({
           title: "Invalid Question Count",
           description: "The selected number of questions exceeds the available questions in the filtered set.",
