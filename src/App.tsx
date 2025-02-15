@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,9 +10,10 @@ import Index from "./pages/Index";
 import Performance from "./pages/Performance";
 import History from "./pages/History";
 import QBanks from "./pages/QBanks";
+import SelectQBank from "./pages/SelectQBank";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
-import { QuizHistory } from "./types/quiz";
+import { QuizHistory, QBank } from "./types/quiz";
 import { qbanks } from "./data/questions";
 import { toast } from "@/components/ui/use-toast";
 
@@ -27,6 +29,10 @@ const App = () => {
       title: "Quiz completed!",
       description: `You scored ${history.score} out of ${history.totalQuestions}`,
     });
+  };
+
+  const handleQBankSelect = (qbank: QBank) => {
+    localStorage.setItem('selectedQBank', JSON.stringify(qbank));
   };
 
   const handleQuizStart = () => setInQuiz(true);
@@ -63,6 +69,10 @@ const App = () => {
                     element={<History quizHistory={quizHistory} />}
                   />
                   <Route path="/qbanks" element={<QBanks qbanks={qbanks} />} />
+                  <Route 
+                    path="/select-qbank" 
+                    element={<SelectQBank qbanks={qbanks} onSelect={handleQBankSelect} />} 
+                  />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </main>
@@ -75,4 +85,3 @@ const App = () => {
 };
 
 export default App;
-

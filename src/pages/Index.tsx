@@ -1,9 +1,9 @@
-import { useState } from "react";
+
+import { QuizHistory } from "../types/quiz";
 import { qbanks } from "../data/questions";
-import { Question, QuizHistory } from "../types/quiz";
 import Dashboard from "../components/Dashboard";
-import ProgressBar from "../components/ProgressBar";
 import ScoreCard from "../components/ScoreCard";
+<<<<<<< HEAD
 import QuestionView from "@/components/quiz/QuestionView";
 import ExplanationView from "@/components/quiz/ExplanationView";
 import QuizController from "@/components/quiz/QuizController";
@@ -15,6 +15,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+=======
+import QuizContent from "@/components/quiz/QuizContent";
+import { useQuiz } from "@/hooks/quiz";
+>>>>>>> 88f6c84dfb1cc2616ab66233fe3e38776a203f3e
 
 interface IndexProps {
   quizHistory?: QuizHistory[];
@@ -24,6 +28,7 @@ interface IndexProps {
 }
 
 const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: IndexProps) => {
+<<<<<<< HEAD
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [showScore, setShowScore] = useState(false);
@@ -227,6 +232,30 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
       }
     }
   };
+=======
+  const {
+    currentQuestionIndex,
+    score,
+    showScore,
+    selectedAnswer,
+    isAnswered,
+    inQuiz,
+    currentQuestions,
+    showExplanation,
+    isPaused,
+    timerEnabled,
+    timePerQuestion,
+    isMarked,
+    handleStartQuiz,
+    handleAnswerTimeout,
+    handleAnswerClick,
+    handleQuit,
+    handlePause,
+    handleRestart,
+    handleQuizNavigation,
+    handleToggleMark
+  } = useQuiz({ onQuizComplete, onQuizStart, onQuizEnd });
+>>>>>>> 88f6c84dfb1cc2616ab66233fe3e38776a203f3e
 
   const handleQuitClick = () => {
     setShowQuitDialog(true);
@@ -258,12 +287,23 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
   }
 
   if (showScore) {
-    return <ScoreCard score={score} total={currentQuestions.length} onRestart={handleRestart} />;
+    return (
+      <ScoreCard 
+        score={score} 
+        total={currentQuestions.length} 
+        questions={currentQuestions}
+        attempts={currentQuestions.map((q, index) => ({
+          questionId: q.id,
+          selectedAnswer: index === currentQuestionIndex ? selectedAnswer : null,
+          isCorrect: index === currentQuestionIndex ? selectedAnswer === q.correctAnswer : false,
+        }))}
+        onEnd={handleRestart}
+      />
+    );
   }
 
-  const currentQuestion = currentQuestions[currentQuestionIndex];
-
   return (
+<<<<<<< HEAD
     <div className="fixed inset-0 bg-background">
       <div className="container mx-auto p-6 h-full flex">
         <div className="w-20 mr-4 overflow-y-auto flex-shrink-0 bg-gray-100 rounded-lg">
@@ -364,6 +404,26 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
         )}
       </div>
     </div>
+=======
+    <QuizContent
+      currentQuestion={currentQuestions[currentQuestionIndex]}
+      currentQuestionIndex={currentQuestionIndex}
+      totalQuestions={currentQuestions.length}
+      selectedAnswer={selectedAnswer}
+      isAnswered={isAnswered}
+      isPaused={isPaused}
+      showExplanation={showExplanation}
+      timerEnabled={timerEnabled}
+      timePerQuestion={timePerQuestion}
+      isMarked={isMarked}
+      onAnswerClick={handleAnswerClick}
+      onNavigate={handleQuizNavigation}
+      onPause={handlePause}
+      onQuit={handleQuit}
+      onTimeUp={handleAnswerTimeout}
+      onToggleMark={handleToggleMark}
+    />
+>>>>>>> 88f6c84dfb1cc2616ab66233fe3e38776a203f3e
   );
 };
 

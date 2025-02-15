@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+
+import { useEffect, useState, useCallback } from 'react';
 
 interface TimerProps {
   timeLimit: number;
@@ -9,13 +10,17 @@ interface TimerProps {
 const Timer = ({ timeLimit, isPaused, onTimeUp }: TimerProps) => {
   const [timeLeft, setTimeLeft] = useState(timeLimit);
 
+  // Reset timer when timeLimit changes or component mounts
   useEffect(() => {
     setTimeLeft(timeLimit);
   }, [timeLimit]);
 
+  // Handle countdown
   useEffect(() => {
+    let timer: NodeJS.Timeout;
+
     if (!isPaused && timeLeft > 0) {
-      const timer = setInterval(() => {
+      timer = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
             clearInterval(timer);
@@ -25,9 +30,13 @@ const Timer = ({ timeLimit, isPaused, onTimeUp }: TimerProps) => {
           return prev - 1;
         });
       }, 1000);
-
-      return () => clearInterval(timer);
     }
+
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
   }, [isPaused, timeLeft, onTimeUp]);
 
   return (
@@ -39,4 +48,4 @@ const Timer = ({ timeLimit, isPaused, onTimeUp }: TimerProps) => {
   );
 };
 
-export default Timer; 
+export default Timer;
