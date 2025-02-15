@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import CircularProgress from "./CircularProgress";
 import { useNavigate } from "react-router-dom";
-import QuestionFiltersBar from "./QuestionFiltersBar";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -158,11 +157,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 
   return (
     <div className="container mx-auto p-6 space-y-8">
-      <QuestionFiltersBar 
-        metrics={metrics}
-        filters={filters}
-        onToggleFilter={toggleFilter}
-      />
       
       <motion.div
         initial={{ opacity: 0, y: 20 }}
