@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Question } from "@/types/quiz";
 import { UseQuizProps, QuizState } from "./types";
 import { initializeQuiz, createQuizHistory, handleQuestionAttempt } from "./quizActions";
+import { qbanks } from "@/data/questions";
 
 export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps) => {
   const [state, setState] = useState<QuizState>({
@@ -126,11 +127,24 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     }
   };
 
-  const handleToggleMark = () => {
+  const handleToggleFlag = () => {
+    const currentQuestion = getCurrentQuestion();
+    if (!currentQuestion) return;
+
     setState(prev => {
       const newQuestions = [...prev.currentQuestions];
       const question = newQuestions[prev.currentQuestionIndex];
-      question.isMarked = !question.isMarked;
+      question.isFlagged = !question.isFlagged;
+
+      const selectedQBank = qbanks.find(qb => qb.id === question.qbankId);
+      if (selectedQBank) {
+        const originalQuestion = selectedQBank.questions.find(q => q.id === question.id);
+        if (originalQuestion) {
+          originalQuestion.isFlagged = question.isFlagged;
+          localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
+        }
+      }
+
       return { ...prev, currentQuestions: newQuestions };
     });
   };
@@ -148,7 +162,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     isPaused: state.isPaused,
     timerEnabled: state.timerEnabled,
     timePerQuestion: state.timePerQuestion,
-    isMarked: getCurrentQuestion()?.isMarked || false,
+    isFlagged: getCurrentQuestion()?.isFlagged || false,
     handleStartQuiz,
     handleAnswerTimeout,
     handleAnswerClick,
@@ -156,6 +170,6 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     handlePause,
     handleRestart,
     handleQuizNavigation,
-    handleToggleMark
+    handleToggleFlag
   };
 };

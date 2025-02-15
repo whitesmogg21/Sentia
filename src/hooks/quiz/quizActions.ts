@@ -1,4 +1,3 @@
-
 import { Question, QuizHistory } from "@/types/quiz";
 import { QuizState } from "./types";
 import { qbanks } from "@/data/questions";
@@ -61,13 +60,13 @@ export const createQuizHistory = (
   return {
     id: Date.now().toString(),
     date: new Date().toLocaleDateString(),
-    score: state.score + (optionIndex === state.currentQuestions[state.currentQuestionIndex]?.correctAnswer ? 1 : 0),
+    score: state.score,
     totalQuestions: state.currentQuestions.length,
     qbankId: state.currentQuestions[0].qbankId,
     questionAttempts: state.currentQuestions.map((q, index) => ({
       questionId: q.id,
-      selectedAnswer: index === state.currentQuestionIndex ? optionIndex : null,
-      isCorrect: index === state.currentQuestionIndex ? optionIndex === q.correctAnswer : false,
+      selectedAnswer: index === state.currentQuestionIndex ? optionIndex : q.attempts?.[0]?.selectedAnswer ?? null,
+      isCorrect: index === state.currentQuestionIndex ? optionIndex === q.correctAnswer : q.attempts?.[0]?.isCorrect ?? false,
     }))
   };
 };

@@ -13,6 +13,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import CircularProgress from "./CircularProgress";
 import { useNavigate } from "react-router-dom";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -35,6 +39,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     flagged: false,
     omitted: false,
   });
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     const storedQBank = localStorage.getItem('selectedQBank');
@@ -72,7 +77,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     // Get all questions that are flagged
     qbanks.forEach(qbank => {
       qbank.questions.forEach(question => {
-        if (question.isMarked) {
+        if (question.isFlagged) {
           flaggedQuestionIds.add(question.id);
         }
       });
@@ -107,24 +112,24 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 
   const filteredQuestions = useMemo(() => {
     if (!selectedQBank) return [];
-    
+      
     return selectedQBank.questions.filter(question => {
       if (!Object.values(filters).some(v => v)) return true;
-      
+        
       const hasBeenAttempted = question.attempts && question.attempts.length > 0;
       const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
-      
+        
       return (
         (filters.unused && !hasBeenAttempted) ||
         (filters.used && hasBeenAttempted) ||
         (filters.correct && lastAttempt?.isCorrect) ||
         (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
-        (filters.flagged && question.isMarked) ||
+        (filters.flagged && question.isFlagged) ||
         (filters.omitted && lastAttempt?.selectedAnswer === null)
       );
     });
   }, [selectedQBank, filters]);
-
+  
   const handleStartQuiz = () => {
     if (selectedQBank && questionCount > 0) {
       if (questionCount > filteredQuestions.length) {
@@ -156,7 +161,22 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-8">
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+          className="rounded-full"
+        >
+          {theme === "light" ? (
+            <Moon className="h-5 w-5" />
+          ) : (
+            <Sun className="h-5 w-5" />
+          )}
+        </Button>
+      </div>
       
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -164,30 +184,34 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         className="space-y-6"
       >
         <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl shadow-lg p-6 flex items-center justify-center">
+          <div className="bg-card rounded-2xl shadow-lg p-6 flex items-center justify-center">
             <CircularProgress percentage={overallAccuracy} />
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg p-6 h-[400px]">
+          <div className="bg-card rounded-2xl shadow-lg p-6 h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis 
                   dataKey="quizNumber" 
                   label={{ value: 'Quiz Number', position: 'bottom' }}
+                  className="text-foreground"
                 />
                 <YAxis 
                   label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }}
                   domain={[0, 100]}
+                  className="text-foreground"
                 />
                 <Tooltip 
                   formatter={(value: number) => [`${value.toFixed(1)}%`, 'Score']}
                   labelFormatter={(label) => `Quiz ${label}`}
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
+                  labelStyle={{ color: 'hsl(var(--foreground))' }}
                 />
                 <Line
                   type="monotone"
                   dataKey="score"
-                  stroke="#8884d8"
+                  stroke="hsl(var(--primary))"
                   activeDot={{ r: 8 }}
                 />
               </LineChart>

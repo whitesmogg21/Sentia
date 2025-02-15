@@ -1,4 +1,4 @@
-
+import { useState } from "react";
 import { QuizHistory } from "../types/quiz";
 import { qbanks } from "../data/questions";
 import Dashboard from "../components/Dashboard";
@@ -26,7 +26,7 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     isPaused,
     timerEnabled,
     timePerQuestion,
-    isMarked,
+    isFlagged,
     handleStartQuiz,
     handleAnswerTimeout,
     handleAnswerClick,
@@ -34,8 +34,23 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     handlePause,
     handleRestart,
     handleQuizNavigation,
-    handleToggleMark
+    handleToggleFlag
   } = useQuiz({ onQuizComplete, onQuizStart, onQuizEnd });
+
+  const [showQuitDialog, setShowQuitDialog] = useState(false);
+
+  const handleQuitClick = () => {
+    setShowQuitDialog(true);
+  };
+
+  const handleQuitConfirm = () => {
+    setShowQuitDialog(false);
+    handleQuit();
+  };
+
+  const handleQuitCancel = () => {
+    setShowQuitDialog(false);
+  };
 
   if (!inQuiz) {
     return (
@@ -53,10 +68,10 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
         score={score} 
         total={currentQuestions.length} 
         questions={currentQuestions}
-        attempts={currentQuestions.map((q, index) => ({
-          questionId: q.id,
-          selectedAnswer: index === currentQuestionIndex ? selectedAnswer : null,
-          isCorrect: index === currentQuestionIndex ? selectedAnswer === q.correctAnswer : false,
+        attempts={currentQuestions.map((question) => ({
+          questionId: question.id,
+          selectedAnswer: question.attempts?.[question.attempts.length - 1]?.selectedAnswer ?? null,
+          isCorrect: question.attempts?.[question.attempts.length - 1]?.isCorrect ?? false
         }))}
         onEnd={handleRestart}
       />
@@ -74,13 +89,13 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
       showExplanation={showExplanation}
       timerEnabled={timerEnabled}
       timePerQuestion={timePerQuestion}
-      isMarked={isMarked}
+      isFlagged={isFlagged}
       onAnswerClick={handleAnswerClick}
       onNavigate={handleQuizNavigation}
       onPause={handlePause}
       onQuit={handleQuit}
       onTimeUp={handleAnswerTimeout}
-      onToggleMark={handleToggleMark}
+      onToggleFlag={handleToggleFlag}
     />
   );
 };

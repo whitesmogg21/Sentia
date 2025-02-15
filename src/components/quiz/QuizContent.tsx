@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Question } from "@/types/quiz";
 import QuestionView from "./QuestionView";
@@ -27,13 +26,13 @@ interface QuizContentProps {
   showExplanation: boolean;
   timerEnabled: boolean;
   timePerQuestion: number;
-  isMarked: boolean;
+  isFlagged: boolean;
   onAnswerClick: (index: number) => void;
   onNavigate: (direction: 'prev' | 'next') => void;
   onPause: () => void;
   onQuit: () => void;
   onTimeUp: () => void;
-  onToggleMark: () => void;
+  onToggleFlag: () => void;
 }
 
 const QuizContent = ({
@@ -46,13 +45,13 @@ const QuizContent = ({
   showExplanation,
   timerEnabled,
   timePerQuestion,
-  isMarked,
+  isFlagged,
   onAnswerClick,
   onNavigate,
   onPause,
   onQuit,
   onTimeUp,
-  onToggleMark
+  onToggleFlag
 }: QuizContentProps) => {
   const [showQuitDialog, setShowQuitDialog] = React.useState(false);
   const [answeredQuestions, setAnsweredQuestions] = React.useState<Array<{ questionIndex: number; isCorrect: boolean }>>([]);
@@ -113,14 +112,14 @@ const QuizContent = ({
           totalQuestions={totalQuestions}
           isAnswered={isAnswered}
           isPaused={isPaused}
-          isMarked={isMarked}
+          isFlagged={isFlagged}
           timerEnabled={timerEnabled}
           timeLimit={timePerQuestion}
           onTimeUp={onTimeUp}
           onNavigate={onNavigate}
           onPause={onPause}
           onQuit={() => setShowQuitDialog(true)}
-          onToggleMark={onToggleMark}
+          onToggleFlag={onToggleFlag}
         />
       </div>
 

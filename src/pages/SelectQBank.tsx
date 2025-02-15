@@ -78,7 +78,7 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
           }
         }
 
-        if (question.isMarked) {
+        if (question.isFlagged) {
           flaggedQuestions.add(question.id);
         }
       });
@@ -110,7 +110,7 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
           (filters.correct && lastAttempt?.isCorrect) ||
           (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
           (filters.omitted && lastAttempt?.selectedAnswer === null) ||
-          (filters.flagged && question.isMarked)
+          (filters.flagged && question.isFlagged)
         );
       })
     );
@@ -125,21 +125,31 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
       onSelect(selectedQBank);
       localStorage.setItem("selectedQBank", JSON.stringify(selectedQBank));
       navigate("/");
-
-      // Simulate a quiz being completed with test data (replace with real quiz results)
-      const sampleQuizResults = selectedQBank.questions.map(question => ({
-        questionId: question.id,
-        selectedAnswer: Math.random() > 0.5 ? question.correctAnswer : null, // Random selection for testing
-        isCorrect: Math.random() > 0.5,
-      }));
-
-      updateFiltersAfterQuiz(sampleQuizResults);
-
+      
       toast({
         title: "QBank Selected",
         description: `Selected ${selectedQBank.name} for quiz`,
       });
     }
+  };
+
+  // Update the filters based on actual question attempts
+  const updateFilters = (qbank: QBank) => {
+    const hasUsed = qbank.questions.some(q => q.attempts?.length > 0);
+    const hasUnused = qbank.questions.some(q => !q.attempts?.length);
+    const hasCorrect = qbank.questions.some(q => q.attempts?.[q.attempts.length - 1]?.isCorrect);
+    const hasIncorrect = qbank.questions.some(q => q.attempts?.[q.attempts.length - 1]?.isCorrect === false);
+    const hasOmitted = qbank.questions.some(q => q.attempts?.[q.attempts.length - 1]?.selectedAnswer === null);
+    const hasFlagged = qbank.questions.some(q => q.isFlagged);
+
+    setFilters({
+      used: hasUsed,
+      unused: hasUnused,
+      correct: hasCorrect,
+      incorrect: hasIncorrect,
+      omitted: hasOmitted,
+      flagged: hasFlagged
+    });
   };
 
   return (
@@ -151,13 +161,16 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
         onToggleFilter={(key) =>
           setFilters(prev => {
             const newFilters = { ...prev, [key]: !prev[key] };
-
-            // Ensure at least one filter remains active
-            if (!Object.values(newFilters).some(v => v)) {
-              return { unused: true }; // Default to "Unused" if no filters are active
-            }
-
-            return newFilters;
+            return Object.values(newFilters).some(v => v) 
+              ? newFilters 
+              : {
+                  unused: true,
+                  used: false,
+                  incorrect: false,
+                  correct: false,
+                  flagged: false,
+                  omitted: false,
+                };
           })
         }
       />

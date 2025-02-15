@@ -1,11 +1,10 @@
-
 export interface Question {
   id: number;
   question: string;
   options: string[];
   correctAnswer: number;
   qbankId: string;
-  isMarked?: boolean;
+  isFlagged?: boolean;
   attempts?: QuestionAttempt[];
   media?: {
     type: 'image' | 'audio' | 'video';
