@@ -4,7 +4,7 @@ import { qbanks } from "../data/questions";
 import Dashboard from "../components/Dashboard";
 import ScoreCard from "../components/ScoreCard";
 import QuizContent from "@/components/quiz/QuizContent";
-import { useQuiz } from "@/hooks/useQuiz";
+import { useQuiz } from "@/hooks/quiz"; // Updated import path
 
 interface IndexProps {
   quizHistory?: QuizHistory[];
