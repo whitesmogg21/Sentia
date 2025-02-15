@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { QBank, QuestionFilter } from "@/types/quiz";
 import { Card } from "@/components/ui/card";
@@ -27,46 +26,67 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
 
   // Calculate metrics for the filter bar
   const metrics = useMemo(() => {
-    const seenQuestionIds = new Set<number>();
-    const correctQuestionIds = new Set<number>();
-    const incorrectQuestionIds = new Set<number>();
-    const omittedQuestionIds = new Set<number>();
-    const flaggedQuestionIds = new Set<number>();
-    
-    // Go through each qbank's questions
+    const seenQuestions = new Set<number>();
+    const correctQuestions = new Set<number>();
+    const incorrectQuestions = new Set<number>();
+    const omittedQuestions = new Set<number>();
+    const flaggedQuestions = new Set<number>();
+
     qbanks.forEach(qbank => {
       qbank.questions.forEach(question => {
-        if (question.attempts && question.attempts.length > 0) {
-          seenQuestionIds.add(question.id);
-          
-          const lastAttempt = question.attempts[question.attempts.length - 1];
-          if (lastAttempt.selectedAnswer === null) {
-            omittedQuestionIds.add(question.id);
+        const attempts = question.attempts || [];
+        const lastAttempt = attempts.length > 0 ? attempts[attempts.length - 1] : null;
+
+        if (attempts.length > 0) {
+          seenQuestions.add(question.id);
+
+          if (lastAttempt?.selectedAnswer === null) {
+            omittedQuestions.add(question.id);
           } else if (lastAttempt.isCorrect) {
-            correctQuestionIds.add(question.id);
+            correctQuestions.add(question.id);
+            incorrectQuestions.delete(question.id); // ✅ Move out of Incorrect if later answered correctly
           } else {
-            incorrectQuestionIds.add(question.id);
+            incorrectQuestions.add(question.id);
           }
         }
-        
+
         if (question.isMarked) {
-          flaggedQuestionIds.add(question.id);
+          flaggedQuestions.add(question.id);
         }
       });
     });
 
-    const totalQuestions = qbanks.reduce((acc, qbank) => 
-      acc + qbank.questions.length, 0);
+    const totalQuestions = qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0);
 
     return {
-      unused: totalQuestions - seenQuestionIds.size,
-      used: seenQuestionIds.size,
-      correct: correctQuestionIds.size,
-      incorrect: incorrectQuestionIds.size,
-      flagged: flaggedQuestionIds.size,
-      omitted: omittedQuestionIds.size,
+      unused: totalQuestions - seenQuestions.size,
+      used: seenQuestions.size,
+      correct: correctQuestions.size,
+      incorrect: incorrectQuestions.size,
+      flagged: flaggedQuestions.size,
+      omitted: omittedQuestions.size,
     };
   }, [qbanks]);
+
+  // Filter QBanks based on selected filter
+  const filteredQBanks = useMemo(() => {
+    if (!Object.values(filters).some(v => v)) return qbanks; // Show all if no filter is active
+
+    return qbanks.filter(qbank =>
+      qbank.questions.some(question => {
+        const lastAttempt = question.attempts?.[question.attempts.length - 1] || null;
+
+        return (
+          (filters.unused && !question.attempts) ||
+          (filters.used && question.attempts) ||
+          (filters.correct && lastAttempt?.isCorrect) ||
+          (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
+          (filters.omitted && lastAttempt?.selectedAnswer === null) ||
+          (filters.flagged && question.isMarked)
+        );
+      })
+    );
+  }, [qbanks, filters]);
 
   const handleQBankClick = (qbank: QBank) => {
     setSelectedQBank(qbank);
@@ -75,8 +95,8 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
   const handleConfirmSelection = () => {
     if (selectedQBank) {
       onSelect(selectedQBank);
-      localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
-      navigate('/');
+      localStorage.setItem("selectedQBank", JSON.stringify(selectedQBank));
+      navigate("/");
       toast({
         title: "QBank Selected",
         description: `Selected ${selectedQBank.name} for quiz`,
@@ -90,10 +110,21 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
       <QuestionFiltersBar
         metrics={metrics}
         filters={filters}
-        onToggleFilter={(key) => setFilters(prev => ({ ...prev, [key]: !prev[key] }))}
+        onToggleFilter={(key) =>
+          setFilters(prev => {
+            const newFilters = { ...prev, [key]: !prev[key] };
+
+            // Ensure at least one filter remains active
+            if (!Object.values(newFilters).some(v => v)) {
+              return { unused: true }; // Default to "Unused" if no filters are active
+            }
+
+            return newFilters;
+          })
+        }
       />
       <div className="grid gap-4">
-        {qbanks.map((qbank) => (
+        {filteredQBanks.map(qbank => (
           <Card
             key={qbank.id}
             className={cn(
@@ -109,10 +140,7 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
         ))}
       </div>
       <div className="flex justify-end">
-        <Button
-          onClick={handleConfirmSelection}
-          disabled={!selectedQBank}
-        >
+        <Button onClick={handleConfirmSelection} disabled={!selectedQBank}>
           Lock Selection
         </Button>
       </div>
