@@ -24,6 +24,34 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
     omitted: false,
   });
 
+  // Function to update the filters based on the latest quiz results
+  const updateFiltersAfterQuiz = (quizResults: { questionId: number; selectedAnswer: number | null; isCorrect: boolean }[]) => {
+    setFilters(prevFilters => {
+      const updatedFilters = { ...prevFilters };
+
+      quizResults.forEach(({ questionId, selectedAnswer, isCorrect }) => {
+        updatedFilters.unused = false; // Mark all questions as used
+        updatedFilters.used = true;
+
+        if (selectedAnswer === null) {
+          updatedFilters.omitted = true; // Mark as omitted if skipped
+        } else {
+          updatedFilters.omitted = false;
+        }
+
+        if (isCorrect) {
+          updatedFilters.correct = true;
+          updatedFilters.incorrect = false; // Remove from incorrect if corrected
+        } else {
+          updatedFilters.correct = false;
+          updatedFilters.incorrect = true; // Mark as incorrect
+        }
+      });
+
+      return updatedFilters;
+    });
+  };
+
   // Calculate metrics for the filter bar
   const metrics = useMemo(() => {
     const seenQuestions = new Set<number>();
@@ -66,7 +94,7 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
       flagged: flaggedQuestions.size,
       omitted: omittedQuestions.size,
     };
-  }, [qbanks]);
+  }, [qbanks, filters]);
 
   // Filter QBanks based on selected filter
   const filteredQBanks = useMemo(() => {
@@ -97,6 +125,16 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
       onSelect(selectedQBank);
       localStorage.setItem("selectedQBank", JSON.stringify(selectedQBank));
       navigate("/");
+
+      // Simulate a quiz being completed with test data (replace with real quiz results)
+      const sampleQuizResults = selectedQBank.questions.map(question => ({
+        questionId: question.id,
+        selectedAnswer: Math.random() > 0.5 ? question.correctAnswer : null, // Random selection for testing
+        isCorrect: Math.random() > 0.5,
+      }));
+
+      updateFiltersAfterQuiz(sampleQuizResults);
+
       toast({
         title: "QBank Selected",
         description: `Selected ${selectedQBank.name} for quiz`,
