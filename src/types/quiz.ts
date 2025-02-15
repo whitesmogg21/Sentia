@@ -54,7 +54,7 @@ export interface QuestionFilter {
   used: boolean;
   incorrect: boolean;
   correct: boolean;
-  marked: boolean;
+  flagged: boolean;
   omitted: boolean;
 }
 

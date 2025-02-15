@@ -3,101 +3,99 @@ import { QuestionFilter } from "@/types/quiz";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface CategoryStats {
+type FilterCategory = {
   label: string;
-  count: number;
+  key: keyof QuestionFilter;
   color: string;
   bgColor: string;
-  key: keyof QuestionFilter;
-}
+};
 
 interface QuestionFiltersBarProps {
-  metrics: {
-    unused: number;
-    used: number;
-    incorrect: number;
-    correct: number;
-    flagged: number;
-    omitted: number;
-  };
+  metrics: Record<keyof QuestionFilter, number>;
   filters: QuestionFilter;
   onToggleFilter: (key: keyof QuestionFilter) => void;
 }
 
-const QuestionFiltersBar = ({ metrics, filters, onToggleFilter }: QuestionFiltersBarProps) => {
-  const categories: CategoryStats[] = [
-    {
-      label: "Unused",
-      count: metrics.unused,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      key: "unused"
-    },
-    {
-      label: "Used",
-      count: metrics.used,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-      key: "used"
-    },
-    {
-      label: "Incorrect",
-      count: metrics.incorrect,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-      key: "incorrect"
-    },
-    {
-      label: "Correct",
-      count: metrics.correct,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      key: "correct"
-    },
-    {
-      label: "Flag",
-      count: metrics.flagged,
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-50",
-      key: "flagged"
-    },
-    {
-      label: "Omitted",
-      count: metrics.omitted,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-      key: "omitted"
-    },
-  ];
+const FILTER_CATEGORIES: FilterCategory[] = [
+  {
+    label: "Unused",
+    key: "unused",
+    color: "text-blue-600",
+    bgColor: "bg-blue-50"
+  },
+  {
+    label: "Used",
+    key: "used",
+    color: "text-purple-600",
+    bgColor: "bg-purple-50"
+  },
+  {
+    label: "Incorrect",
+    key: "incorrect",
+    color: "text-red-600",
+    bgColor: "bg-red-50"
+  },
+  {
+    label: "Correct",
+    key: "correct",
+    color: "text-green-600",
+    bgColor: "bg-green-50"
+  },
+  {
+    label: "Flag",
+    key: "flagged",
+    color: "text-yellow-600",
+    bgColor: "bg-yellow-50"
+  },
+  {
+    label: "Omitted",
+    key: "omitted",
+    color: "text-orange-600",
+    bgColor: "bg-orange-50"
+  }
+];
 
-  return (
-    <div className="flex flex-wrap gap-2">
-      {categories.map((category) => (
-        <button
-          key={category.label}
-          onClick={() => onToggleFilter(category.key)}
-          className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-full transition-all",
-            category.bgColor,
-            category.color,
-            filters[category.key] && "ring-2 ring-offset-2",
-            "hover:opacity-90"
-          )}
-        >
-          <Check 
-            className={cn(
-              "w-4 h-4",
-              filters[category.key] ? "opacity-100" : "opacity-0"
-            )}
-          />
-          <span className="font-medium">{category.label}</span>
-          <span className="px-2 py-0.5 bg-white rounded-full text-sm">
-            {category.count}
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-};
+const FilterButton = ({ 
+  category, 
+  count, 
+  isActive, 
+  onClick 
+}: { 
+  category: FilterCategory; 
+  count: number; 
+  isActive: boolean; 
+  onClick: () => void; 
+}) => (
+  <button
+    onClick={onClick}
+    className={cn(
+      "flex items-center gap-2 px-3 py-2 rounded-full transition-all",
+      category.bgColor,
+      category.color,
+      isActive && "ring-2 ring-offset-2",
+      "hover:opacity-90"
+    )}
+  >
+    <Check className={cn("w-4 h-4", isActive ? "opacity-100" : "opacity-0")} />
+    <span className="font-medium">{category.label}</span>
+    <span className="px-2 py-0.5 bg-white rounded-full text-sm">
+      {count}
+    </span>
+  </button>
+);
+
+const QuestionFiltersBar = ({ metrics, filters, onToggleFilter }: QuestionFiltersBarProps) => (
+  <div className="flex flex-wrap gap-2">
+    {FILTER_CATEGORIES.map((category) => (
+      <FilterButton
+        key={category.key}
+        category={category}
+        count={metrics[category.key]}
+        isActive={filters[category.key]}
+        onClick={() => onToggleFilter(category.key)}
+      />
+    ))}
+  </div>
+);
 
 export default QuestionFiltersBar;
