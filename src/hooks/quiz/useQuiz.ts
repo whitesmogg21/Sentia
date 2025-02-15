@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Question } from "@/types/quiz";
 import { UseQuizProps, QuizState } from "./types";
@@ -91,7 +90,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   const handleQuit = () => {
     const quizHistory = createQuizHistory(state, state.selectedAnswer);
     onQuizComplete?.(quizHistory);
-    handleRestart();
+    setState(prev => ({ ...prev, showScore: true }));
   };
 
   const handlePause = () => {

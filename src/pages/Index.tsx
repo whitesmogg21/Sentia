@@ -4,7 +4,7 @@ import { qbanks } from "../data/questions";
 import Dashboard from "../components/Dashboard";
 import ScoreCard from "../components/ScoreCard";
 import QuizContent from "@/components/quiz/QuizContent";
-import { useQuiz } from "@/hooks/quiz"; // Updated import path
+import { useQuiz } from "@/hooks/quiz";
 
 interface IndexProps {
   quizHistory?: QuizHistory[];
@@ -48,7 +48,19 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
   }
 
   if (showScore) {
-    return <ScoreCard score={score} total={currentQuestions.length} onRestart={handleRestart} />;
+    return (
+      <ScoreCard 
+        score={score} 
+        total={currentQuestions.length} 
+        questions={currentQuestions}
+        attempts={currentQuestions.map((q, index) => ({
+          questionId: q.id,
+          selectedAnswer: index === currentQuestionIndex ? selectedAnswer : null,
+          isCorrect: index === currentQuestionIndex ? selectedAnswer === q.correctAnswer : false,
+        }))}
+        onEnd={handleRestart}
+      />
+    );
   }
 
   return (
