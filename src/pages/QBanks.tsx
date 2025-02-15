@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { QBank, Question } from "../types/quiz";
 import { Trash2, Edit2, Download, Upload } from "lucide-react";
 import MediaUploader from "@/components/MediaUploader";
+import MediaManager from "@/components/MediaManager";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,7 +13,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -271,6 +271,45 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     link.click();
   };
 
+  const calculateQuestionMetrics = (qbank: QBank) => {
+    const metrics = {
+      unused: 0,
+      used: 0,
+      correct: 0,
+      incorrect: 0,
+      omitted: 0,
+      flagged: 0
+    };
+
+    qbank.questions.forEach(question => {
+      if (!question.attempts || question.attempts.length === 0) {
+        metrics.unused++;
+      } else {
+        metrics.used++;
+        const lastAttempt = question.attempts[question.attempts.length - 1];
+        if (lastAttempt.selectedAnswer === null) {
+          metrics.omitted++;
+        } else if (lastAttempt.isCorrect) {
+          metrics.correct++;
+        } else {
+          metrics.incorrect++;
+        }
+      }
+      if (question.isMarked) {
+        metrics.flagged++;
+      }
+    });
+
+    return metrics;
+  };
+
+  const updateMedia = () => {
+    toast({
+      title: "Success",
+      description: "Media files updated successfully",
+    });
+  };
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -294,56 +333,66 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       </div>
 
       <div className="grid gap-4">
-        {qbanks.map((qbank) => (
-          <div
-            key={qbank.id}
-            className="p-4 rounded-lg border-2 cursor-pointer transition-colors hover:border-primary/50"
-            onClick={() => handleSelectQBank(qbank)}
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-bold">{qbank.name}</h3>
-                <p className="text-sm text-gray-600">{qbank.description}</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  {qbank.questions.length} questions
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    exportToCSV(qbank);
-                  }}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    startEditing(qbank);
-                  }}
-                >
-                  <Edit2 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive hover:text-destructive/90"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteQBank(qbank.id);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+        {qbanks.map((qbank) => {
+          const metrics = calculateQuestionMetrics(qbank);
+          
+          return (
+            <div
+              key={qbank.id}
+              className="p-4 rounded-lg border-2 cursor-pointer transition-colors hover:border-primary/50"
+              onClick={() => handleSelectQBank(qbank)}
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-bold">{qbank.name}</h3>
+                  <p className="text-sm text-gray-600">{qbank.description}</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    {qbank.questions.length} questions
+                  </p>
+                  <div className="mt-2 flex gap-2 text-sm">
+                    <span className="text-green-600">✓ {metrics.correct}</span>
+                    <span className="text-red-600">✗ {metrics.incorrect}</span>
+                    <span className="text-yellow-600">⚑ {metrics.flagged}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <MediaManager qbank={qbank} onMediaUpdate={updateMedia} />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      exportToCSV(qbank);
+                    }}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEditing(qbank);
+                    }}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive/90"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteQBank(qbank.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
