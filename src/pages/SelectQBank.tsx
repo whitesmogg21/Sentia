@@ -27,46 +27,46 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
 
   // Calculate metrics for the filter bar
   const metrics = useMemo(() => {
-    const seenQuestionIds = new Set<number>();
-    const correctQuestionIds = new Set<number>();
-    const incorrectQuestionIds = new Set<number>();
-    const omittedQuestionIds = new Set<number>();
-    const flaggedQuestionIds = new Set<number>();
-    
-    // Go through each qbank's questions
-    qbanks.forEach(qbank => {
-      qbank.questions.forEach(question => {
-        if (question.attempts && question.attempts.length > 0) {
-          seenQuestionIds.add(question.id);
-          
-          const lastAttempt = question.attempts[question.attempts.length - 1];
-          if (lastAttempt.selectedAnswer === null) {
-            omittedQuestionIds.add(question.id);
-          } else if (lastAttempt.isCorrect) {
-            correctQuestionIds.add(question.id);
-          } else {
-            incorrectQuestionIds.add(question.id);
-          }
+  const seenQuestionIds = new Set<number>();
+  const correctQuestionIds = new Set<number>();
+  const incorrectQuestionIds = new Set<number>();
+  const omittedQuestionIds = new Set<number>();
+  const flaggedQuestionIds = new Set<number>();
+
+  qbanks.forEach(qbank => {
+    qbank.questions.forEach(question => {
+      const attempts = question.attempts || [];
+      const lastAttempt = attempts.length > 0 ? attempts[attempts.length - 1] : null;
+
+      if (attempts.length > 0) {
+        seenQuestionIds.add(question.id);
+        if (lastAttempt?.selectedAnswer === null) {
+          omittedQuestionIds.add(question.id);
+        } else if (lastAttempt.isCorrect) {
+          correctQuestionIds.add(question.id);
+          incorrectQuestionIds.delete(question.id); // ✅ Ensure it moves out of Incorrect
+        } else {
+          incorrectQuestionIds.add(question.id);
         }
-        
-        if (question.isMarked) {
-          flaggedQuestionIds.add(question.id);
-        }
-      });
+      }
+
+      if (question.isMarked) {
+        flaggedQuestionIds.add(question.id);
+      }
     });
+  });
 
-    const totalQuestions = qbanks.reduce((acc, qbank) => 
-      acc + qbank.questions.length, 0);
+  const totalQuestions = qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0);
 
-    return {
-      unused: totalQuestions - seenQuestionIds.size,
-      used: seenQuestionIds.size,
-      correct: correctQuestionIds.size,
-      incorrect: incorrectQuestionIds.size,
-      flagged: flaggedQuestionIds.size,
-      omitted: omittedQuestionIds.size,
-    };
-  }, [qbanks]);
+  return {
+    unused: totalQuestions - seenQuestionIds.size,
+    used: seenQuestionIds.size,
+    correct: correctQuestionIds.size,
+    incorrect: incorrectQuestionIds.size,
+    flagged: flaggedQuestionIds.size,
+    omitted: omittedQuestionIds.size,
+  };
+}, [qbanks]);
 
   const handleQBankClick = (qbank: QBank) => {
     setSelectedQBank(qbank);
@@ -93,7 +93,25 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
         onToggleFilter={(key) => setFilters(prev => ({ ...prev, [key]: !prev[key] }))}
       />
       <div className="grid gap-4">
-        {qbanks.map((qbank) => (
+  {qbanks
+    .filter((qbank) => {
+      // If no filter is selected, show all QBanks
+      if (!Object.values(filters).some(v => v)) return true;
+
+      // Check if the QBank has at least one question in the selected filter
+      return qbank.questions.some((question) => {
+        const lastAttempt = question.attempts?.[question.attempts.length - 1] || null;
+        return (
+          (filters.unused && !question.attempts) ||
+          (filters.used && question.attempts) ||
+          (filters.correct && lastAttempt?.isCorrect) ||
+          (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
+          (filters.omitted && lastAttempt?.selectedAnswer === null) ||
+          (filters.flagged && question.isMarked)
+        );
+      });
+    })
+    .map((qbank) => (
           <Card
             key={qbank.id}
             className={cn(
