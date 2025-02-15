@@ -13,19 +13,12 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import CircularProgress from "./CircularProgress";
 import { useNavigate } from "react-router-dom";
+import QuestionFiltersBar from "./QuestionFiltersBar";
 
 interface DashboardProps {
   qbanks: QBank[];
   quizHistory: QuizHistory[];
   onStartQuiz: (qbankId: string, questionCount: number, tutorMode: boolean, timerEnabled: boolean, timeLimit: number) => void;
-}
-
-interface CategoryStats {
-  label: string;
-  count: number;
-  color: string;
-  bgColor: string;
-  key: keyof QuestionFilter;
 }
 
 const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
@@ -40,7 +33,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     used: false,
     incorrect: false,
     correct: false,
-    marked: false,
+    flagged: false,
     omitted: false,
   });
 
@@ -60,7 +53,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     const correctQuestionIds = new Set<number>();
     const incorrectQuestionIds = new Set<number>();
     const omittedQuestionIds = new Set<number>();
-    const markedQuestionIds = new Set<number>();
+    const flaggedQuestionIds = new Set<number>();
     
     quizHistory.forEach(quiz => {
       quiz.questionAttempts.forEach(attempt => {
@@ -77,29 +70,26 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       });
     });
 
+    // Get all questions that are flagged
+    qbanks.forEach(qbank => {
+      qbank.questions.forEach(question => {
+        if (question.isMarked) {
+          flaggedQuestionIds.add(question.id);
+        }
+      });
+    });
+
     const totalQuestions = qbanks.reduce((acc, qbank) => 
       acc + qbank.questions.length, 0);
 
-    const unusedCount = qbanks.reduce((acc, qbank) => 
-      acc + qbank.questions.filter(q => !seenQuestionIds.has(q.id)).length, 0);
-
-    if (quizHistory.length > 0) {
-      const lastQuiz = quizHistory[quizHistory.length - 1];
-      qbanks.forEach(qbank => {
-        qbank.questions.forEach(question => {
-          if (question.isMarked) {
-            markedQuestionIds.add(question.id);
-          }
-        });
-      });
-    }
+    const unusedCount = totalQuestions - seenQuestionIds.size;
 
     return {
       unused: unusedCount,
       used: seenQuestionIds.size,
       correct: correctQuestionIds.size,
       incorrect: incorrectQuestionIds.size,
-      marked: markedQuestionIds.size,
+      flagged: flaggedQuestionIds.size,
       omitted: omittedQuestionIds.size,
     };
   }, [qbanks, quizHistory]);
@@ -109,83 +99,12 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     return totalAttempted > 0 ? (metrics.correct / totalAttempted) * 100 : 0;
   }, [metrics]);
 
-  const categories: CategoryStats[] = [
-    {
-      label: "Unused",
-      count: metrics.unused,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      key: "unused"
-    },
-    {
-      label: "Used",
-      count: metrics.used,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-      key: "used"
-    },
-    {
-      label: "Incorrect",
-      count: metrics.incorrect,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-      key: "incorrect"
-    },
-    {
-      label: "Correct",
-      count: metrics.correct,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      key: "correct"
-    },
-    {
-      label: "Marked",
-      count: metrics.marked,
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-50",
-      key: "marked"
-    },
-    {
-      label: "Omitted",
-      count: metrics.omitted,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-      key: "omitted"
-    },
-  ];
-
-  const chartData = quizHistory.map((quiz, index) => ({
-    quizNumber: index + 1,
-    score: (quiz.score / quiz.totalQuestions) * 100,
-    date: quiz.date,
-  }));
-
-  const filteredQBanks = useMemo(() => {
-    if (!Object.values(filters).some(Boolean)) return qbanks;
-
-    return qbanks.map(qbank => ({
-      ...qbank,
-      questions: qbank.questions.filter(question => {
-        const attempts = quizHistory.flatMap(quiz => 
-          quiz.questionAttempts.filter(attempt => attempt.questionId === question.id)
-        );
-        
-        const isUsed = attempts.length > 0;
-        const isCorrect = attempts.some(attempt => attempt.isCorrect);
-        const isIncorrect = attempts.some(attempt => !attempt.isCorrect);
-        const isOmitted = attempts.some(attempt => attempt.selectedAnswer === null);
-
-        return (
-          (filters.unused && !isUsed) ||
-          (filters.used && isUsed) ||
-          (filters.correct && isCorrect) ||
-          (filters.incorrect && isIncorrect) ||
-          (filters.marked && question.isMarked) ||
-          (filters.omitted && isOmitted)
-        );
-      })
-    })).filter(qbank => qbank.questions.length > 0);
-  }, [qbanks, quizHistory, filters]);
+  const chartData = useMemo(() => 
+    quizHistory.map((quiz, index) => ({
+      quizNumber: index + 1,
+      score: (quiz.score / quiz.totalQuestions) * 100,
+      date: quiz.date,
+    })), [quizHistory]);
 
   const handleStartQuiz = () => {
     if (selectedQBank && questionCount > 0) {
@@ -209,48 +128,27 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   };
 
   const handleQBankSelection = () => {
-    navigate('/qbanks');
+    navigate('/select-qbank');
   };
 
   const handleUnlockQBank = () => {
     setSelectedQBank(null);
-    localStorage.removeItem('selectedQBank'); // Clear from localStorage when unlocking
+    localStorage.removeItem('selectedQBank');
   };
 
   return (
     <div className="container mx-auto p-6 space-y-8">
+      <QuestionFiltersBar 
+        metrics={metrics}
+        filters={filters}
+        onToggleFilter={toggleFilter}
+      />
+      
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="space-y-6"
       >
-        <div className="flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <button
-              key={category.label}
-              onClick={() => toggleFilter(category.key)}
-              className={cn(
-                "flex items-center gap-2 px-3 py-2 rounded-full transition-all",
-                category.bgColor,
-                category.color,
-                filters[category.key] && "ring-2 ring-offset-2",
-                "hover:opacity-90"
-              )}
-            >
-              <Check 
-                className={cn(
-                  "w-4 h-4",
-                  filters[category.key] ? "opacity-100" : "opacity-0"
-                )}
-              />
-              <span className="font-medium">{category.label}</span>
-              <span className="px-2 py-0.5 bg-white rounded-full text-sm">
-                {category.count}
-              </span>
-            </button>
-          ))}
-        </div>
-
         <div className="grid md:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl shadow-lg p-6 flex items-center justify-center">
             <CircularProgress percentage={overallAccuracy} />
