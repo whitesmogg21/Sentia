@@ -325,7 +325,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
                 accept=".csv"
                 className="hidden"
                 onChange={handleCSVUpload}
-                disabled={mediaFiles.length === 0}
               />
             </label>
           </Button>
