@@ -33,7 +33,8 @@ interface QBanksProps {
 const QBanks = ({ qbanks }: QBanksProps) => {
   const navigate = useNavigate();
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showQBankConfirmDialog, setShowQBankConfirmDialog] = useState(false);
+  const [showMediaDialog, setShowMediaDialog] = useState(false);
   const [selectedQBank, setSelectedQBank] = useState<QBank | null>(null);
   const [newQBankName, setNewQBankName] = useState("");
   const [newQBankDescription, setNewQBankDescription] = useState("");
@@ -52,6 +53,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       showWith: "question" as "question" | "answer"
     }
   });
+  const [selectedQBankForMedia, setSelectedQBankForMedia] = useState<QBank | null>(null);
 
   const handleMediaUpload = (files: File[]) => {
     setMediaFiles(files);
@@ -231,7 +233,12 @@ const QBanks = ({ qbanks }: QBanksProps) => {
 
   const handleSelectQBank = (qbank: QBank) => {
     setSelectedQBank(qbank);
-    setShowConfirmDialog(true);
+    setShowQBankConfirmDialog(true);
+  };
+
+  const handleManageMedia = (qbank: QBank) => {
+    setSelectedQBankForMedia(qbank);
+    setShowMediaDialog(true);
   };
 
   const handleConfirmSelection = () => {
@@ -295,7 +302,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
           metrics.incorrect++;
         }
       }
-      if (question.isMarked) {
+      if (question.isFlagged) {
         metrics.flagged++;
       }
     });
@@ -355,16 +362,17 @@ const QBanks = ({ qbanks }: QBanksProps) => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <MediaManager qbank={qbank} onMediaUpdate={updateMedia} />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      exportToCSV(qbank);
-                    }}
-                  >
-                    <Download className="h-4 w-4" />
+                  <Button variant="outline" onClick={(e) => {
+                    e.stopPropagation();
+                    handleManageMedia(qbank);
+                  }}>
+                    Manage Media
+                  </Button>
+                  <Button variant="outline" onClick={(e) => {
+                    e.stopPropagation();
+                    exportToCSV(qbank);
+                  }}>
+                    Export
                   </Button>
                   <Button
                     variant="ghost"
@@ -394,20 +402,37 @@ const QBanks = ({ qbanks }: QBanksProps) => {
         })}
       </div>
 
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+      <AlertDialog open={showQBankConfirmDialog} onOpenChange={setShowQBankConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Lock in QBank</AlertDialogTitle>
+            <AlertDialogTitle>Lock in Question Bank?</AlertDialogTitle>
             <AlertDialogDescription>
-              Do you want to lock in {selectedQBank?.name}? You can unlock it later by double-clicking the tile on the dashboard.
+              Are you sure you want to select this question bank? You won't be able to change it later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>No</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmSelection}>Yes</AlertDialogAction>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSelection}>Confirm</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showMediaDialog} onOpenChange={setShowMediaDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Media</DialogTitle>
+          </DialogHeader>
+          {selectedQBankForMedia && (
+            <MediaManager 
+              qbank={selectedQBankForMedia} 
+              onMediaUpdate={() => {
+                setShowMediaDialog(false);
+                setSelectedQBankForMedia(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showNewQBankDialog} onOpenChange={setShowNewQBankDialog}>
         <DialogTrigger asChild>

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Play, Pause, XCircle, Flag } from "lucide-react";
 import Timer from "./Timer";
@@ -8,14 +7,14 @@ interface QuizControllerProps {
   totalQuestions: number;
   isAnswered: boolean;
   isPaused: boolean;
-  isMarked: boolean;
+  isFlagged: boolean;
   timerEnabled: boolean;
   timeLimit: number;
   onTimeUp: () => void;
   onNavigate: (direction: 'prev' | 'next') => void;
   onPause: () => void;
   onQuit: () => void;
-  onToggleMark: () => void;
+  onToggleFlag: () => void;
 }
 
 const QuizController = ({
@@ -23,14 +22,14 @@ const QuizController = ({
   totalQuestions,
   isAnswered,
   isPaused,
-  isMarked,
+  isFlagged,
   timerEnabled,
   timeLimit,
   onTimeUp,
   onNavigate,
   onPause,
   onQuit,
-  onToggleMark
+  onToggleFlag
 }: QuizControllerProps) => {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
@@ -57,11 +56,11 @@ const QuizController = ({
           </Button>
           <Button
             variant="outline"
-            onClick={onToggleMark}
-            className={`flex items-center gap-2 ${isMarked ? 'bg-yellow-100 border-yellow-400' : ''}`}
+            onClick={onToggleFlag}
+            className={`flex items-center gap-2 ${isFlagged ? 'bg-yellow-100 border-yellow-400' : ''}`}
           >
-            <Flag className={`h-4 w-4 ${isMarked ? 'fill-yellow-500' : ''}`} />
-            {isMarked ? 'Marked' : 'Mark'}
+            <Flag className={`h-4 w-4 ${isFlagged ? 'fill-yellow-500' : ''}`} />
+            {isFlagged ? 'Flagged' : 'Flag'}
           </Button>
           <Button
             variant="outline"
