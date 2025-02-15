@@ -271,51 +271,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     link.click();
   };
 
-  const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const rows = text.split('\n').map(row => 
-        row.split(',').map(cell => cell.replace(/^"|"$/g, '').replace(/""/g, '"'))
-      );
-
-      // Skip header row
-      const questions: Question[] = rows.slice(1).map((row, index) => {
-        const options = row.slice(3, 10).filter(opt => opt.trim() !== '');
-        return {
-          id: Date.now() + index,
-          question: row[1],
-          options,
-          correctAnswer: parseInt(row[2]) - 1,
-          qbankId: `imported-${Date.now()}`,
-          explanation: row[12] || undefined,
-          media: row[10] || row[11] ? {
-            type: 'image',
-            url: row[10] || row[11],
-            showWith: row[10] ? 'question' : 'answer'
-          } : undefined
-        };
-      });
-
-      const newQBank: QBank = {
-        id: `imported-${Date.now()}`,
-        name: file.name.replace('.csv', ''),
-        description: `Imported from ${file.name}`,
-        questions
-      };
-
-      qbanks.push(newQBank);
-      toast({
-        title: "Success",
-        description: "QBank imported successfully",
-      });
-    };
-    reader.readAsText(file);
-  };
-
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
