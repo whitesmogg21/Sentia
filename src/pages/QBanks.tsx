@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QBank, Question } from "../types/quiz";
 import { Trash2, Edit2, Download, Upload } from "lucide-react";
-import { Label } from "@/components/ui/label";
+import MediaUploader from "@/components/MediaUploader";
+import { toast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -22,8 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
+import { Label } from "@/components/ui/label";
 
 interface QBanksProps {
   qbanks: QBank[];
@@ -31,6 +32,7 @@ interface QBanksProps {
 
 const QBanks = ({ qbanks }: QBanksProps) => {
   const navigate = useNavigate();
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [selectedQBank, setSelectedQBank] = useState<QBank | null>(null);
   const [newQBankName, setNewQBankName] = useState("");
@@ -50,6 +52,66 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       showWith: "question" as "question" | "answer"
     }
   });
+
+  const handleMediaUpload = (files: File[]) => {
+    setMediaFiles(files);
+    toast({
+      title: "Media Files Ready",
+      description: `${files.length} files will be used for the next CSV import`,
+    });
+  };
+
+  const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const rows = text.split('\n').map(row => 
+        row.split(',').map(cell => cell.replace(/^"|"$/g, '').replace(/""/g, '"'))
+      );
+
+      // Skip header row
+      const questions: Question[] = rows.slice(1).map((row, index) => {
+        const options = row.slice(3, 10).filter(opt => opt.trim() !== '');
+        const imageFilename = row[10]?.trim();
+        
+        // Find matching media file
+        const mediaFile = mediaFiles.find(file => file.name === imageFilename);
+        const mediaUrl = mediaFile ? URL.createObjectURL(mediaFile) : undefined;
+
+        return {
+          id: Date.now() + index,
+          question: row[1],
+          options,
+          correctAnswer: parseInt(row[2]) - 1,
+          qbankId: `imported-${Date.now()}`,
+          explanation: row[12] || undefined,
+          media: imageFilename && mediaUrl ? {
+            type: 'image',
+            url: mediaUrl,
+            showWith: 'question'
+          } : undefined
+        };
+      });
+
+      const newQBank: QBank = {
+        id: `imported-${Date.now()}`,
+        name: file.name.replace('.csv', ''),
+        description: `Imported from ${file.name}`,
+        questions
+      };
+
+      qbanks.push(newQBank);
+      setMediaFiles([]); // Clear media files after import
+      toast({
+        title: "Success",
+        description: "QBank imported successfully with media files",
+      });
+    };
+    reader.readAsText(file);
+  };
 
   const handleCreateQBank = () => {
     if (!newQBankName.trim() || !newQBankDescription.trim()) {
@@ -259,6 +321,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Question Banks</h1>
         <div className="flex gap-2">
+          <MediaUploader onUploadComplete={handleMediaUpload} />
           <Button asChild>
             <label>
               <Upload className="mr-2 h-4 w-4" />
@@ -268,6 +331,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
                 accept=".csv"
                 className="hidden"
                 onChange={handleCSVUpload}
+                disabled={mediaFiles.length === 0}
               />
             </label>
           </Button>
