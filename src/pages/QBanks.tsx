@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +40,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [allQuestions, setAllQuestions] = useState<Question[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showFullLibrary, setShowFullLibrary] = useState(false);
 
   useEffect(() => {
     const questions = new Set<Question>();
@@ -57,7 +57,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       prev.map(q => q.id === updatedQuestion.id ? updatedQuestion : q)
     );
 
-    // Remove the question from any QBanks that no longer match its tags
     qbanks.forEach(qbank => {
       const shouldBeInQBank = updatedQuestion.tags.includes(qbank.id);
       const questionIndex = qbank.questions.findIndex(q => q.id === updatedQuestion.id);
@@ -71,7 +70,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       }
     });
 
-    // Create new QBanks for any new tags
     updatedQuestion.tags.forEach(tag => {
       if (!qbanks.some(qbank => qbank.id === tag)) {
         const newQBank: QBank = {
@@ -252,7 +250,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       </div>
 
       <div className="space-y-8">
-        <Sheet>
+        <Sheet open={showFullLibrary} onOpenChange={setShowFullLibrary}>
           <div className="border rounded-lg p-6">
             <div className="flex flex-col space-y-4">
               <div className="flex justify-between items-center">
