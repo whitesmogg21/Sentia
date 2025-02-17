@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,7 +6,8 @@ import { QBank, Question } from "../types/quiz";
 import { Trash2, Edit2, Download, Upload } from "lucide-react";
 import MediaUploader from "@/components/MediaUploader";
 import MediaManager from "@/components/MediaManager";
-import { toast } from "@/components/ui/use-toast";
+import EditQBankModal from "@/components/qbank/EditQBankModal";
+import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
