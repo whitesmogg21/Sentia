@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
   SheetClose,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -40,7 +40,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
   const navigate = useNavigate();
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [allQuestions, setAllQuestions] = useState<Question[]>([]);
-  const [showFullLibrary, setShowFullLibrary] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
@@ -58,13 +57,21 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       prev.map(q => q.id === updatedQuestion.id ? updatedQuestion : q)
     );
 
+    // Remove the question from any QBanks that no longer match its tags
     qbanks.forEach(qbank => {
+      const shouldBeInQBank = updatedQuestion.tags.includes(qbank.id);
       const questionIndex = qbank.questions.findIndex(q => q.id === updatedQuestion.id);
-      if (questionIndex !== -1) {
+      
+      if (!shouldBeInQBank && questionIndex !== -1) {
+        qbank.questions.splice(questionIndex, 1);
+      } else if (shouldBeInQBank && questionIndex !== -1) {
         qbank.questions[questionIndex] = updatedQuestion;
+      } else if (shouldBeInQBank && questionIndex === -1) {
+        qbank.questions.push(updatedQuestion);
       }
     });
 
+    // Create new QBanks for any new tags
     updatedQuestion.tags.forEach(tag => {
       if (!qbanks.some(qbank => qbank.id === tag)) {
         const newQBank: QBank = {
@@ -185,10 +192,13 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Question</TableHead>
-          <TableHead>Tags</TableHead>
-          <TableHead>Options</TableHead>
+          <TableHead>Question #</TableHead>
+          <TableHead>Question Text</TableHead>
           <TableHead>Correct Answer</TableHead>
+          <TableHead>Option 2</TableHead>
+          <TableHead>Option 3</TableHead>
+          <TableHead>Option 4</TableHead>
+          <TableHead>Tags</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -197,14 +207,25 @@ const QBanks = ({ qbanks }: QBanksProps) => {
             q.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
             q.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
           )
-          .map((question) => (
-          <TableRow key={question.id}>
-            <TableCell>{question.question}</TableCell>
-            <TableCell>{question.tags.join(", ")}</TableCell>
-            <TableCell>{question.options.join(", ")}</TableCell>
-            <TableCell>{question.options[question.correctAnswer]}</TableCell>
-          </TableRow>
-        ))}
+          .map((question, index) => {
+            const correctAnswer = question.options[question.correctAnswer];
+            const otherOptions = question.options
+              .filter((_, i) => i !== question.correctAnswer)
+              .concat(Array(3).fill("")) // Pad with empty strings if needed
+              .slice(0, 3); // Take only first 3 incorrect options
+
+            return (
+              <TableRow key={question.id}>
+                <TableCell>{question.id}</TableCell>
+                <TableCell>{question.question}</TableCell>
+                <TableCell>{correctAnswer}</TableCell>
+                {otherOptions.map((option, i) => (
+                  <TableCell key={i}>{option}</TableCell>
+                ))}
+                <TableCell>{question.tags.join(", ")}</TableCell>
+              </TableRow>
+            );
+          })}
       </TableBody>
     </Table>
   );
@@ -269,15 +290,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
                 <SheetClose asChild>
                   <Button variant="outline">Close</Button>
                 </SheetClose>
-              </div>
-              <div className="relative w-full max-w-sm">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search questions..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
               </div>
             </SheetHeader>
             <ScrollArea className="h-[calc(100vh-8rem)]">
