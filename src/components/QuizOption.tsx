@@ -1,6 +1,9 @@
 
 import { cn } from "@/lib/utils";
 import { Checkbox } from "./ui/checkbox";
+import { Button } from "./ui/button";
+import { StrikethroughIcon } from "lucide-react";
+import { useState } from "react";
 
 interface QuizOptionProps {
   option: string;
@@ -11,6 +14,8 @@ interface QuizOptionProps {
 }
 
 const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOptionProps) => {
+  const [isStrikethrough, setIsStrikethrough] = useState(false);
+
   const getStateColor = () => {
     if (!selected) return "";
     if (correct === undefined) return "data-[state=checked]:bg-primary data-[state=checked]:border-primary";
@@ -21,21 +26,31 @@ const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOption
 
   return (
     <div className={cn(
-      "flex items-start gap-3 p-4 rounded-lg bg-secondary",
-      "transition-colors duration-200",
+      "flex items-center gap-3",
+      "py-2",
       disabled && "opacity-75"
     )}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6"
+        onClick={() => setIsStrikethrough(!isStrikethrough)}
+      >
+        <StrikethroughIcon className="h-4 w-4" />
+      </Button>
       <Checkbox
         checked={selected}
         onCheckedChange={() => onClick()}
         disabled={disabled}
         className={cn(
-          "mt-1",
           getStateColor(),
           "border-2"
         )}
       />
-      <span className="text-secondary-foreground font-medium">
+      <span className={cn(
+        "text-secondary-foreground",
+        isStrikethrough && "line-through"
+      )}>
         {option}
       </span>
     </div>
