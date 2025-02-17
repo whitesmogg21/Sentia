@@ -50,6 +50,8 @@ const EditQBankModal = ({ qbank, isOpen, onClose }: EditQBankModalProps) => {
       options: ["", "", "", ""],
       correctAnswer: 0,
       qbankId: qbank.id,
+      tags: [qbank.id], // Initialize with the current QBank's ID as a tag
+      explanation: "",
     };
     setQuestions([...questions, newQuestion]);
     setHasUnsavedChanges(true);

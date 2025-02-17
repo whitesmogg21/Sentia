@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 interface QBanksProps {
   qbanks: QBank[];
@@ -250,6 +250,31 @@ const QBanks = ({ qbanks }: QBanksProps) => {
             </ScrollArea>
           </SheetContent>
         </Sheet>
+
+        <div className="border rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Available Question Banks</h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {qbanks.map((qbank) => (
+              <div
+                key={qbank.id}
+                className="p-4 border rounded-lg space-y-2 hover:border-primary transition-colors"
+              >
+                <h3 className="font-semibold">{qbank.name}</h3>
+                <p className="text-sm text-muted-foreground">{qbank.description}</p>
+                <div className="flex gap-2 flex-wrap">
+                  {qbank.tags.map(tag => (
+                    <Badge key={tag} variant="secondary">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {qbank.questions.length} questions
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
