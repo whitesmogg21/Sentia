@@ -1,101 +1,102 @@
 
 import { QuestionFilter } from "@/types/quiz";
-import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-type FilterCategory = {
-  label: string;
-  key: keyof QuestionFilter;
-  color: string;
-  bgColor: string;
-};
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 
 interface QuestionFiltersBarProps {
+  filter: QuestionFilter;
+  onFilterChange: (filter: QuestionFilter) => void;
   metrics: Record<keyof QuestionFilter, number>;
-  filters: QuestionFilter;
-  onToggleFilter: (key: keyof QuestionFilter) => void;
+  tags: string[];
 }
 
-const FILTER_CATEGORIES: FilterCategory[] = [
-  {
-    label: "Unused",
-    key: "unused",
-    color: "text-blue-600",
-    bgColor: "bg-blue-50"
-  },
-  {
-    label: "Used",
-    key: "used",
-    color: "text-purple-600",
-    bgColor: "bg-purple-50"
-  },
-  {
-    label: "Incorrect",
-    key: "incorrect",
-    color: "text-red-600",
-    bgColor: "bg-red-50"
-  },
-  {
-    label: "Correct",
-    key: "correct",
-    color: "text-green-600",
-    bgColor: "bg-green-50"
-  },
-  {
-    label: "Flag",
-    key: "flagged",
-    color: "text-yellow-600",
-    bgColor: "bg-yellow-50"
-  },
-  {
-    label: "Omitted",
-    key: "omitted",
-    color: "text-orange-600",
-    bgColor: "bg-orange-50"
-  }
-];
+export const QuestionFiltersBar = ({
+  filter,
+  onFilterChange,
+  metrics,
+  tags
+}: QuestionFiltersBarProps) => {
+  const handleFilterChange = (key: keyof QuestionFilter, value: boolean | string[]) => {
+    onFilterChange({
+      ...filter,
+      [key]: value,
+    });
+  };
 
-const FilterButton = ({ 
-  category, 
-  count, 
-  isActive, 
-  onClick 
-}: { 
-  category: FilterCategory; 
-  count: number; 
-  isActive: boolean; 
-  onClick: () => void; 
-}) => (
-  <button
-    onClick={onClick}
-    className={cn(
-      "flex items-center gap-2 px-3 py-2 rounded-full transition-all",
-      category.bgColor,
-      category.color,
-      isActive && "ring-2 ring-offset-2",
-      "hover:opacity-90"
-    )}
-  >
-    <Check className={cn("w-4 h-4", isActive ? "opacity-100" : "opacity-0")} />
-    <span className="font-medium">{category.label}</span>
-    <span className="px-2 py-0.5 bg-white rounded-full text-sm">
-      {count}
-    </span>
-  </button>
-);
+  return (
+    <div className="flex flex-wrap gap-4 p-4 border rounded-lg bg-background">
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="unused"
+          checked={filter.unused}
+          onCheckedChange={(checked) => handleFilterChange("unused", !!checked)}
+        />
+        <label htmlFor="unused" className="text-sm font-medium">
+          Unused ({metrics.unused})
+        </label>
+      </div>
+      
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="correct"
+          checked={filter.correct}
+          onCheckedChange={(checked) => handleFilterChange("correct", !!checked)}
+        />
+        <label htmlFor="correct" className="text-sm font-medium">
+          Correct ({metrics.correct})
+        </label>
+      </div>
 
-const QuestionFiltersBar = ({ metrics, filters, onToggleFilter }: QuestionFiltersBarProps) => (
-  <div className="flex flex-wrap gap-2">
-    {FILTER_CATEGORIES.map((category) => (
-      <FilterButton
-        key={category.key}
-        category={category}
-        count={metrics[category.key]}
-        isActive={filters[category.key]}
-        onClick={() => onToggleFilter(category.key)}
-      />
-    ))}
-  </div>
-);
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="incorrect"
+          checked={filter.incorrect}
+          onCheckedChange={(checked) => handleFilterChange("incorrect", !!checked)}
+        />
+        <label htmlFor="incorrect" className="text-sm font-medium">
+          Incorrect ({metrics.incorrect})
+        </label>
+      </div>
 
-export default QuestionFiltersBar;
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="flagged"
+          checked={filter.flagged}
+          onCheckedChange={(checked) => handleFilterChange("flagged", !!checked)}
+        />
+        <label htmlFor="flagged" className="text-sm font-medium">
+          Flagged ({metrics.flagged})
+        </label>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="omitted"
+          checked={filter.omitted}
+          onCheckedChange={(checked) => handleFilterChange("omitted", !!checked)}
+        />
+        <label htmlFor="omitted" className="text-sm font-medium">
+          Omitted ({metrics.omitted})
+        </label>
+      </div>
+
+      <div className="flex gap-2 flex-wrap">
+        {tags.map(tag => (
+          <Badge
+            key={tag}
+            variant={filter.tags.includes(tag) ? "default" : "outline"}
+            className="cursor-pointer"
+            onClick={() => {
+              const newTags = filter.tags.includes(tag)
+                ? filter.tags.filter(t => t !== tag)
+                : [...filter.tags, tag];
+              handleFilterChange("tags", newTags);
+            }}
+          >
+            {tag}
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+};
