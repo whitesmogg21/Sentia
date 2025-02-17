@@ -7,8 +7,10 @@ import QuizController from "./QuizController";
 import ProgressBar from "../ProgressBar";
 import QuestionsSidebar from "./QuestionsSidebar";
 import { Button } from "../ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize, Minimize, Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useFullscreen } from "@/hooks/use-fullscreen";
+import { useTheme } from "@/components/ThemeProvider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +62,8 @@ const QuizContent = ({
   const [showQuitDialog, setShowQuitDialog] = React.useState(false);
   const [answeredQuestions, setAnsweredQuestions] = React.useState<Array<{ questionIndex: number; isCorrect: boolean }>>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
+  const { theme, setTheme } = useTheme();
 
   const handleAnswerClick = (index: number) => {
     if (!isAnswered) {
@@ -96,6 +100,33 @@ const QuizContent = ({
         sidebarCollapsed ? "ml-0" : "ml-[160px]"
       )}>
         <div className="container mx-auto p-6 h-full flex flex-col">
+          <div className="flex items-center justify-end gap-2 mb-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="bg-background border"
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleFullscreen}
+              className="bg-background border"
+            >
+              {isFullscreen ? (
+                <Minimize className="h-4 w-4" />
+              ) : (
+                <Maximize className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+
           <div className="mb-4">
             <ProgressBar current={currentQuestionIndex + 1} total={totalQuestions} />
           </div>
