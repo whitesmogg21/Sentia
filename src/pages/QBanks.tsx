@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QBank, Question } from "../types/quiz";
-import { Upload } from "lucide-react";
+import { Upload, Plus, Search } from "lucide-react";
 import MediaUploader from "@/components/MediaUploader";
 import { QuestionLibrary } from "@/components/qbank/QuestionLibrary";
 import { toast } from "@/hooks/use-toast";
@@ -19,6 +19,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
+  SheetClose,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -40,6 +41,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [allQuestions, setAllQuestions] = useState<Question[]>([]);
   const [showFullLibrary, setShowFullLibrary] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const questions = new Set<Question>();
@@ -56,7 +58,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       prev.map(q => q.id === updatedQuestion.id ? updatedQuestion : q)
     );
 
-    // Update question in QBanks
     qbanks.forEach(qbank => {
       const questionIndex = qbank.questions.findIndex(q => q.id === updatedQuestion.id);
       if (questionIndex !== -1) {
@@ -64,7 +65,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       }
     });
 
-    // Create new QBanks based on tags if they don't exist
     updatedQuestion.tags.forEach(tag => {
       if (!qbanks.some(qbank => qbank.id === tag)) {
         const newQBank: QBank = {
@@ -82,7 +82,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
   const handleAddQuestion = (newQuestion: Question) => {
     setAllQuestions(prev => [...prev, newQuestion]);
     
-    // Create new QBanks for each tag
     newQuestion.tags.forEach(tag => {
       if (!qbanks.some(qbank => qbank.id === tag)) {
         const newQBank: QBank = {
@@ -126,7 +125,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
         row.split(',').map(cell => cell.replace(/^"|"$/g, '').replace(/""/g, '"'))
       );
 
-      // Extract tags from CSV header
       const tags = rows[0].slice(10).map(tag => tag.trim().toLowerCase())
         .filter(tag => tag && tag !== 'Question Image' && tag !== 'Answer Image' && tag !== 'Explanation');
 
@@ -152,7 +150,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
           } : undefined
         };
 
-        // Create or update QBanks based on tags
         questionTags.forEach(tag => {
           if (!qbanks.some(qbank => qbank.id === tag)) {
             const newQBank: QBank = {
@@ -195,7 +192,12 @@ const QBanks = ({ qbanks }: QBanksProps) => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {allQuestions.map((question) => (
+        {allQuestions
+          .filter(q => 
+            q.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            q.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+          )
+          .map((question) => (
           <TableRow key={question.id}>
             <TableCell>{question.question}</TableCell>
             <TableCell>{question.tags.join(", ")}</TableCell>
@@ -230,9 +232,25 @@ const QBanks = ({ qbanks }: QBanksProps) => {
 
       <div className="space-y-8">
         <Sheet>
-          <SheetTrigger asChild>
-            <div className="border rounded-lg p-6 cursor-pointer hover:border-primary transition-colors">
-              <h2 className="text-xl font-semibold mb-4">Question Library</h2>
+          <div className="border rounded-lg p-6">
+            <div className="flex flex-col space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">Question Library</h2>
+                <div className="flex gap-2">
+                  <div className="relative w-64">
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search questions..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <Button onClick={() => setShowFullLibrary(true)}>
+                    View All Questions
+                  </Button>
+                </div>
+              </div>
               <QuestionLibrary
                 questions={allQuestions}
                 qbanks={qbanks}
@@ -240,13 +258,32 @@ const QBanks = ({ qbanks }: QBanksProps) => {
                 onAddQuestion={handleAddQuestion}
               />
             </div>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-[90%] sm:w-[80%]">
-            <SheetHeader>
-              <SheetTitle>Question Library</SheetTitle>
+          </div>
+          <SheetContent 
+            side="right" 
+            className="w-screen p-0"
+          >
+            <SheetHeader className="p-6 border-b">
+              <div className="flex justify-between items-center">
+                <SheetTitle>Question Library</SheetTitle>
+                <SheetClose asChild>
+                  <Button variant="outline">Close</Button>
+                </SheetClose>
+              </div>
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search questions..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </SheetHeader>
-            <ScrollArea className="h-[calc(100vh-8rem)] mt-6">
-              <QuestionTable />
+            <ScrollArea className="h-[calc(100vh-8rem)]">
+              <div className="p-6">
+                <QuestionTable />
+              </div>
             </ScrollArea>
           </SheetContent>
         </Sheet>
