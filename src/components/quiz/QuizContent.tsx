@@ -134,8 +134,8 @@ const QuizContent = ({
       </div>
 
       <div className={cn(
-        "fixed left-0 top-0 h-full transition-transform duration-300",
-        sidebarCollapsed && "-translate-x-full"
+        "fixed left-0 top-0 h-full w-[160px] transition-transform duration-300",
+        sidebarCollapsed && "-translate-x-[160px]"
       )}>
         <QuestionsSidebar
           totalQuestions={totalQuestions}
@@ -143,19 +143,23 @@ const QuizContent = ({
           answeredQuestions={answeredQuestions}
           onQuestionClick={handleQuestionClick}
         />
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute -right-10 top-4 bg-background border"
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        >
-          {sidebarCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
       </div>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn(
+          "fixed top-4 transition-all duration-300 bg-background border",
+          sidebarCollapsed ? "left-4" : "left-[150px]"
+        )}
+        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+      >
+        {sidebarCollapsed ? (
+          <ChevronRight className="h-4 w-4" />
+        ) : (
+          <ChevronLeft className="h-4 w-4" />
+        )}
+      </Button>
 
       <AlertDialog open={showQuitDialog} onOpenChange={setShowQuitDialog}>
         <AlertDialogContent>
