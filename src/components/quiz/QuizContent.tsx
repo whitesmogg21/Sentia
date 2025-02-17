@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Question } from "@/types/quiz";
 import QuestionView from "./QuestionView";
@@ -6,8 +5,6 @@ import ExplanationView from "./ExplanationView";
 import QuizController from "./QuizController";
 import ProgressBar from "../ProgressBar";
 import QuestionsSidebar from "./QuestionsSidebar";
-import { Maximize2, Minimize2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,7 +55,6 @@ const QuizContent = ({
 }: QuizContentProps) => {
   const [showQuitDialog, setShowQuitDialog] = React.useState(false);
   const [answeredQuestions, setAnsweredQuestions] = React.useState<Array<{ questionIndex: number; isCorrect: boolean }>>([]);
-  const [isFullscreen, setIsFullscreen] = React.useState(false);
 
   const handleAnswerClick = (index: number) => {
     if (!isAnswered) {
@@ -88,44 +84,11 @@ const QuizContent = ({
     onQuit();
   };
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    }
-  };
-
-  React.useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
-
   return (
     <div className="fixed inset-0 bg-background">
       <div className="ml-[160px] container mx-auto p-6 h-full flex flex-col">
-        <div className="mb-4 flex justify-between items-center">
+        <div className="mb-4">
           <ProgressBar current={currentQuestionIndex + 1} total={totalQuestions} />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleFullscreen}
-            className="ml-2"
-          >
-            {isFullscreen ? (
-              <Minimize2 className="h-4 w-4" />
-            ) : (
-              <Maximize2 className="h-4 w-4" />
-            )}
-          </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto">
