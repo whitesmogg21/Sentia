@@ -1,6 +1,7 @@
 
-import { BarChart, Clock, Home, Library } from "lucide-react";
+import { BarChart, Clock, Home, Library, Image, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -10,6 +11,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar";
 
 const items = [
@@ -27,15 +30,12 @@ const items = [
     title: "Previous Quizzes",
     url: "/history",
     icon: Clock,
-  },
-  {
-    title: "Edit QBanks",
-    url: "/qbanks",
-    icon: Library,
-  },
+  }
 ];
 
 export function AppSidebar() {
+  const [isQBankExpanded, setIsQBankExpanded] = useState(true);
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -53,6 +53,32 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => setIsQBankExpanded(!isQBankExpanded)}
+                >
+                  <Library />
+                  <span>Edit QBanks</span>
+                  <ChevronRight 
+                    className={`ml-auto h-4 w-4 transition-transform ${
+                      isQBankExpanded ? "rotate-90" : ""
+                    }`}
+                  />
+                </SidebarMenuButton>
+                <SidebarMenuSub>
+                  <SidebarMenuItem>
+                    <SidebarMenuSubButton asChild>
+                      <Link to="/qbanks">Question Banks</Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuSubButton asChild>
+                      <Link to="/qbanks/media">Media Library</Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuItem>
+                </SidebarMenuSub>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
