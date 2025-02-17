@@ -1,9 +1,11 @@
+
 export interface Question {
   id: number;
   question: string;
   options: string[];
   correctAnswer: number;
-  qbankId: string;
+  qbankId?: string; // Made optional since questions can exist without being in a QBank
+  tags: string[];
   isFlagged?: boolean;
   attempts?: QuestionAttempt[];
   media?: {
@@ -45,6 +47,7 @@ export interface QBank {
   id: string;
   name: string;
   description: string;
+  tags: string[]; // Added tags to QBank
   questions: Question[];
 }
 
@@ -55,6 +58,7 @@ export interface QuestionFilter {
   correct: boolean;
   flagged: boolean;
   omitted: boolean;
+  tags: string[]; // Added tags filter
 }
 
 export type QuestionCategory = 'unused' | 'correct' | 'incorrect' | 'omitted';
