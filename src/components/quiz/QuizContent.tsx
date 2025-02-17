@@ -1,13 +1,10 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { Question } from "@/types/quiz";
 import QuestionView from "./QuestionView";
 import ExplanationView from "./ExplanationView";
 import QuizController from "./QuizController";
 import ProgressBar from "../ProgressBar";
 import QuestionsSidebar from "./QuestionsSidebar";
-import QuizTopBar from "./QuizTopBar";
-import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,8 +53,7 @@ const QuizContent = ({
   onTimeUp,
   onToggleFlag
 }: QuizContentProps) => {
-  const [showQuitDialog, setShowQuitDialog] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showQuitDialog, setShowQuitDialog] = React.useState(false);
   const [answeredQuestions, setAnsweredQuestions] = React.useState<Array<{ questionIndex: number; isCorrect: boolean }>>([]);
 
   const handleAnswerClick = (index: number) => {
@@ -90,61 +86,49 @@ const QuizContent = ({
 
   return (
     <div className="fixed inset-0 bg-background">
-      <QuizTopBar onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} />
-      
-      <div className={cn(
-        "ml-[160px] transition-all duration-300",
-        sidebarCollapsed && "ml-0"
-      )}>
-        <div className="container mx-auto p-6 h-full flex flex-col mt-12">
-          <div className="mb-4">
-            <ProgressBar current={currentQuestionIndex + 1} total={totalQuestions} />
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            <div className="grid grid-cols-1 gap-6">
-              <QuestionView
-                question={currentQuestion}
-                selectedAnswer={selectedAnswer}
-                isAnswered={isAnswered}
-                isPaused={isPaused}
-                onAnswerClick={handleAnswerClick}
-              />
-
-              {isAnswered && showExplanation && (
-                <ExplanationView question={currentQuestion} />
-              )}
-            </div>
-          </div>
-
-          <QuizController
-            currentQuestionIndex={currentQuestionIndex}
-            totalQuestions={totalQuestions}
-            isAnswered={isAnswered}
-            isPaused={isPaused}
-            isFlagged={isFlagged}
-            timerEnabled={timerEnabled}
-            timeLimit={timePerQuestion}
-            onTimeUp={onTimeUp}
-            onNavigate={onNavigate}
-            onPause={onPause}
-            onQuit={() => setShowQuitDialog(true)}
-            onToggleFlag={onToggleFlag}
-          />
+      <div className="ml-[160px] container mx-auto p-6 h-full flex flex-col">
+        <div className="mb-4">
+          <ProgressBar current={currentQuestionIndex + 1} total={totalQuestions} />
         </div>
-      </div>
 
-      <div className={cn(
-        "fixed left-0 top-12 h-[calc(100vh-48px)] transition-transform duration-300",
-        sidebarCollapsed && "-translate-x-full"
-      )}>
-        <QuestionsSidebar
-          totalQuestions={totalQuestions}
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-1 gap-6">
+            <QuestionView
+              question={currentQuestion}
+              selectedAnswer={selectedAnswer}
+              isAnswered={isAnswered}
+              isPaused={isPaused}
+              onAnswerClick={handleAnswerClick}
+            />
+
+            {isAnswered && showExplanation && (
+              <ExplanationView question={currentQuestion} />
+            )}
+          </div>
+        </div>
+
+        <QuizController
           currentQuestionIndex={currentQuestionIndex}
-          answeredQuestions={answeredQuestions}
-          onQuestionClick={handleQuestionClick}
+          totalQuestions={totalQuestions}
+          isAnswered={isAnswered}
+          isPaused={isPaused}
+          isFlagged={isFlagged}
+          timerEnabled={timerEnabled}
+          timeLimit={timePerQuestion}
+          onTimeUp={onTimeUp}
+          onNavigate={onNavigate}
+          onPause={onPause}
+          onQuit={() => setShowQuitDialog(true)}
+          onToggleFlag={onToggleFlag}
         />
       </div>
+
+      <QuestionsSidebar
+        totalQuestions={totalQuestions}
+        currentQuestionIndex={currentQuestionIndex}
+        answeredQuestions={answeredQuestions}
+        onQuestionClick={handleQuestionClick}
+      />
 
       <AlertDialog open={showQuitDialog} onOpenChange={setShowQuitDialog}>
         <AlertDialogContent>
