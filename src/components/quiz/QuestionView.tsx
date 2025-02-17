@@ -41,7 +41,7 @@ const QuestionView = ({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="bg-white p-8 rounded-2xl shadow-lg"
+      className="bg-white dark:bg-gray-900 text-black dark:text-white p-8 rounded-2xl shadow-lg"
     >
       {question.media?.showWith === 'question' && renderMedia(question.media)}
       
