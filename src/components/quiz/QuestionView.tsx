@@ -48,6 +48,7 @@ const QuestionView = ({
   };
 
   useEffect(() => {
+    // Load highlights from localStorage when question changes
     const savedHighlights = localStorage.getItem(`highlights-${question.id}`);
     if (savedHighlights) {
       setHighlights(JSON.parse(savedHighlights));
@@ -57,6 +58,7 @@ const QuestionView = ({
   }, [question.id]);
 
   useEffect(() => {
+    // Save highlights to localStorage when they change
     localStorage.setItem(`highlights-${question.id}`, JSON.stringify(highlights));
   }, [highlights, question.id]);
 
@@ -94,7 +96,7 @@ const QuestionView = ({
       const regex = new RegExp(`(${escapedText})`, 'gi');
       result = result.replace(
         regex,
-        `<span class="bg-${highlight.color}-200" data-highlight-id="${highlight.id}">${highlight.text}</span>`
+        `<span class="cursor-pointer bg-${highlight.color}-200" data-highlight-id="${highlight.id}">$1</span>`
       );
     });
     
@@ -139,8 +141,15 @@ const QuestionView = ({
         {question.options.map((option, index) => (
           <div
             key={index}
-            className="flex items-start"
+            onMouseUp={() => handleHighlight(`option-${index}`)}
+            onClick={handleClick}
           >
+            <div
+              dangerouslySetInnerHTML={{
+                __html: renderHighlightedText(option, `option-${index}`)
+              }}
+              className="absolute inset-0 pointer-events-none"
+            />
             <QuizOption
               option={option}
               selected={selectedAnswer === index}
@@ -151,14 +160,6 @@ const QuestionView = ({
               }
               onClick={() => onAnswerClick(index)}
               disabled={isAnswered || isPaused}
-            />
-            <div
-              className="flex-1 ml-[-275px] pl-[275px]"
-              onMouseUp={() => handleHighlight(`option-${index}`)}
-              onClick={handleClick}
-              dangerouslySetInnerHTML={{
-                __html: renderHighlightedText(option, `option-${index}`)
-              }}
             />
           </div>
         ))}
