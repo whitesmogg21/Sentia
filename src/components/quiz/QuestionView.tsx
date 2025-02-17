@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { Question } from "@/types/quiz";
 import QuizOption from "../QuizOption";
@@ -142,18 +141,14 @@ const QuestionView = ({
         {question.options.map((option, index) => (
           <div
             key={index}
-            className={cn(
-              "relative",
-              selectedAnswer === index && "z-10"
-            )}
+            onMouseUp={() => handleHighlight(`option-${index}`)}
+            onClick={handleClick}
           >
             <div
-              onMouseUp={() => handleHighlight(`option-${index}`)}
-              onClick={handleClick}
-              className="absolute inset-0 pointer-events-auto"
               dangerouslySetInnerHTML={{
                 __html: renderHighlightedText(option, `option-${index}`)
               }}
+              className="absolute inset-0 pointer-events-none"
             />
             <QuizOption
               option={option}
