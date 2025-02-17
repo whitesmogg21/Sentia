@@ -1,4 +1,3 @@
-
 import { Question, QuizHistory } from "@/types/quiz";
 import { QuizState } from "./types";
 import { qbanks } from "@/data/questions";
@@ -56,40 +55,19 @@ export const initializeQuiz = (
 
 export const createQuizHistory = (
   state: QuizState,
-  lastAnswerIndex: number | null
+  optionIndex: number | null
 ): QuizHistory => {
-  const currentQuestion = state.currentQuestions[state.currentQuestionIndex];
-  
-  // Create attempts array with all questions
-  const questionAttempts = state.currentQuestions.map((q, index) => {
-    let selectedAnswer: number | null = null;
-    let isCorrect = false;
-
-    if (index < state.currentQuestionIndex) {
-      // For previous questions, use the recorded attempt
-      selectedAnswer = q.attempts?.[q.attempts.length - 1]?.selectedAnswer ?? null;
-      isCorrect = q.attempts?.[q.attempts.length - 1]?.isCorrect ?? false;
-    } else if (index === state.currentQuestionIndex) {
-      // For current question, use the last answer index
-      selectedAnswer = lastAnswerIndex;
-      isCorrect = lastAnswerIndex === q.correctAnswer;
-    }
-    // Future questions remain null/false
-
-    return {
-      questionId: q.id,
-      selectedAnswer,
-      isCorrect
-    };
-  });
-
   return {
     id: Date.now().toString(),
     date: new Date().toLocaleDateString(),
     score: state.score,
     totalQuestions: state.currentQuestions.length,
     qbankId: state.currentQuestions[0].qbankId,
-    questionAttempts
+    questionAttempts: state.currentQuestions.map((q, index) => ({
+      questionId: q.id,
+      selectedAnswer: index === state.currentQuestionIndex ? optionIndex : q.attempts?.[0]?.selectedAnswer ?? null,
+      isCorrect: index === state.currentQuestionIndex ? optionIndex === q.correctAnswer : q.attempts?.[0]?.isCorrect ?? false,
+    }))
   };
 };
 
