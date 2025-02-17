@@ -54,6 +54,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     }
   });
   const [selectedQBankForMedia, setSelectedQBankForMedia] = useState<QBank | null>(null);
+  const [editingQBankModal, setEditingQBankModal] = useState<QBank | null>(null);
 
   const handleMediaUpload = (files: File[]) => {
     setMediaFiles(files);
@@ -370,6 +371,12 @@ const QBanks = ({ qbanks }: QBanksProps) => {
                   </Button>
                   <Button variant="outline" onClick={(e) => {
                     e.stopPropagation();
+                    setEditingQBankModal(qbank);
+                  }}>
+                    Edit Questions
+                  </Button>
+                  <Button variant="outline" onClick={(e) => {
+                    e.stopPropagation();
                     exportToCSV(qbank);
                   }}>
                     Export
@@ -465,6 +472,14 @@ const QBanks = ({ qbanks }: QBanksProps) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {editingQBankModal && (
+        <EditQBankModal
+          qbank={editingQBankModal}
+          isOpen={!!editingQBankModal}
+          onClose={() => setEditingQBankModal(null)}
+        />
+      )}
     </div>
   );
 };
