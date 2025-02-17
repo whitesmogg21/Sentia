@@ -1,10 +1,12 @@
-import { useState, useEffect } from "react";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QBank, Question } from "../types/quiz";
-import { Upload, Plus, Search } from "lucide-react";
+import { Trash2, Edit2, Download, Upload } from "lucide-react";
 import MediaUploader from "@/components/MediaUploader";
-import { QuestionLibrary } from "@/components/qbank/QuestionLibrary";
+import MediaManager from "@/components/MediaManager";
+import EditQBankModal from "@/components/qbank/EditQBankModal";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,24 +14,19 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetClose,
-} from "@/components/ui/sheet";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
 
 interface QBanksProps {
   qbanks: QBank[];
@@ -38,78 +35,28 @@ interface QBanksProps {
 const QBanks = ({ qbanks }: QBanksProps) => {
   const navigate = useNavigate();
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
-  const [allQuestions, setAllQuestions] = useState<Question[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showFullLibrary, setShowFullLibrary] = useState(false);
-
-  useEffect(() => {
-    const questions = new Set<Question>();
-    qbanks.forEach(qbank => {
-      qbank.questions.forEach(question => {
-        questions.add(question);
-      });
-    });
-    setAllQuestions(Array.from(questions));
-  }, [qbanks]);
-
-  const handleUpdateQuestion = (updatedQuestion: Question) => {
-    setAllQuestions(prev =>
-      prev.map(q => q.id === updatedQuestion.id ? updatedQuestion : q)
-    );
-
-    qbanks.forEach(qbank => {
-      const shouldBeInQBank = updatedQuestion.tags.includes(qbank.id);
-      const questionIndex = qbank.questions.findIndex(q => q.id === updatedQuestion.id);
-      
-      if (!shouldBeInQBank && questionIndex !== -1) {
-        qbank.questions.splice(questionIndex, 1);
-      } else if (shouldBeInQBank && questionIndex !== -1) {
-        qbank.questions[questionIndex] = updatedQuestion;
-      } else if (shouldBeInQBank && questionIndex === -1) {
-        qbank.questions.push(updatedQuestion);
-      }
-    });
-
-    updatedQuestion.tags.forEach(tag => {
-      if (!qbanks.some(qbank => qbank.id === tag)) {
-        const newQBank: QBank = {
-          id: tag,
-          name: tag.charAt(0).toUpperCase() + tag.slice(1),
-          description: `Questions related to ${tag}`,
-          tags: [tag],
-          questions: [updatedQuestion]
-        };
-        qbanks.push(newQBank);
-      }
-    });
-  };
-
-  const handleAddQuestion = (newQuestion: Question) => {
-    setAllQuestions(prev => [...prev, newQuestion]);
-    
-    newQuestion.tags.forEach(tag => {
-      if (!qbanks.some(qbank => qbank.id === tag)) {
-        const newQBank: QBank = {
-          id: tag,
-          name: tag.charAt(0).toUpperCase() + tag.slice(1),
-          description: `Questions related to ${tag}`,
-          tags: [tag],
-          questions: [newQuestion]
-        };
-        qbanks.push(newQBank);
-      } else {
-        const existingQBank = qbanks.find(qbank => qbank.id === tag);
-        if (existingQBank) {
-          existingQBank.questions.push(newQuestion);
-        }
-      }
-    });
-
-    toast({
-      title: "Question Added",
-      description: "Question has been added to the library.",
-    });
-  };
+  const [showQBankConfirmDialog, setShowQBankConfirmDialog] = useState(false);
+  const [showMediaDialog, setShowMediaDialog] = useState(false);
+  const [selectedQBank, setSelectedQBank] = useState<QBank | null>(null);
+  const [newQBankName, setNewQBankName] = useState("");
+  const [newQBankDescription, setNewQBankDescription] = useState("");
+  const [showNewQBankDialog, setShowNewQBankDialog] = useState(false);
+  const [editingQBankId, setEditingQBankId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [editingDescription, setEditingDescription] = useState("");
+  const [newQuestion, setNewQuestion] = useState({
+    question: "",
+    options: ["", "", "", ""],
+    correctAnswer: 0,
+    explanation: "",
+    media: {
+      type: "" as "image" | "audio" | "video" | "",
+      url: "",
+      showWith: "question" as "question" | "answer"
+    }
+  });
+  const [selectedQBankForMedia, setSelectedQBankForMedia] = useState<QBank | null>(null);
+  const [editingQBankModal, setEditingQBankModal] = useState<QBank | null>(null);
 
   const handleMediaUpload = (files: File[]) => {
     setMediaFiles(files);
@@ -130,103 +77,248 @@ const QBanks = ({ qbanks }: QBanksProps) => {
         row.split(',').map(cell => cell.replace(/^"|"$/g, '').replace(/""/g, '"'))
       );
 
-      const tags = rows[0].slice(10).map(tag => tag.trim().toLowerCase())
-        .filter(tag => tag && tag !== 'Question Image' && tag !== 'Answer Image' && tag !== 'Explanation');
-
+      // Skip header row
       const questions: Question[] = rows.slice(1).map((row, index) => {
-        const options = row.slice(3, 7).filter(opt => opt.trim() !== '');
-        const imageFilename = row[7]?.trim();
-        const questionTags = tags.filter((_, i) => row[i + 10]?.trim().toLowerCase() === 'yes');
+        const options = row.slice(3, 10).filter(opt => opt.trim() !== '');
+        const imageFilename = row[10]?.trim();
         
+        // Find matching media file
         const mediaFile = mediaFiles.find(file => file.name === imageFilename);
         const mediaUrl = mediaFile ? URL.createObjectURL(mediaFile) : undefined;
 
-        const question: Question = {
+        return {
           id: Date.now() + index,
           question: row[1],
           options,
           correctAnswer: parseInt(row[2]) - 1,
-          tags: questionTags,
-          explanation: row[8] || undefined,
+          qbankId: `imported-${Date.now()}`,
+          explanation: row[12] || undefined,
           media: imageFilename && mediaUrl ? {
             type: 'image',
             url: mediaUrl,
             showWith: 'question'
           } : undefined
         };
-
-        questionTags.forEach(tag => {
-          if (!qbanks.some(qbank => qbank.id === tag)) {
-            const newQBank: QBank = {
-              id: tag,
-              name: tag.charAt(0).toUpperCase() + tag.slice(1),
-              description: `Questions related to ${tag}`,
-              tags: [tag],
-              questions: [question]
-            };
-            qbanks.push(newQBank);
-          } else {
-            const existingQBank = qbanks.find(qbank => qbank.id === tag);
-            if (existingQBank) {
-              existingQBank.questions.push(question);
-            }
-          }
-        });
-
-        return question;
       });
 
-      setAllQuestions(prev => [...prev, ...questions]);
-      setMediaFiles([]);
+      const newQBank: QBank = {
+        id: `imported-${Date.now()}`,
+        name: file.name.replace('.csv', ''),
+        description: `Imported from ${file.name}`,
+        questions
+      };
+
+      qbanks.push(newQBank);
+      setMediaFiles([]); // Clear media files after import
       toast({
         title: "Success",
-        description: `Imported ${questions.length} questions with ${tags.length} tags`,
+        description: "QBank imported successfully with media files",
       });
     };
     reader.readAsText(file);
   };
 
-  const QuestionTable = () => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Question #</TableHead>
-          <TableHead>Question Text</TableHead>
-          <TableHead>Correct Answer</TableHead>
-          <TableHead>Option 2</TableHead>
-          <TableHead>Option 3</TableHead>
-          <TableHead>Option 4</TableHead>
-          <TableHead>Tags</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {allQuestions
-          .filter(q => 
-            q.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            q.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-          )
-          .map((question, index) => {
-            const correctAnswer = question.options[question.correctAnswer];
-            const otherOptions = question.options
-              .filter((_, i) => i !== question.correctAnswer)
-              .concat(Array(3).fill("")) // Pad with empty strings if needed
-              .slice(0, 3); // Take only first 3 incorrect options
+  const handleCreateQBank = () => {
+    if (!newQBankName.trim() || !newQBankDescription.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields",
+        variant: "destructive",
+      });
+      return;
+    }
 
-            return (
-              <TableRow key={question.id}>
-                <TableCell>{question.id}</TableCell>
-                <TableCell>{question.question}</TableCell>
-                <TableCell>{correctAnswer}</TableCell>
-                {otherOptions.map((option, i) => (
-                  <TableCell key={i}>{option}</TableCell>
-                ))}
-                <TableCell>{question.tags.join(", ")}</TableCell>
-              </TableRow>
-            );
-          })}
-      </TableBody>
-    </Table>
-  );
+    const newQBank: QBank = {
+      id: `qbank-${Date.now()}`,
+      name: newQBankName,
+      description: newQBankDescription,
+      questions: [],
+    };
+
+    qbanks.push(newQBank);
+    setNewQBankName("");
+    setNewQBankDescription("");
+    setShowNewQBankDialog(false);
+    toast({
+      title: "Success",
+      description: "Question bank created successfully",
+    });
+  };
+
+  const handleDeleteQBank = (qbankId: string) => {
+    const index = qbanks.findIndex((qbank) => qbank.id === qbankId);
+    if (index !== -1) {
+      qbanks.splice(index, 1);
+      setSelectedQBank(null);
+      toast({
+        title: "Success",
+        description: "Question bank deleted successfully",
+      });
+    }
+  };
+
+  const startEditing = (qbank: QBank) => {
+    setEditingQBankId(qbank.id);
+    setEditingName(qbank.name);
+    setEditingDescription(qbank.description);
+  };
+
+  const handleSaveEdit = (qbankId: string) => {
+    const qbank = qbanks.find((q) => q.id === qbankId);
+    if (qbank) {
+      if (!editingName.trim() || !editingDescription.trim()) {
+        toast({
+          title: "Error",
+          description: "Name and description cannot be empty",
+          variant: "destructive",
+        });
+        return;
+      }
+      qbank.name = editingName;
+      qbank.description = editingDescription;
+      setEditingQBankId(null);
+      toast({
+        title: "Success",
+        description: "Question bank updated successfully",
+      });
+    }
+  };
+
+  const handleAddQuestion = () => {
+    if (selectedQBank) {
+      if (!newQuestion.question.trim() || newQuestion.options.some(opt => !opt.trim())) {
+        toast({
+          title: "Error",
+          description: "Please fill in all required fields",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const question: Question = {
+        id: Date.now(),
+        question: newQuestion.question,
+        options: newQuestion.options,
+        correctAnswer: newQuestion.correctAnswer,
+        qbankId: selectedQBank.id,
+      };
+
+      if (newQuestion.explanation.trim()) {
+        question.explanation = newQuestion.explanation;
+      }
+
+      if (newQuestion.media.type && newQuestion.media.url) {
+        question.media = {
+          type: newQuestion.media.type,
+          url: newQuestion.media.url,
+          showWith: newQuestion.media.showWith,
+        };
+      }
+
+      selectedQBank.questions.push(question);
+      setNewQuestion({
+        question: "",
+        options: ["", "", "", ""],
+        correctAnswer: 0,
+        explanation: "",
+        media: {
+          type: "",
+          url: "",
+          showWith: "question"
+        }
+      });
+      toast({
+        title: "Success",
+        description: "Question added successfully",
+      });
+    }
+  };
+
+  const handleSelectQBank = (qbank: QBank) => {
+    setSelectedQBank(qbank);
+    setShowQBankConfirmDialog(true);
+  };
+
+  const handleManageMedia = (qbank: QBank) => {
+    setSelectedQBankForMedia(qbank);
+    setShowMediaDialog(true);
+  };
+
+  const handleConfirmSelection = () => {
+    if (selectedQBank) {
+      localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
+      navigate('/');
+      toast({
+        title: "QBank Selected",
+        description: `${selectedQBank.name} has been locked in.`,
+      });
+    }
+  };
+
+  const exportToCSV = (qbank: QBank) => {
+    const csvRows = [
+      ['Serial', 'Question', 'Correct Answer', 'Option 1', 'Option 2', 'Option 3', 'Option 4', 'Option 5', 'Option 6', 'Option 7', 'Question Image', 'Answer Image', 'Explanation'],
+      ...qbank.questions.map((q, index) => [
+        index + 1,
+        q.question,
+        q.correctAnswer + 1,
+        ...q.options,
+        ...(Array(7 - q.options.length).fill('')), // Pad with empty strings if less than 7 options
+        q.media?.showWith === 'question' ? q.media.url : '',
+        q.media?.showWith === 'answer' ? q.media.url : '',
+        q.explanation || ''
+      ])
+    ];
+
+    const csvContent = csvRows.map(row => row.map(cell => 
+      `"${String(cell).replace(/"/g, '""')}"`
+    ).join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${qbank.name}.csv`;
+    link.click();
+  };
+
+  const calculateQuestionMetrics = (qbank: QBank) => {
+    const metrics = {
+      unused: 0,
+      used: 0,
+      correct: 0,
+      incorrect: 0,
+      omitted: 0,
+      flagged: 0
+    };
+
+    qbank.questions.forEach(question => {
+      if (!question.attempts || question.attempts.length === 0) {
+        metrics.unused++;
+      } else {
+        metrics.used++;
+        const lastAttempt = question.attempts[question.attempts.length - 1];
+        if (lastAttempt.selectedAnswer === null) {
+          metrics.omitted++;
+        } else if (lastAttempt.isCorrect) {
+          metrics.correct++;
+        } else {
+          metrics.incorrect++;
+        }
+      }
+      if (question.isFlagged) {
+        metrics.flagged++;
+      }
+    });
+
+    return metrics;
+  };
+
+  const updateMedia = () => {
+    toast({
+      title: "Success",
+      description: "Media files updated successfully",
+    });
+  };
 
   return (
     <div className="container mx-auto p-6">
@@ -249,80 +341,147 @@ const QBanks = ({ qbanks }: QBanksProps) => {
         </div>
       </div>
 
-      <div className="space-y-8">
-        <Sheet open={showFullLibrary} onOpenChange={setShowFullLibrary}>
-          <div className="border rounded-lg p-6">
-            <div className="flex flex-col space-y-4">
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold">Question Library</h2>
-                <div className="flex gap-2">
-                  <div className="relative w-64">
-                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search questions..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9"
-                    />
+      <div className="grid gap-4">
+        {qbanks.map((qbank) => {
+          const metrics = calculateQuestionMetrics(qbank);
+          
+          return (
+            <div
+              key={qbank.id}
+              className="p-4 rounded-lg border-2 cursor-pointer transition-colors hover:border-primary/50"
+              onClick={() => handleSelectQBank(qbank)}
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-bold">{qbank.name}</h3>
+                  <p className="text-sm text-gray-600">{qbank.description}</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    {qbank.questions.length} questions
+                  </p>
+                  <div className="mt-2 flex gap-2 text-sm">
+                    <span className="text-green-600">✓ {metrics.correct}</span>
+                    <span className="text-red-600">✗ {metrics.incorrect}</span>
+                    <span className="text-yellow-600">⚑ {metrics.flagged}</span>
                   </div>
-                  <Button onClick={() => setShowFullLibrary(true)}>
-                    View All Questions
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={(e) => {
+                    e.stopPropagation();
+                    handleManageMedia(qbank);
+                  }}>
+                    Manage Media
+                  </Button>
+                  <Button variant="outline" onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingQBankModal(qbank);
+                  }}>
+                    Edit Questions
+                  </Button>
+                  <Button variant="outline" onClick={(e) => {
+                    e.stopPropagation();
+                    exportToCSV(qbank);
+                  }}>
+                    Export
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEditing(qbank);
+                    }}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive hover:text-destructive/90"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteQBank(qbank.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
-              <QuestionLibrary
-                questions={allQuestions}
-                qbanks={qbanks}
-                onUpdateQuestion={handleUpdateQuestion}
-                onAddQuestion={handleAddQuestion}
+            </div>
+          );
+        })}
+      </div>
+
+      <AlertDialog open={showQBankConfirmDialog} onOpenChange={setShowQBankConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Lock in Question Bank?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to select this question bank? You won't be able to change it later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmSelection}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={showMediaDialog} onOpenChange={setShowMediaDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Media</DialogTitle>
+          </DialogHeader>
+          {selectedQBankForMedia && (
+            <MediaManager 
+              qbank={selectedQBankForMedia} 
+              onMediaUpdate={() => {
+                setShowMediaDialog(false);
+                setSelectedQBankForMedia(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showNewQBankDialog} onOpenChange={setShowNewQBankDialog}>
+        <DialogTrigger asChild>
+          <Button>Create New Question Bank</Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Question Bank</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Name</label>
+              <Input
+                placeholder="Enter question bank name"
+                value={newQBankName}
+                onChange={(e) => setNewQBankName(e.target.value)}
               />
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Description</label>
+              <Input
+                placeholder="Enter description"
+                value={newQBankDescription}
+                onChange={(e) => setNewQBankDescription(e.target.value)}
+              />
+            </div>
+            <Button className="w-full" onClick={handleCreateQBank}>
+              Create Question Bank
+            </Button>
           </div>
-          <SheetContent 
-            side="right" 
-            className="w-screen p-0"
-          >
-            <SheetHeader className="p-6 border-b">
-              <div className="flex justify-between items-center">
-                <SheetTitle>Question Library</SheetTitle>
-                <SheetClose asChild>
-                  <Button variant="outline">Close</Button>
-                </SheetClose>
-              </div>
-            </SheetHeader>
-            <ScrollArea className="h-[calc(100vh-8rem)]">
-              <div className="p-6">
-                <QuestionTable />
-              </div>
-            </ScrollArea>
-          </SheetContent>
-        </Sheet>
+        </DialogContent>
+      </Dialog>
 
-        <div className="border rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Available Question Banks</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {qbanks.map((qbank) => (
-              <div
-                key={qbank.id}
-                className="p-4 border rounded-lg space-y-2 hover:border-primary transition-colors"
-              >
-                <h3 className="font-semibold">{qbank.name}</h3>
-                <p className="text-sm text-muted-foreground">{qbank.description}</p>
-                <div className="flex gap-2 flex-wrap">
-                  {qbank.tags.map(tag => (
-                    <Badge key={tag} variant="secondary">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {qbank.questions.length} questions
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {editingQBankModal && (
+        <EditQBankModal
+          qbank={editingQBankModal}
+          isOpen={!!editingQBankModal}
+          onClose={() => setEditingQBankModal(null)}
+        />
+      )}
     </div>
   );
 };

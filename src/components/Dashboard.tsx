@@ -38,7 +38,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     correct: false,
     flagged: false,
     omitted: false,
-    tags: []
   });
   const { theme, setTheme } = useTheme();
 
