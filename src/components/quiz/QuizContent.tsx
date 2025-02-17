@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTheme } from "@/components/ThemeProvider"; // ✅ Import Theme Provider
 import { Question } from "@/types/quiz";
 import QuestionView from "./QuestionView";
 import ExplanationView from "./ExplanationView";
@@ -85,7 +86,8 @@ const QuizContent = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-background">
+    const { theme } = useTheme(); // ✅ Get current theme
+<div className={`fixed inset-0 bg-background ${theme === "dark" ? "dark" : ""}`}>
       <div className="ml-[160px] container mx-auto p-6 h-full flex flex-col">
         <div className="mb-4">
           <ProgressBar current={currentQuestionIndex + 1} total={totalQuestions} />
