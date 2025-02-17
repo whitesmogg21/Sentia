@@ -6,6 +6,7 @@ import { Trash2, Edit2, Download, Upload } from "lucide-react";
 import MediaUploader from "@/components/MediaUploader";
 import MediaManager from "@/components/MediaManager";
 import EditQBankModal from "@/components/qbank/EditQBankModal";
+import { QuestionLibrary } from "@/components/qbank/QuestionLibrary";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import {
@@ -25,7 +26,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Label } from "@/components/ui/label";
 
 interface QBanksProps {
   qbanks: QBank[];
@@ -37,6 +37,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
   const [showQBankConfirmDialog, setShowQBankConfirmDialog] = useState(false);
   const [showMediaDialog, setShowMediaDialog] = useState(false);
   const [selectedQBank, setSelectedQBank] = useState<QBank | null>(null);
+  const [selectedQBankForMedia, setSelectedQBankForMedia] = useState<QBank | null>(null);
   const [newQBankName, setNewQBankName] = useState("");
   const [newQBankDescription, setNewQBankDescription] = useState("");
   const [showNewQBankDialog, setShowNewQBankDialog] = useState(false);
@@ -44,6 +45,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
   const [editingName, setEditingName] = useState("");
   const [editingDescription, setEditingDescription] = useState("");
   const [allQuestions, setAllQuestions] = useState<Question[]>([]);
+  const [editingQBankModal, setEditingQBankModal] = useState<QBank | null>(null);
 
   useEffect(() => {
     const questions = new Set<Question>();
@@ -108,6 +110,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
           options,
           correctAnswer: parseInt(row[2]) - 1,
           qbankId: `imported-${Date.now()}`,
+          tags: [],
           explanation: row[12] || undefined,
           media: imageFilename && mediaUrl ? {
             type: 'image',
@@ -121,11 +124,12 @@ const QBanks = ({ qbanks }: QBanksProps) => {
         id: `imported-${Date.now()}`,
         name: file.name.replace('.csv', ''),
         description: `Imported from ${file.name}`,
+        tags: [],
         questions
       };
 
       qbanks.push(newQBank);
-      setMediaFiles([]); // Clear media files after import
+      setMediaFiles([]);
       toast({
         title: "Success",
         description: "QBank imported successfully with media files",
@@ -148,6 +152,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       id: `qbank-${Date.now()}`,
       name: newQBankName,
       description: newQBankDescription,
+      tags: [],
       questions: [],
     };
 
@@ -323,7 +328,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
           <div className="grid gap-4">
             {qbanks.map((qbank) => {
               const metrics = calculateQuestionMetrics(qbank);
-              
               return (
                 <div
                   key={qbank.id}
