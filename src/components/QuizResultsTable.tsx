@@ -29,22 +29,22 @@ const QuizResultsTable = ({ questions, attempts }: QuizResultsTableProps) => {
                 key={question.id}
                 className={cn(
                   "border-t dark:border-gray-700",
-                  attempt?.isCorrect && "bg-green-50 dark:bg-green-900/20",
-                  attempt?.isCorrect === false && "bg-red-50 dark:bg-red-900/20"
+                  attempt?.selectedAnswer !== null && attempt.isCorrect && "bg-green-50 dark:bg-green-900/20",
+                  attempt?.selectedAnswer !== null && !attempt.isCorrect && "bg-red-50 dark:bg-red-900/20"
                 )}
               >
                 <td className="p-2 dark:text-gray-200">{index + 1}</td>
                 <td className="p-2 dark:text-gray-200">{question.question}</td>
                 <td className={cn(
                   "p-2",
-                  attempt?.isCorrect && "text-green-600 dark:text-green-400",
+                  attempt?.selectedAnswer !== null && attempt.isCorrect && "text-green-600 dark:text-green-400",
                   attempt?.selectedAnswer !== null && !attempt.isCorrect && "text-red-600 dark:text-red-400",
                   attempt?.isFlagged && "text-yellow-600 dark:text-yellow-400",
-                  !attempt?.selectedAnswer && "text-gray-500 dark:text-gray-400"
+                  attempt?.selectedAnswer === null && "text-gray-500 dark:text-gray-400"
                 )}>
-                  {attempt?.isCorrect ? "Correct" : 
-                    attempt?.selectedAnswer !== null ? "Incorrect" : 
-                    attempt?.isFlagged ? "Flagged" : "Omitted"}
+                  {attempt?.selectedAnswer !== null 
+                    ? (attempt.isCorrect ? "Correct" : "Incorrect")
+                    : (attempt?.isFlagged ? "Flagged" : "Omitted")}
                 </td>
               </tr>
             );
