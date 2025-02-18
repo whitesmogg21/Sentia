@@ -91,7 +91,11 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   const handleQuit = () => {
     const quizHistory = createQuizHistory(state, state.selectedAnswer);
     onQuizComplete?.(quizHistory);
-    setState(prev => ({ ...prev, showScore: true }));
+    setState(prev => ({ 
+      ...prev, 
+      showScore: true,
+      inQuiz: true  // Add this line to ensure we stay in quiz mode
+    }));
   };
 
   const handlePause = () => {

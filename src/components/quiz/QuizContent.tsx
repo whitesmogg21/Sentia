@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Question } from "@/types/quiz";
 import QuestionView from "./QuestionView";
 import ExplanationView from "./ExplanationView";
@@ -21,6 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { motion } from "framer-motion";
 
 interface QuizContentProps {
   currentQuestion: Question;
@@ -64,9 +64,10 @@ const QuizContent = ({
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const { theme, setTheme } = useTheme();
+  const [timeRemaining, setTimeRemaining] = useState(60);
 
   const handleAnswerClick = (index: number) => {
-    if (!isAnswered) {
+    if (!isAnswered && !isPaused) {
       setAnsweredQuestions(prev => [
         ...prev.filter(q => q.questionIndex !== currentQuestionIndex),
         {
@@ -79,12 +80,10 @@ const QuizContent = ({
   };
 
   const handleQuestionClick = (index: number) => {
-    if (!timerEnabled) {
-      if (index > currentQuestionIndex) {
-        onNavigate('next');
-      } else if (index < currentQuestionIndex) {
-        onNavigate('prev');
-      }
+    if (index > currentQuestionIndex) {
+      onNavigate('next');
+    } else if (index < currentQuestionIndex) {
+      onNavigate('prev');
     }
   };
 
@@ -93,8 +92,16 @@ const QuizContent = ({
     onQuit();
   };
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeRemaining(prev => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-background">
+    <div className="fixed inset-0 bg-background dark:bg-background">
       <div className={cn(
         "transition-all duration-300",
         sidebarCollapsed ? "ml-0" : "ml-[160px]"
@@ -106,6 +113,7 @@ const QuizContent = ({
               size="icon"
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="bg-background border"
+              aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
                 <Sun className="h-4 w-4" />
@@ -118,6 +126,7 @@ const QuizContent = ({
               size="icon"
               onClick={toggleFullscreen}
               className="bg-background border"
+              aria-label="Toggle fullscreen"
             >
               {isFullscreen ? (
                 <Minimize className="h-4 w-4" />
@@ -131,19 +140,32 @@ const QuizContent = ({
             <ProgressBar current={currentQuestionIndex + 1} total={totalQuestions} />
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto relative">
+            {isPaused && (
+              <div className="absolute inset-0 bg-gray-800/50 dark:bg-black/50 flex items-center justify-center z-10">
+                <p className="text-white text-lg font-bold">Quiz is paused</p>
+              </div>
+            )}
             <div className="grid grid-cols-1 gap-6">
-              <QuestionView
-                question={currentQuestion}
-                selectedAnswer={selectedAnswer}
-                isAnswered={isAnswered}
-                isPaused={isPaused}
-                onAnswerClick={handleAnswerClick}
-              />
+              <motion.div
+                key={currentQuestion.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg"
+              >
+                <QuestionView
+                  question={currentQuestion}
+                  selectedAnswer={selectedAnswer}
+                  isAnswered={isAnswered}
+                  isPaused={isPaused}
+                  onAnswerClick={handleAnswerClick}
+                />
 
-              {isAnswered && showExplanation && (
-                <ExplanationView question={currentQuestion} />
-              )}
+                {isAnswered && showExplanation && (
+                  <ExplanationView question={currentQuestion} />
+                )}
+              </motion.div>
             </div>
           </div>
 
@@ -184,6 +206,7 @@ const QuizContent = ({
           sidebarCollapsed ? "left-4" : "left-[150px]"
         )}
         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+        aria-label="Toggle sidebar"
       >
         {sidebarCollapsed ? (
           <ChevronRight className="h-4 w-4" />
@@ -201,7 +224,7 @@ const QuizContent = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>No, continue quiz</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setShowQuitDialog(false)}>No, continue quiz</AlertDialogCancel>
             <AlertDialogAction onClick={handleQuizComplete}>
               Yes, end quiz
             </AlertDialogAction>
