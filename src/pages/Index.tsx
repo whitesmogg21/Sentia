@@ -71,7 +71,8 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
         attempts={currentQuestions.map((question) => ({
           questionId: question.id,
           selectedAnswer: question.attempts?.[question.attempts.length - 1]?.selectedAnswer ?? null,
-          isCorrect: question.attempts?.[question.attempts.length - 1]?.isCorrect ?? false
+          isCorrect: question.attempts?.[question.attempts.length - 1]?.selectedAnswer === question.correctAnswer,
+          isFlagged: question.isFlagged
         }))}
         onEnd={handleRestart}
       />

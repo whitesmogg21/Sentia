@@ -1,4 +1,3 @@
-
 import { motion } from "framer-motion";
 import { Question, QuizHistory } from "@/types/quiz";
 import QuizResultsTable from "./QuizResultsTable";
@@ -20,7 +19,7 @@ const ScoreCard = ({ score, total, questions, attempts, onEnd }: ScoreCardProps)
       animate={{ opacity: 1, scale: 1 }}
       className="container mx-auto p-6"
     >
-      <div className="w-full max-w-lg mx-auto bg-white p-8 rounded-2xl shadow-lg text-center">
+      <div className="w-full max-w-lg mx-auto bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg text-center dark:text-gray-100">
         <h2 className="text-2xl font-bold mb-4">Quiz Complete!</h2>
         <div className="text-6xl font-bold text-primary mb-4">{percentage}%</div>
         <p className="text-lg mb-6">
