@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,8 +5,7 @@ import { QBank, Question } from "../types/quiz";
 import { Trash2, Edit2, Download, Upload } from "lucide-react";
 import MediaUploader from "@/components/MediaUploader";
 import MediaManager from "@/components/MediaManager";
-import EditQBankModal from "@/components/qbank/EditQBankModal";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import {
   Dialog,
@@ -56,7 +54,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     }
   });
   const [selectedQBankForMedia, setSelectedQBankForMedia] = useState<QBank | null>(null);
-  const [editingQBankModal, setEditingQBankModal] = useState<QBank | null>(null);
 
   const handleMediaUpload = (files: File[]) => {
     setMediaFiles(files);
@@ -373,12 +370,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
                   </Button>
                   <Button variant="outline" onClick={(e) => {
                     e.stopPropagation();
-                    setEditingQBankModal(qbank);
-                  }}>
-                    Edit Questions
-                  </Button>
-                  <Button variant="outline" onClick={(e) => {
-                    e.stopPropagation();
                     exportToCSV(qbank);
                   }}>
                     Export
@@ -474,14 +465,6 @@ const QBanks = ({ qbanks }: QBanksProps) => {
           </div>
         </DialogContent>
       </Dialog>
-
-      {editingQBankModal && (
-        <EditQBankModal
-          qbank={editingQBankModal}
-          isOpen={!!editingQBankModal}
-          onClose={() => setEditingQBankModal(null)}
-        />
-      )}
     </div>
   );
 };
