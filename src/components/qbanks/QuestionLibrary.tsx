@@ -307,41 +307,33 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         const rows = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1 });
 
         const questions = rows.slice(1).map((row: any) => {
-          if (!Array.isArray(row) || row.length < 2) {
+          if (!Array.isArray(row)) {
             throw new Error("Invalid row format");
           }
 
-          const question = row[0];
-          const correctAnswer = row[1];
-          const otherChoices = row[2] || "";
-          const tags = row[3] || "";
-          const explanation = row[4] || "";
+          const [question, correctAnswer, otherChoices, category] = row;
 
           if (!question || !correctAnswer) {
-            throw new Error("Question and correct answer are required");
+            throw new Error(`Question and correct answer are required. Row: ${row}`);
           }
 
-          const options = [correctAnswer, ...otherChoices.split(';').filter(Boolean)];
-          const questionTags = tags.split(';')
-            .map(tag => tag.trim())
-            .filter(Boolean);
+          const otherAnswers = otherChoices ? otherChoices.split(/[;,]/).map(s => s.trim()) : [];
+          
+          const options = [correctAnswer, ...otherAnswers].filter(Boolean);
 
-          if (questionTags.length === 0) {
-            questionTags.push('general');
-          }
+          const tags = category ? [category.toLowerCase()] : ['general'];
 
           const newQuestion: Question = {
             id: Date.now() + Math.random(),
             question,
             options,
             correctAnswer: 0,
-            qbankId: questionTags[0],
-            tags: questionTags,
-            explanation,
+            qbankId: tags[0],
+            tags,
             attempts: []
           };
 
-          questionTags.forEach(tag => {
+          tags.forEach(tag => {
             let qbank = qbanks.find(qb => qb.id === tag);
             if (!qbank) {
               qbank = {
@@ -363,6 +355,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           description: `${questions.length} questions imported successfully`,
         });
       } catch (error) {
+        console.error('Excel import error:', error);
         toast({
           title: "Error",
           description: error instanceof Error ? error.message : "Failed to import questions",
