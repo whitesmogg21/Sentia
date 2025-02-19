@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -94,9 +95,11 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <SidebarProvider>
-              <div className="min-h-screen flex w-full">
+              <div className="min-h-screen flex">
                 {!inQuiz && <AppSidebar />}
-                <main className="flex-1">
+                <main className="flex-1 transition-[margin] duration-300" style={{
+                  marginLeft: !inQuiz ? "160px" : "0"
+                }}>
                   <Routes>
                     <Route
                       path="/"

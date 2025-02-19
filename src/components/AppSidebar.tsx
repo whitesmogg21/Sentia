@@ -38,9 +38,9 @@ export function AppSidebar() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
-    <>
+    <div className="fixed left-0 top-0 h-full">
       <div className={cn(
-        "fixed left-0 top-0 h-full w-[160px] transition-transform duration-300",
+        "w-[160px] transition-transform duration-300",
         sidebarCollapsed && "-translate-x-[160px]"
       )}>
         <Sidebar>
@@ -71,7 +71,7 @@ export function AppSidebar() {
         variant="ghost"
         size="icon"
         className={cn(
-          "fixed top-4 transition-all duration-300 bg-background border",
+          "absolute top-4 transition-all duration-300 bg-background border",
           sidebarCollapsed ? "left-4" : "left-[150px]"
         )}
         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -83,6 +83,6 @@ export function AppSidebar() {
           <ChevronLeft className="h-4 w-4" />
         )}
       </Button>
-    </>
+    </div>
   );
 }
