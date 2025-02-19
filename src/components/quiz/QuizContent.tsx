@@ -80,11 +80,19 @@ const QuizContent = ({
   useEffect(() => {
     const handleMouseUp = () => {
       const selection = window.getSelection();
-      if (selection && selection.toString().length > 0) {
+      if (!selection || selection.toString().length === 0) return;
+      
+      try {
         const range = selection.getRangeAt(0);
         const span = document.createElement('span');
         span.className = selectedColor.class;
+        span.style.cursor = 'text';
+        span.style.userSelect = 'text';
         range.surroundContents(span);
+      } catch (e) {
+        console.error('Failed to highlight:', e);
+      } finally {
+        selection.removeAllRanges();
       }
     };
 
@@ -131,10 +139,14 @@ const QuizContent = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={cn("bg-background border relative p-0 overflow-hidden", selectedColor.class)}
+                  className={cn(
+                    "bg-background border relative p-0 overflow-hidden cursor-default select-none",
+                    selectedColor.class
+                  )}
                   aria-label="Select highlight color"
+                  style={{ pointerEvents: 'auto' }}
                 >
-                  <div className="w-4 h-4 rounded-full" />
+                  <div className="w-4 h-4 rounded-full pointer-events-none" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -144,7 +156,7 @@ const QuizContent = ({
                       key={color.name}
                       onClick={() => setSelectedColor(color)}
                       className={cn(
-                        'w-6 h-6 rounded-full border border-gray-200',
+                        'w-6 h-6 rounded-full border border-gray-200 cursor-pointer select-none',
                         color.class,
                         selectedColor.name === color.name && 'ring-2 ring-primary'
                       )}
