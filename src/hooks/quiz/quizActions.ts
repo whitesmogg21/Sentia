@@ -1,5 +1,6 @@
 
-import { Question, QuizHistory, QuizState } from "@/types/quiz";
+import { Question, QuizHistory } from "@/types/quiz";
+import { QuizState } from "./types";
 import { qbanks } from "@/data/questions";
 
 export const generateQuestionAttempts = (
@@ -34,7 +35,7 @@ export const initializeQuiz = (
     .slice(0, questionCount);
 
   return {
-    currentQuestions: shuffledQuestions,
+    questions: shuffledQuestions,
     inQuiz: true,
     currentQuestionIndex: 0,
     score: 0,
@@ -74,22 +75,20 @@ export const handleQuestionAttempt = (
 };
 
 export const createQuizHistory = (state: QuizState, finalAnswer: number | null): QuizHistory => {
-  const answers = state.currentQuestions.map((_, index) => {
+  const answers = state.questions.map((_, index) => {
     if (index === state.currentQuestionIndex) {
       return finalAnswer;
     }
-    const question = state.currentQuestions[index];
+    const question = state.questions[index];
     return question.attempts?.[question.attempts.length - 1]?.selectedAnswer ?? null;
   });
 
   return {
+    id: `quiz-${Date.now()}`, // Generate a unique ID
     date: new Date().toISOString(),
     score: state.score,
-    totalQuestions: state.currentQuestions.length,
-    qbankId: state.currentQuestions[0]?.qbankId || '',
-    questionAttempts: generateQuestionAttempts(state.currentQuestions, answers),
-    tutorMode: state.tutorMode,
-    timerEnabled: state.timerEnabled,
-    timeLimit: state.initialTimeLimit
+    totalQuestions: state.questions.length,
+    qbankId: state.questions[0]?.qbankId || '',
+    questionAttempts: generateQuestionAttempts(state.questions, answers)
   };
 };

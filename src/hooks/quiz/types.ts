@@ -14,7 +14,7 @@ export interface QuizState {
   selectedAnswer: number | null;
   isAnswered: boolean;
   inQuiz: boolean;
-  currentQuestions: Question[];
+  questions: Question[];
   tutorMode: boolean;
   showExplanation: boolean;
   isPaused: boolean;
