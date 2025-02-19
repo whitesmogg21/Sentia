@@ -12,7 +12,7 @@ import QBanks from "./pages/QBanks";
 import SelectQBank from "./pages/SelectQBank";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
-import { QuizHistory, QBank } from "./types/quiz";
+import { QuizHistory, QBank, Question } from "./types/quiz";
 import { qbanks } from "./data/questions";
 import { toast } from "@/components/ui/use-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -58,7 +58,17 @@ const App = () => {
     localStorage.setItem('selectedQBank', JSON.stringify(qbank));
   };
 
-  const handleQuizStart = () => setInQuiz(true);
+  const handleQuizStart = () => {
+    setInQuiz(true);
+    // Reset all questions in qbanks
+    qbanks.forEach(qbank => {
+      qbank.questions.forEach(question => {
+        question.attempts = [];
+        question.isFlagged = false;
+      });
+    });
+    localStorage.removeItem('selectedQBank');
+  };
   const handleQuizEnd = () => setInQuiz(false);
 
   const handleClearHistory = () => {
