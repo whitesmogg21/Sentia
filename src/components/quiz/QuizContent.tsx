@@ -6,10 +6,15 @@ import QuizController from "./QuizController";
 import ProgressBar from "../ProgressBar";
 import QuestionsSidebar from "./QuestionsSidebar";
 import { Button } from "../ui/button";
-import { ChevronLeft, ChevronRight, Maximize, Minimize, Moon, Sun } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize, Minimize, Moon, Sun, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { useTheme } from "@/components/ThemeProvider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +26,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { motion } from "framer-motion";
+
+const highlightColors = [
+  { name: 'yellow', class: 'bg-yellow-200 dark:bg-yellow-900/50' },
+  { name: 'green', class: 'bg-green-200 dark:bg-green-900/50' },
+  { name: 'blue', class: 'bg-blue-200 dark:bg-blue-900/50' },
+  { name: 'purple', class: 'bg-purple-200 dark:bg-purple-900/50' },
+];
 
 interface QuizContentProps {
   currentQuestion: Question;
@@ -65,6 +77,7 @@ const QuizContent = ({
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const { theme, setTheme } = useTheme();
   const [timeRemaining, setTimeRemaining] = useState(60);
+  const [selectedColor, setSelectedColor] = useState(highlightColors[0]);
 
   const handleAnswerClick = (index: number) => {
     if (!isAnswered && !isPaused) {
@@ -108,6 +121,33 @@ const QuizContent = ({
       )}>
         <div className="container mx-auto p-6 h-full flex flex-col">
           <div className="flex items-center justify-end gap-2 mb-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={cn("bg-background border relative", selectedColor.class)}
+                  aria-label="Select highlight color"
+                >
+                  <Palette className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <div className="flex gap-2 p-2">
+                  {highlightColors.map((color) => (
+                    <button
+                      key={color.name}
+                      onClick={() => setSelectedColor(color)}
+                      className={cn(
+                        'w-6 h-6 rounded-full border border-gray-200',
+                        color.class,
+                        selectedColor.name === color.name && 'ring-2 ring-primary'
+                      )}
+                    />
+                  ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="ghost"
               size="icon"
@@ -159,7 +199,7 @@ const QuizContent = ({
                   selectedAnswer={selectedAnswer}
                   isAnswered={isAnswered}
                   isPaused={isPaused}
-                  onAnswerClick={handleAnswerClick}
+                  onAnswerClick={onAnswerClick}
                 />
 
                 {isAnswered && showExplanation && (
