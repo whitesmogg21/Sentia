@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -49,7 +48,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
 
-  // Get all unique tags from existing questions
   const existingTags = Array.from(new Set(
     qbanks.flatMap(qbank => qbank.questions.flatMap(q => q.tags))
   ));
@@ -85,13 +83,12 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       return;
     }
 
-    // Create new question
     const question: Question = {
       id: Date.now(),
       question: newQuestion.question!,
       options: newQuestion.options!,
       correctAnswer: newQuestion.correctAnswer!,
-      qbankId: selectedTags[0], // Use first tag as primary qbankId
+      qbankId: selectedTags[0],
       tags: selectedTags,
       attempts: []
     };
@@ -108,12 +105,10 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       };
     }
 
-    // Add question to all relevant qbanks based on tags
     selectedTags.forEach(tag => {
       let qbank = qbanks.find(qb => qb.id === tag);
       
       if (!qbank) {
-        // Create new qbank if tag doesn't exist
         qbank = {
           id: tag,
           name: tag.charAt(0).toUpperCase() + tag.slice(1),
@@ -172,7 +167,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const handleUpdate = () => {
     if (!editingQuestion) return;
 
-    // Update question in all relevant question banks
     qbanks.forEach(qbank => {
       const questionIndex = qbank.questions.findIndex(q => q.id === editingQuestion.id);
       if (questionIndex !== -1) {
@@ -209,46 +203,93 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     if (!file) return;
 
     Papa.parse(file, {
+      header: false,
+      skipEmptyLines: true,
       complete: (results) => {
-        const questions = results.data.slice(1).map((row: any) => {
-          const [question, correctAnswer, otherChoices, tags, explanation] = row;
-          const options = [correctAnswer, ...otherChoices.split(';')];
-          const questionTags = tags.split(';').map((tag: string) => tag.trim());
-
-          const newQuestion: Question = {
-            id: Date.now() + Math.random(),
-            question,
-            options,
-            correctAnswer: 0,
-            qbankId: questionTags[0],
-            tags: questionTags,
-            explanation,
-            attempts: []
-          };
-
-          // Add question to relevant question banks
-          questionTags.forEach(tag => {
-            let qbank = qbanks.find(qb => qb.id === tag);
-            if (!qbank) {
-              qbank = {
-                id: tag,
-                name: tag.charAt(0).toUpperCase() + tag.slice(1),
-                description: `Questions tagged with ${tag}`,
-                questions: []
-              };
-              qbanks.push(qbank);
-            }
-            qbank.questions.push({ ...newQuestion });
+        if (results.errors.length > 0) {
+          toast({
+            title: "Error",
+            description: "Failed to parse CSV file. Please check the format.",
+            variant: "destructive"
           });
-        });
+          return;
+        }
 
-        toast({
-          title: "Success",
-          description: `${results.data.length - 1} questions imported successfully`,
-        });
+        try {
+          const questions = results.data.slice(1).map((row: string[]) => {
+            if (!Array.isArray(row) || row.length < 5) {
+              throw new Error("Invalid row format");
+            }
+
+            const question = row[0];
+            const correctAnswer = row[1];
+            const otherChoices = row[2] || "";
+            const tags = row[3] || "";
+            const explanation = row[4] || "";
+
+            if (!question || !correctAnswer) {
+              throw new Error("Question and correct answer are required");
+            }
+
+            const options = [correctAnswer, ...otherChoices.split(';').filter(Boolean)];
+            const questionTags = tags.split(';')
+              .map(tag => tag.trim())
+              .filter(Boolean);
+
+            if (questionTags.length === 0) {
+              questionTags.push('general');
+            }
+
+            const newQuestion: Question = {
+              id: Date.now() + Math.random(),
+              question,
+              options,
+              correctAnswer: 0,
+              qbankId: questionTags[0],
+              tags: questionTags,
+              explanation,
+              attempts: []
+            };
+
+            questionTags.forEach(tag => {
+              let qbank = qbanks.find(qb => qb.id === tag);
+              if (!qbank) {
+                qbank = {
+                  id: tag,
+                  name: tag.charAt(0).toUpperCase() + tag.slice(1),
+                  description: `Questions tagged with ${tag}`,
+                  questions: []
+                };
+                qbanks.push(qbank);
+              }
+              qbank.questions.push({ ...newQuestion });
+            });
+
+            return newQuestion;
+          });
+
+          toast({
+            title: "Success",
+            description: `${questions.length} questions imported successfully`,
+          });
+        } catch (error) {
+          toast({
+            title: "Error",
+            description: error instanceof Error ? error.message : "Failed to import questions",
+            variant: "destructive"
+          });
+        }
       },
-      header: true,
+      error: (error) => {
+        toast({
+          title: "Error",
+          description: "Failed to read CSV file",
+          variant: "destructive"
+        });
+      }
     });
+
+    event.target.value = '';
   };
 
   const filteredQuestions = qbanks.flatMap(qbank => 
