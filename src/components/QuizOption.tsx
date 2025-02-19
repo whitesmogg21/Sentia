@@ -12,16 +12,27 @@ interface QuizOptionProps {
 }
 
 const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOptionProps) => {
-  const showStrikethrough = selected && correct === false;
+  const [isStrikedOut, setIsStrikedOut] = React.useState(false);
+
+  const handleStrikethrough = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the parent onClick
+    if (!disabled) {
+      setIsStrikedOut(!isStrikedOut);
+    }
+  };
 
   return (
     <div className="flex items-center gap-3 my-2">
-      {showStrikethrough && (
-        <div className="text-error dark:text-error/80">
-          <Strikethrough className="w-4 h-4" />
-        </div>
-      )}
-      {!showStrikethrough && <div className="w-4" />} {/* Spacer to maintain alignment */}
+      <div 
+        onClick={handleStrikethrough}
+        className={cn(
+          "text-gray-400 hover:text-error dark:text-gray-500 dark:hover:text-error/80 cursor-pointer",
+          isStrikedOut && "text-error dark:text-error/80",
+          disabled && "cursor-not-allowed opacity-50"
+        )}
+      >
+        <Strikethrough className="w-4 h-4" />
+      </div>
       <motion.div
         whileHover={{ scale: disabled ? 1 : 1.05 }}
         whileTap={{ scale: disabled ? 1 : 0.95 }}
@@ -39,7 +50,7 @@ const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOption
       </motion.div>
       <span className={cn(
         "text-secondary-foreground",
-        showStrikethrough && "line-through text-gray-500 dark:text-gray-400"
+        isStrikedOut && "line-through text-gray-500 dark:text-gray-400"
       )}>
         {option}
       </span>
