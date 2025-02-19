@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Question } from "@/types/quiz";
 import QuestionView from "./QuestionView";
@@ -6,15 +7,10 @@ import QuizController from "./QuizController";
 import ProgressBar from "../ProgressBar";
 import QuestionsSidebar from "./QuestionsSidebar";
 import { Button } from "../ui/button";
-import { ChevronLeft, ChevronRight, Maximize, Minimize, Moon, Sun, Palette } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize, Minimize, Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { useTheme } from "@/components/ThemeProvider";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +21,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { motion } from "framer-motion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const highlightColors = [
   { name: 'yellow', class: 'bg-yellow-200 dark:bg-yellow-900/50' },
@@ -76,7 +76,6 @@ const QuizContent = ({
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const { theme, setTheme } = useTheme();
-  const [timeRemaining, setTimeRemaining] = useState(60);
   const [selectedColor, setSelectedColor] = useState(highlightColors[0]);
 
   const handleAnswerClick = (index: number) => {
@@ -105,14 +104,6 @@ const QuizContent = ({
     onQuit();
   };
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeRemaining(prev => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
   return (
     <div className="fixed inset-0 bg-background dark:bg-background">
       <div className={cn(
@@ -126,10 +117,10 @@ const QuizContent = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={cn("bg-background border relative", selectedColor.class)}
+                  className={cn("bg-background border relative p-0 overflow-hidden", selectedColor.class)}
                   aria-label="Select highlight color"
                 >
-                  <Palette className="h-4 w-4" />
+                  <div className="w-4 h-4 rounded-full" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -187,25 +178,17 @@ const QuizContent = ({
               </div>
             )}
             <div className="grid grid-cols-1 gap-6">
-              <motion.div
-                key={currentQuestion.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg"
-              >
-                <QuestionView
-                  question={currentQuestion}
-                  selectedAnswer={selectedAnswer}
-                  isAnswered={isAnswered}
-                  isPaused={isPaused}
-                  onAnswerClick={onAnswerClick}
-                />
+              <QuestionView
+                question={currentQuestion}
+                selectedAnswer={selectedAnswer}
+                isAnswered={isAnswered}
+                isPaused={isPaused}
+                onAnswerClick={handleAnswerClick}
+              />
 
-                {isAnswered && showExplanation && (
-                  <ExplanationView question={currentQuestion} />
-                )}
-              </motion.div>
+              {isAnswered && showExplanation && (
+                <ExplanationView question={currentQuestion} />
+              )}
             </div>
           </div>
 
