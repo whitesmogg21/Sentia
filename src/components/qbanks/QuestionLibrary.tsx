@@ -199,100 +199,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     });
   };
 
-  const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    Papa.parse(file, {
-      header: false,
-      skipEmptyLines: true,
-      complete: (results) => {
-        if (results.errors.length > 0) {
-          toast({
-            title: "Error",
-            description: "Failed to parse CSV file. Please check the format.",
-            variant: "destructive"
-          });
-          return;
-        }
-
-        try {
-          const questions = results.data.slice(1).map((row: string[]) => {
-            if (!Array.isArray(row) || row.length < 5) {
-              throw new Error("Invalid row format");
-            }
-
-            const question = row[0];
-            const correctAnswer = row[1];
-            const otherChoices = row[2] || "";
-            const tags = row[3] || "";
-            const explanation = row[4] || "";
-
-            if (!question || !correctAnswer) {
-              throw new Error("Question and correct answer are required");
-            }
-
-            const options = [correctAnswer, ...otherChoices.split(';').filter(Boolean)];
-            const questionTags = tags.split(';')
-              .map(tag => tag.trim())
-              .filter(Boolean);
-
-            if (questionTags.length === 0) {
-              questionTags.push('general');
-            }
-
-            const newQuestion: Question = {
-              id: Date.now() + Math.random(),
-              question,
-              options,
-              correctAnswer: 0,
-              qbankId: questionTags[0],
-              tags: questionTags,
-              explanation,
-              attempts: []
-            };
-
-            questionTags.forEach(tag => {
-              let qbank = qbanks.find(qb => qb.id === tag);
-              if (!qbank) {
-                qbank = {
-                  id: tag,
-                  name: tag.charAt(0).toUpperCase() + tag.slice(1),
-                  description: `Questions tagged with ${tag}`,
-                  questions: []
-                };
-                qbanks.push(qbank);
-              }
-              qbank.questions.push({ ...newQuestion });
-            });
-
-            return newQuestion;
-          });
-
-          toast({
-            title: "Success",
-            description: `${questions.length} questions imported successfully`,
-          });
-        } catch (error) {
-          toast({
-            title: "Error",
-            description: error instanceof Error ? error.message : "Failed to import questions",
-            variant: "destructive"
-          });
-        }
-      },
-      error: (error) => {
-        toast({
-          title: "Error",
-          description: "Failed to read CSV file",
-          variant: "destructive"
-        });
-      }
-    });
-
-    event.target.value = '';
-  };
-
   const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -314,7 +220,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               throw new Error(`Invalid row format: ${JSON.stringify(row)}`);
             }
 
-            const [question, correctAnswer, otherChoices, category] = row;
+            const [question, correctAnswer, otherChoices, category, explanation] = row;
 
             if (!question?.toString().trim() || !correctAnswer?.toString().trim()) {
               console.error('Missing required fields:', row);
@@ -341,6 +247,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               correctAnswer: 0,
               qbankId: tags[0],
               tags,
+              explanation: explanation?.toString().trim() || undefined,  // Add explanation if present
               attempts: []
             };
 
@@ -421,21 +328,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Question Library</h1>
         <div className="flex gap-2">
-          <Input
-            type="file"
-            accept=".csv"
-            onChange={handleCSVUpload}
-            className="hidden"
-            id="csv-upload"
-          />
-          <label htmlFor="csv-upload">
-            <Button variant="outline" asChild>
-              <span>
-                <Upload className="w-4 h-4 mr-2" />
-                Import CSV
-              </span>
-            </Button>
-          </label>
           <Input
             type="file"
             accept=".xlsx"
