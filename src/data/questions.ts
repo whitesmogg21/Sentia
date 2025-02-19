@@ -13,7 +13,7 @@ export const qbanks: QBank[] = [
         options: ["London", "Berlin", "Paris", "Madrid"],
         correctAnswer: 2,
         qbankId: "general",
-        tags: []
+        tags: ["general"]
       },
       {
         id: 2,
@@ -21,7 +21,7 @@ export const qbanks: QBank[] = [
         options: ["Venus", "Mars", "Jupiter", "Saturn"],
         correctAnswer: 1,
         qbankId: "general",
-        tags: []
+        tags: ["general", "science"]
       },
       {
         id: 3,
@@ -29,7 +29,7 @@ export const qbanks: QBank[] = [
         options: ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Pacific Ocean"],
         correctAnswer: 3,
         qbankId: "general",
-        tags: []
+        tags: ["general"]
       },
       {
         id: 4,
@@ -37,7 +37,7 @@ export const qbanks: QBank[] = [
         options: ["Vincent van Gogh", "Leonardo da Vinci", "Pablo Picasso", "Michelangelo"],
         correctAnswer: 1,
         qbankId: "general",
-        tags: []
+        tags: ["general", "art"]
       },
       {
         id: 5,
@@ -45,7 +45,7 @@ export const qbanks: QBank[] = [
         options: ["Ag", "Fe", "Au", "Cu"],
         correctAnswer: 2,
         qbankId: "general",
-        tags: []
+        tags: ["general", "science"]
       }
     ]
   },
@@ -60,7 +60,7 @@ export const qbanks: QBank[] = [
         options: ["O", "Ox", "Om", "On"],
         correctAnswer: 0,
         qbankId: "science",
-        tags: []
+        tags: ["science"]
       },
       {
         id: 7,
@@ -68,7 +68,7 @@ export const qbanks: QBank[] = [
         options: ["299,792 km/s", "199,792 km/s", "399,792 km/s", "499,792 km/s"],
         correctAnswer: 0,
         qbankId: "science",
-        tags: []
+        tags: ["science", "physics"]
       }
     ]
   }
