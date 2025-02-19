@@ -126,10 +126,10 @@ const QuizContent = ({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={cn("bg-background border relative p-0 overflow-hidden", selectedColor.class)}
+                  className={cn("bg-background border relative", selectedColor.class)}
                   aria-label="Select highlight color"
                 >
-                  <div className="w-4 h-4 rounded-full" />
+                  <Palette className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
