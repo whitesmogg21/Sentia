@@ -67,6 +67,7 @@ export const createQuizHistory = (
       questionId: q.id,
       selectedAnswer: index === state.currentQuestionIndex ? optionIndex : q.attempts?.[0]?.selectedAnswer ?? null,
       isCorrect: index === state.currentQuestionIndex ? optionIndex === q.correctAnswer : q.attempts?.[0]?.isCorrect ?? false,
+      isFlagged: Boolean(q.isFlagged)
     }))
   };
 };
