@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -51,7 +52,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   // Get all unique tags from existing questions
   const existingTags = Array.from(new Set(
     qbanks.flatMap(qbank => qbank.questions.flatMap(q => q.tags))
-  );
+  ));
 
   const handleAddTag = (tag: string) => {
     const normalizedTag = tag.toLowerCase().trim();
