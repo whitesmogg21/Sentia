@@ -68,7 +68,7 @@ export const qbanks: QBank[] = [
         options: ["299,792 km/s", "199,792 km/s", "399,792 km/s", "499,792 km/s"],
         correctAnswer: 0,
         qbankId: "science",
-        tags: ["science", "physics"]
+        tags: ["science"]
       }
     ]
   }
