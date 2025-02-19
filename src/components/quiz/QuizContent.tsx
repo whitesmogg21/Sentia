@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Question } from "@/types/quiz";
 import QuestionView from "./QuestionView";
@@ -77,6 +76,21 @@ const QuizContent = ({
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const { theme, setTheme } = useTheme();
   const [selectedColor, setSelectedColor] = useState(highlightColors[0]);
+
+  useEffect(() => {
+    const handleMouseUp = () => {
+      const selection = window.getSelection();
+      if (selection && selection.toString().length > 0) {
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.className = selectedColor.class;
+        range.surroundContents(span);
+      }
+    };
+
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => document.removeEventListener('mouseup', handleMouseUp);
+  }, [selectedColor]);
 
   const handleAnswerClick = (index: number) => {
     if (!isAnswered && !isPaused) {
