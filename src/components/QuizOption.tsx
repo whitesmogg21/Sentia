@@ -1,7 +1,7 @@
 
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check, Strikethrough } from "lucide-react";
 
 interface QuizOptionProps {
   option: string;
@@ -16,6 +16,12 @@ const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOption
 
   return (
     <div className="flex items-center gap-3 my-2">
+      {showStrikethrough && (
+        <div className="text-error dark:text-error/80">
+          <Strikethrough className="w-4 h-4" />
+        </div>
+      )}
+      {!showStrikethrough && <div className="w-4" />} {/* Spacer to maintain alignment */}
       <motion.div
         whileHover={{ scale: disabled ? 1 : 1.05 }}
         whileTap={{ scale: disabled ? 1 : 0.95 }}
