@@ -306,49 +306,64 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         const worksheet = workbook.Sheets[firstSheetName];
         const rows = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1 });
 
-        const questions = rows.slice(1).map((row: any) => {
-          if (!Array.isArray(row)) {
-            throw new Error("Invalid row format");
-          }
-
-          const [question, correctAnswer, otherChoices, category] = row;
-
-          if (!question || !correctAnswer) {
-            throw new Error(`Question and correct answer are required. Row: ${row}`);
-          }
-
-          const otherAnswers = otherChoices ? otherChoices.split(/[;,]/).map(s => s.trim()) : [];
-          
-          const options = [correctAnswer, ...otherAnswers].filter(Boolean);
-
-          const tags = category ? [category.toLowerCase()] : ['general'];
-
-          const newQuestion: Question = {
-            id: Date.now() + Math.random(),
-            question,
-            options,
-            correctAnswer: 0,
-            qbankId: tags[0],
-            tags,
-            attempts: []
-          };
-
-          tags.forEach(tag => {
-            let qbank = qbanks.find(qb => qb.id === tag);
-            if (!qbank) {
-              qbank = {
-                id: tag,
-                name: tag.charAt(0).toUpperCase() + tag.slice(1),
-                description: `Questions tagged with ${tag}`,
-                questions: []
-              };
-              qbanks.push(qbank);
+        const questions = rows.slice(1)
+          .filter(row => row && row.length >= 2)
+          .map((row: any) => {
+            if (!Array.isArray(row)) {
+              console.error('Invalid row:', row);
+              throw new Error(`Invalid row format: ${JSON.stringify(row)}`);
             }
-            qbank.questions.push({ ...newQuestion });
+
+            const [question, correctAnswer, otherChoices, category] = row;
+
+            if (!question?.toString().trim() || !correctAnswer?.toString().trim()) {
+              console.error('Missing required fields:', row);
+              throw new Error(`Question and correct answer are required. Row: ${JSON.stringify(row)}`);
+            }
+
+            const questionStr = question.toString().trim();
+            const correctAnswerStr = correctAnswer.toString().trim();
+            
+            const otherAnswers = otherChoices 
+              ? otherChoices.toString().split(/[;,]/).map(s => s.trim()).filter(Boolean)
+              : [];
+          
+            const options = [correctAnswerStr, ...otherAnswers];
+
+            const tags = category?.toString().trim() 
+              ? [category.toString().toLowerCase().trim()] 
+              : ['general'];
+
+            const newQuestion: Question = {
+              id: Date.now() + Math.random(),
+              question: questionStr,
+              options,
+              correctAnswer: 0,
+              qbankId: tags[0],
+              tags,
+              attempts: []
+            };
+
+            tags.forEach(tag => {
+              let qbank = qbanks.find(qb => qb.id === tag);
+              if (!qbank) {
+                qbank = {
+                  id: tag,
+                  name: tag.charAt(0).toUpperCase() + tag.slice(1),
+                  description: `Questions tagged with ${tag}`,
+                  questions: []
+                };
+                qbanks.push(qbank);
+              }
+              qbank.questions.push({ ...newQuestion });
+            });
+
+            return newQuestion;
           });
 
-          return newQuestion;
-        });
+        if (questions.length === 0) {
+          throw new Error("No valid questions found in the file");
+        }
 
         toast({
           title: "Success",
