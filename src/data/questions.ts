@@ -1,66 +1,86 @@
-import { Question, QBank } from "../types/quiz";
 
-export const qbanks: QBank[] = [
+export const qbanks = [
   {
-    id: "general",
-    name: "General Knowledge",
-    description: "Test your general knowledge with these questions",
+    id: "qbank1",
+    name: "Basic Math",
+    description: "Basic arithmetic operations",
     questions: [
       {
         id: 1,
-        question: "What is the capital of France?",
-        options: ["London", "Berlin", "Paris", "Madrid"],
-        correctAnswer: 2,
-        qbankId: "general"
+        question: "What is 2 + 2?",
+        options: ["3", "4", "5", "6"],
+        correctAnswer: 1,
+        qbankId: "qbank1",
+        tags: [], // Added empty tags array to satisfy TypeScript
+        attempts: [],
+        isFlagged: false,
       },
       {
         id: 2,
-        question: "Which planet is known as the Red Planet?",
-        options: ["Venus", "Mars", "Jupiter", "Saturn"],
+        question: "What is 5 - 3?",
+        options: ["1", "2", "3", "4"],
         correctAnswer: 1,
-        qbankId: "general"
+        qbankId: "qbank1",
+        tags: [],
+        attempts: [],
+        isFlagged: false,
       },
       {
         id: 3,
-        question: "What is the largest ocean on Earth?",
-        options: ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Pacific Ocean"],
-        correctAnswer: 3,
-        qbankId: "general"
+        question: "What is 3 × 4?",
+        options: ["10", "11", "12", "13"],
+        correctAnswer: 2,
+        qbankId: "qbank1",
+        tags: [],
+        attempts: [],
+        isFlagged: false,
       },
       {
         id: 4,
-        question: "Who painted the Mona Lisa?",
-        options: ["Vincent van Gogh", "Leonardo da Vinci", "Pablo Picasso", "Michelangelo"],
+        question: "What is 8 ÷ 2?",
+        options: ["2", "4", "6", "8"],
         correctAnswer: 1,
-        qbankId: "general"
+        qbankId: "qbank1",
+        tags: [],
+        attempts: [],
+        isFlagged: false,
       },
       {
         id: 5,
-        question: "What is the chemical symbol for gold?",
-        options: ["Ag", "Fe", "Au", "Cu"],
+        question: "What is 10 - 7?",
+        options: ["1", "2", "3", "4"],
         correctAnswer: 2,
-        qbankId: "general"
+        qbankId: "qbank1",
+        tags: [],
+        attempts: [],
+        isFlagged: false,
       }
     ]
   },
   {
-    id: "science",
+    id: "qbank2",
     name: "Science",
-    description: "Challenge yourself with science questions",
+    description: "Basic science concepts",
     questions: [
       {
         id: 6,
-        question: "What is the chemical symbol for Oxygen?",
-        options: ["O", "Ox", "Om", "On"],
+        question: "What is the chemical symbol for water?",
+        options: ["H2O", "CO2", "O2", "N2"],
         correctAnswer: 0,
-        qbankId: "science"
+        qbankId: "qbank2",
+        tags: [],
+        attempts: [],
+        isFlagged: false,
       },
       {
         id: 7,
-        question: "What is the speed of light?",
-        options: ["299,792 km/s", "199,792 km/s", "399,792 km/s", "499,792 km/s"],
-        correctAnswer: 0,
-        qbankId: "science"
+        question: "What is the closest planet to the Sun?",
+        options: ["Venus", "Mars", "Mercury", "Earth"],
+        correctAnswer: 2,
+        qbankId: "qbank2",
+        tags: [],
+        attempts: [],
+        isFlagged: false,
       }
     ]
   }
