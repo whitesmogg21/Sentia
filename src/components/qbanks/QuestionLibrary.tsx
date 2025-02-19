@@ -24,7 +24,7 @@ interface QuestionLibraryProps {
 }
 
 type SortConfig = {
-  key: keyof Question | 'correctAnswerText' | null;
+  key: keyof Question | 'correctAnswerText' | 'tagsText' | null;
   direction: 'asc' | 'desc';
 };
 
@@ -300,27 +300,34 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 
   const filteredQuestions = qbanks.flatMap(qbank => 
     qbank.questions.filter(q => 
-      q.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      q.question.toLowerCase() === searchQuery.toLowerCase() ||
+      q.tags.some(tag => tag.toLowerCase() === searchQuery.toLowerCase())
     )
   );
 
   const sortedQuestions = [...filteredQuestions].sort((a, b) => {
     if (!sortConfig.key) return 0;
     
-    let aValue = sortConfig.key === 'correctAnswerText' 
-      ? a.options[a.correctAnswer]
-      : a[sortConfig.key];
-    let bValue = sortConfig.key === 'correctAnswerText'
-      ? b.options[b.correctAnswer]
-      : b[sortConfig.key];
+    let aValue: string;
+    let bValue: string;
 
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return sortConfig.direction === 'asc'
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
+    switch (sortConfig.key) {
+      case 'correctAnswerText':
+        aValue = a.options[a.correctAnswer];
+        bValue = b.options[b.correctAnswer];
+        break;
+      case 'tagsText':
+        aValue = a.tags.join(', ');
+        bValue = b.tags.join(', ');
+        break;
+      default:
+        aValue = String(a[sortConfig.key]);
+        bValue = String(b[sortConfig.key]);
     }
-    return 0;
+
+    return sortConfig.direction === 'asc'
+      ? aValue.localeCompare(bValue)
+      : bValue.localeCompare(aValue);
   });
 
   return (
@@ -485,7 +492,10 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                 <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead>Other Choices</TableHead>
-              <TableHead>Tags</TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('tagsText')}>
+                Tags
+                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
               <TableHead>Explanation</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
