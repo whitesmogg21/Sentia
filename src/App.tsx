@@ -16,6 +16,8 @@ import { QuizHistory, QBank, Question } from "./types/quiz";
 import { qbanks } from "./data/questions";
 import { toast } from "@/components/ui/use-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import QuestionLibrary from "@/components/qbanks/QuestionLibrary";
+import MediaLibrary from "@/components/qbanks/MediaLibrary";
 
 const queryClient = new QueryClient();
 
@@ -116,6 +118,8 @@ const App = () => {
                       element={<History quizHistory={quizHistory} onClearHistory={handleClearHistory} />}
                     />
                     <Route path="/qbanks" element={<QBanks qbanks={qbanks} />} />
+                    <Route path="/qbanks/questions" element={<QuestionLibrary qbanks={qbanks} />} />
+                    <Route path="/qbanks/media" element={<MediaLibrary qbanks={qbanks} />} />
                     <Route 
                       path="/select-qbank" 
                       element={<SelectQBank qbanks={qbanks} onSelect={handleQBankSelect} />} 
