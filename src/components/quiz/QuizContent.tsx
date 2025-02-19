@@ -85,9 +85,15 @@ const QuizContent = ({
       try {
         const range = selection.getRangeAt(0);
         const span = document.createElement('span');
-        span.className = selectedColor.class;
-        span.style.cursor = 'text';
-        span.style.userSelect = 'text';
+        span.className = `${selectedColor.class} cursor-pointer`;
+        span.onclick = (e) => {
+          const target = e.target as HTMLSpanElement;
+          const parent = target.parentNode;
+          if (parent) {
+            parent.replaceChild(document.createTextNode(target.textContent || ''), target);
+          }
+          e.stopPropagation();
+        };
         range.surroundContents(span);
       } catch (e) {
         console.error('Failed to highlight:', e);
