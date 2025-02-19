@@ -4,11 +4,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash, Upload, Tag, Edit, Check, X } from "lucide-react";
+import { Plus, Tag, Check, X } from "lucide-react";
 import { Question, QBank } from "@/types/quiz";
 import { toast } from "@/components/ui/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import MediaSelector from "./MediaSelector";
 
 interface QuestionLibraryProps {
@@ -277,29 +284,33 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         />
       </div>
 
-      <div className="space-y-4">
-        {filteredQuestions.map((question, index) => (
-          <div key={`${question.id}-${index}`} className="p-4 border rounded-lg">
-            <div className="flex justify-between items-start">
-              <h3 className="font-bold">Question {index + 1}</h3>
-            </div>
-            <p className="mt-2">{question.question}</p>
-            <div className="mt-2">
-              {question.options.map((option, optIndex) => (
-                <div key={optIndex} className={`p-2 ${optIndex === question.correctAnswer ? 'text-green-600' : ''}`}>
-                  {option}
-                </div>
-              ))}
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {question.tags.map(tag => (
-                <span key={tag} className="px-2 py-1 bg-gray-100 rounded-full text-sm">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        ))}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Question</TableHead>
+              <TableHead>Correct Answer</TableHead>
+              <TableHead>Other Choices</TableHead>
+              <TableHead>Tags</TableHead>
+              <TableHead>Explanation</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredQuestions.map((question) => (
+              <TableRow key={question.id}>
+                <TableCell className="font-medium">{question.question}</TableCell>
+                <TableCell>{question.options[question.correctAnswer]}</TableCell>
+                <TableCell>
+                  {question.options
+                    .filter((_, index) => index !== question.correctAnswer)
+                    .join('; ')}
+                </TableCell>
+                <TableCell>{question.tags.join('; ')}</TableCell>
+                <TableCell>{question.explanation || '-'}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
