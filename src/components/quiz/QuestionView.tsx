@@ -4,12 +4,13 @@ import { Question } from "@/types/quiz";
 import QuizOption from "../QuizOption";
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from "../ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Palette } from "lucide-react";
 
 interface QuestionViewProps {
   question: Question;
@@ -36,8 +37,6 @@ const QuestionView = ({
   const [selectedColor, setSelectedColor] = useState(highlightColors[0]);
   const contentRef = useRef<HTMLDivElement>(null);
   const [selection, setSelection] = useState<Selection | null>(null);
-  const [popoverPosition, setPopoverPosition] = useState({ x: 0, y: 0 });
-  const [showColorPicker, setShowColorPicker] = useState(false);
 
   const renderMedia = (media?: Question['media']) => {
     if (!media) return null;
@@ -59,51 +58,36 @@ const QuestionView = ({
   useEffect(() => {
     const handleMouseUp = () => {
       const selection = window.getSelection();
-      if (selection && !selection.isCollapsed && contentRef.current) {
-        const range = selection.getRangeAt(0);
-        const { startContainer, endContainer } = range;
-        
-        // Check if selection is within our content area
-        if (contentRef.current.contains(startContainer) && contentRef.current.contains(endContainer)) {
-          setSelection(selection);
-          const rect = range.getBoundingClientRect();
-          setPopoverPosition({
-            x: rect.x + rect.width / 2,
-            y: rect.y - 10
-          });
-          setShowColorPicker(true);
-        }
+      if (selection && !selection.isCollapsed) {
+        handleHighlight(selection);
       }
     };
 
     document.addEventListener('mouseup', handleMouseUp);
     return () => document.removeEventListener('mouseup', handleMouseUp);
-  }, []);
+  }, [selectedColor]);
 
-  const handleHighlight = () => {
-    if (selection && !selection.isCollapsed) {
-      const range = selection.getRangeAt(0);
-      const span = document.createElement('span');
-      span.className = cn('cursor-pointer', selectedColor.class);
-      
-      try {
-        range.surroundContents(span);
-        span.addEventListener('click', () => {
-          const parent = span.parentNode;
-          if (parent) {
-            while (span.firstChild) {
-              parent.insertBefore(span.firstChild, span);
-            }
-            parent.removeChild(span);
+  const handleHighlight = (selection: Selection) => {
+    const range = selection.getRangeAt(0);
+    const span = document.createElement('span');
+    span.className = cn('cursor-pointer', selectedColor.class);
+    
+    try {
+      range.surroundContents(span);
+      span.addEventListener('click', () => {
+        const parent = span.parentNode;
+        if (parent) {
+          while (span.firstChild) {
+            parent.insertBefore(span.firstChild, span);
           }
-        });
-      } catch (error) {
-        console.error('Error applying highlight:', error);
-      }
-      
-      selection.removeAllRanges();
-      setShowColorPicker(false);
+          parent.removeChild(span);
+        }
+      });
+    } catch (error) {
+      console.error('Error applying highlight:', error);
     }
+    
+    selection.removeAllRanges();
   };
 
   return (
@@ -114,6 +98,36 @@ const QuestionView = ({
       exit={{ opacity: 0, x: -20 }}
       className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg dark:text-gray-100"
     >
+      <div className="flex justify-end gap-2 mb-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn("bg-background border relative", selectedColor.class)}
+              aria-label="Select highlight color"
+            >
+              <Palette className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <div className="flex gap-2 p-2">
+              {highlightColors.map((color) => (
+                <button
+                  key={color.name}
+                  onClick={() => setSelectedColor(color)}
+                  className={cn(
+                    'w-6 h-6 rounded-full border border-gray-200',
+                    color.class,
+                    selectedColor.name === color.name && 'ring-2 ring-primary'
+                  )}
+                />
+              ))}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       {question.media?.showWith === 'question' && renderMedia(question.media)}
       
       <div ref={contentRef}>
@@ -138,37 +152,6 @@ const QuestionView = ({
       </div>
 
       {isAnswered && question.media?.showWith === 'answer' && renderMedia(question.media)}
-
-      <Popover open={showColorPicker} onOpenChange={setShowColorPicker}>
-        <PopoverTrigger asChild>
-          <div 
-            style={{ 
-              position: 'fixed', 
-              left: `${popoverPosition.x}px`, 
-              top: `${popoverPosition.y}px`,
-              visibility: showColorPicker ? 'visible' : 'hidden',
-              transform: 'translateX(-50%)'
-            }} 
-          />
-        </PopoverTrigger>
-        <PopoverContent className="w-fit p-2">
-          <div className="flex gap-2">
-            {highlightColors.map((color) => (
-              <button
-                key={color.name}
-                onClick={() => {
-                  setSelectedColor(color);
-                  handleHighlight();
-                }}
-                className={cn(
-                  'w-6 h-6 rounded-full border border-gray-200',
-                  color.class
-                )}
-              />
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
     </motion.div>
   );
 };

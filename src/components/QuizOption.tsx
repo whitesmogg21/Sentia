@@ -49,10 +49,12 @@ const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOption
       >
         {selected && <Check className="w-3 h-3 text-white" />}
       </motion.div>
-      <span className={cn(
-        "text-secondary-foreground",
-        isStrikedOut && "line-through text-gray-500 dark:text-gray-400"
-      )}>
+      <span 
+        className={cn(
+          "text-secondary-foreground flex-1",
+          isStrikedOut && "line-through text-gray-500 dark:text-gray-400"
+        )}
+      >
         {option}
       </span>
     </div>
