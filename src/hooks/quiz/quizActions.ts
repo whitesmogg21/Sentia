@@ -1,23 +1,7 @@
-
 import { Question, QuizHistory } from "@/types/quiz";
 import { QuizState } from "./types";
 import { qbanks } from "@/data/questions";
-
-export const generateQuestionAttempts = (
-  questions: Question[],
-  answers: (number | null)[]
-): QuizHistory['questionAttempts'] => {
-  return questions.map((question, index) => ({
-    questionId: question.id,
-    selectedAnswer: answers[index],
-    isCorrect: answers[index] === question.correctAnswer,
-    isFlagged: question.isFlagged || false
-  }));
-};
-
-export const calculateScore = (questionAttempts: QuizHistory['questionAttempts']): number => {
-  return questionAttempts.filter(attempt => attempt.isCorrect).length;
-};
+import { toast } from "@/components/ui/use-toast";
 
 export const initializeQuiz = (
   qbankId: string,
@@ -26,69 +10,85 @@ export const initializeQuiz = (
   withTimer: boolean,
   timeLimit: number
 ): Partial<QuizState> | null => {
-  const selectedQBank = qbanks.find(qb => qb.id === qbankId);
-  if (!selectedQBank) return null;
+  const selectedQBank = qbanks.find((qb) => qb.id === qbankId);
+  if (!selectedQBank) {
+    toast({
+      title: "Error",
+      description: "Selected question bank not found",
+      variant: "destructive",
+    });
+    return null;
+  }
 
-  // Shuffle and slice questions
+  if (questionCount > selectedQBank.questions.length) {
+    toast({
+      title: "Error",
+      description: "Not enough questions in the selected question bank",
+      variant: "destructive",
+    });
+    return null;
+  }
+
   const shuffledQuestions = [...selectedQBank.questions]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, questionCount);
+  .sort(() => Math.random() - 0.5)
+  .slice(0, questionCount)
+  .map(q => ({
+    ...q,
+    attempts: []  // Reset attempts for new quiz
+  }));
 
   return {
-    questions: shuffledQuestions,
-    inQuiz: true,
+    currentQuestions: shuffledQuestions,
     currentQuestionIndex: 0,
     score: 0,
     showScore: false,
     selectedAnswer: null,
     isAnswered: false,
     tutorMode: isTutorMode,
-    showExplanation: false,
-    isPaused: false,
     timerEnabled: withTimer,
     timePerQuestion: timeLimit,
-    initialTimeLimit: timeLimit
+    initialTimeLimit: timeLimit,
+    inQuiz: true,
+    isPaused: false,
+  };
+};
+
+export const createQuizHistory = (
+  state: QuizState,
+  optionIndex: number | null
+): QuizHistory => {
+  return {
+    id: Date.now().toString(),
+    date: new Date().toLocaleDateString(),
+    score: state.score,
+    totalQuestions: state.currentQuestions.length,
+    qbankId: state.currentQuestions[0].qbankId,
+    questionAttempts: state.currentQuestions.map((q, index) => ({
+      questionId: q.id,
+      selectedAnswer: index === state.currentQuestionIndex ? optionIndex : q.attempts?.[0]?.selectedAnswer ?? null,
+      isCorrect: index === state.currentQuestionIndex ? optionIndex === q.correctAnswer : q.attempts?.[0]?.isCorrect ?? false,
+    }))
   };
 };
 
 export const handleQuestionAttempt = (
   questions: Question[],
   currentIndex: number,
-  selectedAnswer: number | null,
+  optionIndex: number | null,
   isTimeout: boolean = false
 ): Question[] => {
-  const updatedQuestions = [...questions];
-  const currentQuestion = updatedQuestions[currentIndex];
+  const newQuestions = [...questions];
+  const question = newQuestions[currentIndex];
+  const isCorrect = !isTimeout && optionIndex === question.correctAnswer;
 
-  if (currentQuestion) {
-    currentQuestion.attempts = [
-      ...(currentQuestion.attempts || []),
-      {
-        selectedAnswer,
-        isCorrect: selectedAnswer === currentQuestion.correctAnswer,
-        date: new Date().toISOString()
-      }
-    ];
-  }
-
-  return updatedQuestions;
-};
-
-export const createQuizHistory = (state: QuizState, finalAnswer: number | null): QuizHistory => {
-  const answers = state.questions.map((_, index) => {
-    if (index === state.currentQuestionIndex) {
-      return finalAnswer;
+  question.attempts = [
+    ...(question.attempts || []),
+    {
+      date: new Date().toISOString(),
+      selectedAnswer: optionIndex,
+      isCorrect
     }
-    const question = state.questions[index];
-    return question.attempts?.[question.attempts.length - 1]?.selectedAnswer ?? null;
-  });
+  ];
 
-  return {
-    id: `quiz-${Date.now()}`, // Generate a unique ID
-    date: new Date().toISOString(),
-    score: state.score,
-    totalQuestions: state.questions.length,
-    qbankId: state.questions[0]?.qbankId || '',
-    questionAttempts: generateQuestionAttempts(state.questions, answers)
-  };
+  return newQuestions;
 };

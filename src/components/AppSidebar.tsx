@@ -1,9 +1,5 @@
-
-import { BarChart, Clock, Home, Library, ChevronLeft, ChevronRight } from "lucide-react";
+import { BarChart, Clock, Home, Library } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { Button } from "./ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -35,54 +31,28 @@ const items = [
 ];
 
 export function AppSidebar() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
   return (
-    <div className="fixed left-0 top-0 h-full">
-      <div className={cn(
-        "w-[160px] transition-transform duration-300",
-        sidebarCollapsed && "-translate-x-[160px]"
-      )}>
-        <Sidebar>
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Quiz App</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild>
-                        <Link to={item.url}>
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                  <QBankDropdown />
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
-      </div>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        className={cn(
-          "absolute top-4 transition-all duration-300 bg-background border",
-          sidebarCollapsed ? "left-4" : "left-[150px]"
-        )}
-        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        aria-label="Toggle sidebar"
-      >
-        {sidebarCollapsed ? (
-          <ChevronRight className="h-4 w-4" />
-        ) : (
-          <ChevronLeft className="h-4 w-4" />
-        )}
-      </Button>
-    </div>
+    <Sidebar>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Quiz App</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <Link to={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+              <QBankDropdown />
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
   );
 }

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { QuizHistory } from "../types/quiz";
 import { qbanks } from "../data/questions";
@@ -22,7 +21,7 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     selectedAnswer,
     isAnswered,
     inQuiz,
-    questions,
+    currentQuestions,
     showExplanation,
     isPaused,
     timerEnabled,
@@ -67,9 +66,9 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     return (
       <ScoreCard 
         score={score} 
-        total={questions.length} 
-        questions={questions}
-        attempts={questions.map((question) => ({
+        total={currentQuestions.length} 
+        questions={currentQuestions}
+        attempts={currentQuestions.map((question) => ({
           questionId: question.id,
           selectedAnswer: question.attempts?.[question.attempts.length - 1]?.selectedAnswer ?? null,
           isCorrect: question.attempts?.[question.attempts.length - 1]?.selectedAnswer === question.correctAnswer,
@@ -82,9 +81,9 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
 
   return (
     <QuizContent
-      currentQuestion={questions[currentQuestionIndex]}
+      currentQuestion={currentQuestions[currentQuestionIndex]}
       currentQuestionIndex={currentQuestionIndex}
-      totalQuestions={questions.length}
+      totalQuestions={currentQuestions.length}
       selectedAnswer={selectedAnswer}
       isAnswered={isAnswered}
       isPaused={isPaused}

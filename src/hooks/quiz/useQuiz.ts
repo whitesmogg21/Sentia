@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Question } from "@/types/quiz";
 import { UseQuizProps, QuizState } from "./types";
@@ -13,7 +12,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     selectedAnswer: null,
     isAnswered: false,
     inQuiz: false,
-    questions: [],
+    currentQuestions: [],
     tutorMode: false,
     showExplanation: false,
     isPaused: false,
@@ -22,7 +21,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     initialTimeLimit: 60,
   });
 
-  const getCurrentQuestion = () => state.questions[state.currentQuestionIndex];
+  const getCurrentQuestion = () => state.currentQuestions[state.currentQuestionIndex];
 
   const handleStartQuiz = (qbankId: string, questionCount: number, isTutorMode: boolean, withTimer: boolean, timeLimit: number) => {
     const initialState = initializeQuiz(qbankId, questionCount, isTutorMode, withTimer, timeLimit);
@@ -38,7 +37,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
 
     setState(prev => ({
       ...prev,
-      questions: handleQuestionAttempt(prev.questions, prev.currentQuestionIndex, null, true)
+      currentQuestions: handleQuestionAttempt(prev.currentQuestions, prev.currentQuestionIndex, null, true)
     }));
 
     proceedToNextQuestion(null);
@@ -54,7 +53,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
 
     setState(prev => ({
       ...prev,
-      questions: handleQuestionAttempt(prev.questions, prev.currentQuestionIndex, optionIndex),
+      currentQuestions: handleQuestionAttempt(prev.currentQuestions, prev.currentQuestionIndex, optionIndex),
       selectedAnswer: optionIndex,
       isAnswered: true,
       score: isCorrect ? prev.score + 1 : prev.score,
@@ -67,7 +66,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   };
 
   const proceedToNextQuestion = (optionIndex: number | null) => {
-    if (state.currentQuestionIndex === state.questions.length - 1) {
+    if (state.currentQuestionIndex === state.currentQuestions.length - 1) {
       const quizHistory = createQuizHistory(state, optionIndex);
       onQuizComplete?.(quizHistory);
       setState(prev => ({ ...prev, showScore: true }));
@@ -95,7 +94,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     setState(prev => ({ 
       ...prev, 
       showScore: true,
-      inQuiz: true
+      inQuiz: true  // Add this line to ensure we stay in quiz mode
     }));
   };
 
@@ -111,7 +110,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
       selectedAnswer: null,
       isAnswered: false,
       inQuiz: false,
-      questions: [],
+      currentQuestions: [],
       tutorMode: false,
       showExplanation: false,
       isPaused: false,
@@ -131,7 +130,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
         isAnswered: false,
         showExplanation: false
       }));
-    } else if (direction === 'next' && state.currentQuestionIndex < state.questions.length - 1) {
+    } else if (direction === 'next' && state.currentQuestionIndex < state.currentQuestions.length - 1) {
       proceedToNextQuestion(state.selectedAnswer);
     }
   };
@@ -141,7 +140,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     if (!currentQuestion) return;
 
     setState(prev => {
-      const newQuestions = [...prev.questions];
+      const newQuestions = [...prev.currentQuestions];
       const question = newQuestions[prev.currentQuestionIndex];
       question.isFlagged = !question.isFlagged;
 
@@ -154,7 +153,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
         }
       }
 
-      return { ...prev, questions: newQuestions };
+      return { ...prev, currentQuestions: newQuestions };
     });
   };
 
@@ -165,7 +164,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     selectedAnswer: state.selectedAnswer,
     isAnswered: state.isAnswered,
     inQuiz: state.inQuiz,
-    questions: state.questions,
+    currentQuestions: state.currentQuestions,
     tutorMode: state.tutorMode,
     showExplanation: state.showExplanation,
     isPaused: state.isPaused,
