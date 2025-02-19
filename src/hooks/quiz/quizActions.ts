@@ -1,4 +1,6 @@
-import { Question, QuizHistory } from "@/types/quiz";
+
+import { Question, QuizHistory, QuizState } from "@/types/quiz";
+import { qbanks } from "@/data/questions";
 
 export const generateQuestionAttempts = (
   questions: Question[],
@@ -8,10 +10,86 @@ export const generateQuestionAttempts = (
     questionId: question.id,
     selectedAnswer: answers[index],
     isCorrect: answers[index] === question.correctAnswer,
-    isFlagged: question.isFlagged || false // Added isFlagged property
+    isFlagged: question.isFlagged || false
   }));
 };
 
 export const calculateScore = (questionAttempts: QuizHistory['questionAttempts']): number => {
   return questionAttempts.filter(attempt => attempt.isCorrect).length;
+};
+
+export const initializeQuiz = (
+  qbankId: string,
+  questionCount: number,
+  isTutorMode: boolean,
+  withTimer: boolean,
+  timeLimit: number
+): Partial<QuizState> | null => {
+  const selectedQBank = qbanks.find(qb => qb.id === qbankId);
+  if (!selectedQBank) return null;
+
+  // Shuffle and slice questions
+  const shuffledQuestions = [...selectedQBank.questions]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, questionCount);
+
+  return {
+    currentQuestions: shuffledQuestions,
+    inQuiz: true,
+    currentQuestionIndex: 0,
+    score: 0,
+    showScore: false,
+    selectedAnswer: null,
+    isAnswered: false,
+    tutorMode: isTutorMode,
+    showExplanation: false,
+    isPaused: false,
+    timerEnabled: withTimer,
+    timePerQuestion: timeLimit,
+    initialTimeLimit: timeLimit
+  };
+};
+
+export const handleQuestionAttempt = (
+  questions: Question[],
+  currentIndex: number,
+  selectedAnswer: number | null,
+  isTimeout: boolean = false
+): Question[] => {
+  const updatedQuestions = [...questions];
+  const currentQuestion = updatedQuestions[currentIndex];
+
+  if (currentQuestion) {
+    currentQuestion.attempts = [
+      ...(currentQuestion.attempts || []),
+      {
+        selectedAnswer,
+        isCorrect: selectedAnswer === currentQuestion.correctAnswer,
+        date: new Date().toISOString()
+      }
+    ];
+  }
+
+  return updatedQuestions;
+};
+
+export const createQuizHistory = (state: QuizState, finalAnswer: number | null): QuizHistory => {
+  const answers = state.currentQuestions.map((_, index) => {
+    if (index === state.currentQuestionIndex) {
+      return finalAnswer;
+    }
+    const question = state.currentQuestions[index];
+    return question.attempts?.[question.attempts.length - 1]?.selectedAnswer ?? null;
+  });
+
+  return {
+    date: new Date().toISOString(),
+    score: state.score,
+    totalQuestions: state.currentQuestions.length,
+    qbankId: state.currentQuestions[0]?.qbankId || '',
+    questionAttempts: generateQuestionAttempts(state.currentQuestions, answers),
+    tutorMode: state.tutorMode,
+    timerEnabled: state.timerEnabled,
+    timeLimit: state.initialTimeLimit
+  };
 };
