@@ -51,7 +51,8 @@ const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOption
       </motion.div>
       <span 
         className={cn(
-          "text-secondary-foreground flex-1",
+          "flex-1",
+          "text-card-foreground dark:text-card-foreground", // Using card-foreground to match question color
           isStrikedOut && "line-through text-gray-500 dark:text-gray-400"
         )}
       >
