@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { QBank, QuizHistory } from "@/types/quiz";
+import { QBank, QuestionFilter } from "@/types/quiz";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
@@ -9,11 +9,10 @@ import { cn } from "@/lib/utils";
 
 interface SelectQBankProps {
   qbanks: QBank[];
-  quizHistory: QuizHistory[];
-  onStartQuiz: (qbankId: string) => void;
+  onSelect: (qbank: QBank) => void;
 }
 
-const SelectQBank = ({ qbanks, quizHistory, onStartQuiz }: SelectQBankProps) => {
+const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
   const navigate = useNavigate();
   const [selectedQBank, setSelectedQBank] = useState<QBank | null>(null);
   const [filters, setFilters] = useState<QuestionFilter>({
@@ -25,26 +24,27 @@ const SelectQBank = ({ qbanks, quizHistory, onStartQuiz }: SelectQBankProps) => 
     omitted: false,
   });
 
+  // Function to update the filters based on the latest quiz results
   const updateFiltersAfterQuiz = (quizResults: { questionId: number; selectedAnswer: number | null; isCorrect: boolean }[]) => {
     setFilters(prevFilters => {
       const updatedFilters = { ...prevFilters };
 
       quizResults.forEach(({ questionId, selectedAnswer, isCorrect }) => {
-        updatedFilters.unused = false;
+        updatedFilters.unused = false; // Mark all questions as used
         updatedFilters.used = true;
 
         if (selectedAnswer === null) {
-          updatedFilters.omitted = true;
+          updatedFilters.omitted = true; // Mark as omitted if skipped
         } else {
           updatedFilters.omitted = false;
         }
 
         if (isCorrect) {
           updatedFilters.correct = true;
-          updatedFilters.incorrect = false;
+          updatedFilters.incorrect = false; // Remove from incorrect if corrected
         } else {
           updatedFilters.correct = false;
-          updatedFilters.incorrect = true;
+          updatedFilters.incorrect = true; // Mark as incorrect
         }
       });
 
@@ -52,6 +52,7 @@ const SelectQBank = ({ qbanks, quizHistory, onStartQuiz }: SelectQBankProps) => 
     });
   };
 
+  // Calculate metrics for the filter bar
   const metrics = useMemo(() => {
     const seenQuestions = new Set<number>();
     const correctQuestions = new Set<number>();
@@ -71,7 +72,7 @@ const SelectQBank = ({ qbanks, quizHistory, onStartQuiz }: SelectQBankProps) => 
             omittedQuestions.add(question.id);
           } else if (lastAttempt.isCorrect) {
             correctQuestions.add(question.id);
-            incorrectQuestions.delete(question.id);
+            incorrectQuestions.delete(question.id); // ✅ Move out of Incorrect if later answered correctly
           } else {
             incorrectQuestions.add(question.id);
           }
@@ -95,8 +96,9 @@ const SelectQBank = ({ qbanks, quizHistory, onStartQuiz }: SelectQBankProps) => 
     };
   }, [qbanks, filters]);
 
+  // Filter QBanks based on selected filter
   const filteredQBanks = useMemo(() => {
-    if (!Object.values(filters).some(v => v)) return qbanks;
+    if (!Object.values(filters).some(v => v)) return qbanks; // Show all if no filter is active
 
     return qbanks.filter(qbank =>
       qbank.questions.some(question => {
@@ -120,7 +122,7 @@ const SelectQBank = ({ qbanks, quizHistory, onStartQuiz }: SelectQBankProps) => 
 
   const handleConfirmSelection = () => {
     if (selectedQBank) {
-      onStartQuiz(selectedQBank.id);
+      onSelect(selectedQBank);
       localStorage.setItem("selectedQBank", JSON.stringify(selectedQBank));
       navigate("/");
       
@@ -131,6 +133,7 @@ const SelectQBank = ({ qbanks, quizHistory, onStartQuiz }: SelectQBankProps) => 
     }
   };
 
+  // Update the filters based on actual question attempts
   const updateFilters = (qbank: QBank) => {
     const hasUsed = qbank.questions.some(q => q.attempts?.length > 0);
     const hasUnused = qbank.questions.some(q => !q.attempts?.length);

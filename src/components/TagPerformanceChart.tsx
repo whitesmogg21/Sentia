@@ -4,7 +4,6 @@ import {
   RadarChart,
   PolarGrid,
   PolarAngleAxis,
-  PolarRadiusAxis,
   Radar,
   ResponsiveContainer,
 } from 'recharts';
@@ -65,26 +64,29 @@ export const TagPerformanceChart = ({ qbanks, quizHistory }: TagPerformanceChart
 
   if (tagPerformance.length === 0) {
     return (
-      <Card className="p-4 flex flex-col items-center">
-        <h3 className="text-sm font-medium mb-2">Performance by Tag</h3>
+      <Card className="w-full p-4">
+        <h3 className="text-sm font-medium">Tag Performance</h3>
         <p className="text-sm text-muted-foreground">No tag data available</p>
       </Card>
     );
   }
 
   return (
-    <Card className="p-4 flex flex-col items-center">
-      <h3 className="text-sm font-medium mb-2">Performance by Tag</h3>
-      <div className="w-[100px] h-[100px]">
+    <Card className="w-full p-4">
+      <h3 className="text-sm font-medium">Tag Performance</h3>
+      <div className="aspect-square w-full max-w-[120px] mx-auto mt-2">
         <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={tagPerformance} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+          <RadarChart 
+            data={tagPerformance} 
+            margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
+          >
             <PolarGrid 
               stroke="hsl(var(--muted-foreground))" 
               strokeOpacity={0.2}
             />
             <PolarAngleAxis
               dataKey="tag"
-              tick={({ x, y, payload, index }) => (
+              tick={({ x, y, payload }) => (
                 <g transform={`translate(${x},${y})`}>
                   <HoverCard>
                     <HoverCardTrigger asChild>
@@ -99,8 +101,8 @@ export const TagPerformanceChart = ({ qbanks, quizHistory }: TagPerformanceChart
                     </HoverCardTrigger>
                     <HoverCardContent 
                       side="right" 
-                      align="start" 
-                      className="w-[150px] bg-card"
+                      align="start"
+                      className="w-[150px]"
                     >
                       <p className="text-sm font-medium">{payload.value}</p>
                     </HoverCardContent>
@@ -110,7 +112,6 @@ export const TagPerformanceChart = ({ qbanks, quizHistory }: TagPerformanceChart
               tickFormatter={() => ''}
             />
             <Radar
-              name="Score"
               dataKey="score"
               stroke="hsl(var(--primary))"
               fill="hsl(var(--primary))"
