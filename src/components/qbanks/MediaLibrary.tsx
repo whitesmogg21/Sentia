@@ -1,203 +1,237 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash, Image, Video, Music } from "lucide-react";
+import { Plus, Trash, Edit2, Search } from "lucide-react";
 import { QBank } from "@/types/quiz";
 import { toast } from "@/components/ui/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface MediaLibraryProps {
   qbanks: QBank[];
 }
 
 interface MediaItem {
-  type: 'image' | 'audio' | 'video';
+  id: string;
+  name: string;
   url: string;
+  tags: string[];
 }
 
 const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
-  const [selectedQBank, setSelectedQBank] = useState<QBank | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
-  const [newMedia, setNewMedia] = useState<MediaItem>({
-    type: 'image',
-    url: ''
-  });
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
+  const [newName, setNewName] = useState("");
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  const getMediaIcon = (type: string) => {
-    switch (type) {
-      case 'image':
-        return <Image className="w-4 h-4" />;
-      case 'video':
-        return <Video className="w-4 h-4" />;
-      case 'audio':
-        return <Music className="w-4 h-4" />;
-      default:
-        return null;
-    }
+  useEffect(() => {
+    // Extract images mentioned in questions and their tags
+    const extractedMedia = new Map<string, Set<string>>();
+    
+    qbanks.forEach(qbank => {
+      qbank.questions.forEach(question => {
+        const matches = question.question.match(/\/([^\/]+\.(?:png|jpg|jpeg|gif))/g);
+        if (matches) {
+          matches.forEach(match => {
+            const imageName = match.slice(1); // Remove leading /
+            if (!extractedMedia.has(imageName)) {
+              extractedMedia.set(imageName, new Set());
+            }
+            question.tags.forEach(tag => {
+              extractedMedia.get(imageName)?.add(tag);
+            });
+          });
+        }
+      });
+    });
+
+    // Update media items with extracted tags
+    setMediaItems(prev => {
+      return prev.map(item => {
+        const tags = extractedMedia.get(item.name);
+        return {
+          ...item,
+          tags: tags ? Array.from(tags) : item.tags
+        };
+      });
+    });
+  }, [qbanks]);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    const newMediaItems = files.map(file => ({
+      id: `${Date.now()}-${file.name}`,
+      name: file.name,
+      url: URL.createObjectURL(file),
+      tags: []
+    }));
+
+    setMediaItems(prev => [...prev, ...newMediaItems]);
+    toast({
+      title: "Success",
+      description: `${files.length} files uploaded successfully`
+    });
   };
 
-  const handleSubmit = () => {
-    if (!selectedQBank) {
-      toast({
-        title: "Error",
-        description: "Please select a question bank",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!newMedia.url) {
-      toast({
-        title: "Error",
-        description: "Please enter a media URL",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Store media in the question bank
-    // This is a simplified version - you might want to implement a more robust media management system
-    selectedQBank.media = selectedQBank.media || [];
-    selectedQBank.media.push(newMedia);
-    
-    localStorage.setItem('qbanks', JSON.stringify(qbanks));
-    
-    setIsOpen(false);
-    setNewMedia({
-      type: 'image',
-      url: ''
+  const handleDelete = (id: string) => {
+    setMediaItems(prev => prev.filter(item => item.id !== id));
+    toast({
+      title: "Success",
+      description: "Media deleted successfully"
     });
+  };
+
+  const handleEdit = (item: MediaItem) => {
+    setEditingItem(item);
+    setNewName(item.name);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingItem) return;
+
+    setMediaItems(prev =>
+      prev.map(item =>
+        item.id === editingItem.id
+          ? { ...item, name: newName }
+          : item
+      )
+    );
+
+    setIsEditDialogOpen(false);
+    setEditingItem(null);
+    setNewName("");
 
     toast({
       title: "Success",
-      description: "Media added successfully"
+      description: "Media name updated successfully"
     });
   };
 
-  const handleDeleteMedia = (index: number) => {
-    if (selectedQBank && selectedQBank.media) {
-      selectedQBank.media.splice(index, 1);
-      localStorage.setItem('qbanks', JSON.stringify(qbanks));
-      toast({
-        title: "Success",
-        description: "Media deleted successfully"
-      });
-    }
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const url = URL.createObjectURL(file);
-    setNewMedia(prev => ({
-      ...prev,
-      url
-    }));
-  };
+  const filteredMedia = mediaItems.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Media Library</h1>
         <div className="flex gap-4">
-          <Select value={selectedQBank?.id} onValueChange={(value) => setSelectedQBank(qbanks.find(q => q.id === value) || null)}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select Question Bank" />
-            </SelectTrigger>
-            <SelectContent>
-              {qbanks.map((qbank) => (
-                <SelectItem key={qbank.id} value={qbank.id}>
-                  {qbank.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button disabled={!selectedQBank}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Media
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Add New Media</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Media Type</Label>
-                  <Select value={newMedia.type} onValueChange={(value: 'image' | 'audio' | 'video') => 
-                    setNewMedia(prev => ({ ...prev, type: value }))
-                  }>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select media type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="image">Image</SelectItem>
-                      <SelectItem value="audio">Audio</SelectItem>
-                      <SelectItem value="video">Video</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Upload Media</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="file"
-                      accept={`${newMedia.type}/*`}
-                      onChange={handleFileUpload}
-                      className="flex-1"
-                    />
-                  </div>
-                  {newMedia.url && newMedia.type === 'image' && (
-                    <img src={newMedia.url} alt="Preview" className="max-h-40 object-contain" />
-                  )}
-                </div>
-
-                <Button onClick={handleSubmit} className="w-full">
-                  Add Media
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or tags..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+          <Button asChild>
+            <label>
+              <Plus className="w-4 h-4 mr-2" />
+              Upload Media
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </label>
+          </Button>
         </div>
       </div>
 
-      {selectedQBank && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {selectedQBank.media?.map((media, index) => (
-            <div key={index} className="p-4 border rounded-lg">
-              <div className="flex justify-between items-start mb-2">
-                <div className="flex items-center gap-2">
-                  {getMediaIcon(media.type)}
-                  <span className="capitalize">{media.type}</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDeleteMedia(index)}
-                >
-                  <Trash className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="break-all">
-                <a href={media.url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                  {media.url}
-                </a>
-              </div>
-              {media.type === 'image' && (
-                <img src={media.url} alt="Preview" className="mt-2 max-w-full h-auto rounded" />
-              )}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Preview</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Tags</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredMedia.map((item) => (
+              <TableRow key={item.id}>
+                <TableCell>
+                  <img
+                    src={item.url}
+                    alt={item.name}
+                    className="w-16 h-16 object-cover rounded"
+                  />
+                </TableCell>
+                <TableCell>{item.name}</TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {item.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-sm"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(item)}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(item.id)}
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Media Name</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Enter new name"
+              />
             </div>
-          ))}
-        </div>
-      )}
+            <Button onClick={handleSaveEdit}>Save Changes</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
 
-export default MediaLibrary; 
+export default MediaLibrary;

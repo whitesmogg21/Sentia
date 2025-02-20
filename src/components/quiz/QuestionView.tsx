@@ -20,29 +20,41 @@ const QuestionView = ({
 }: QuestionViewProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const renderMedia = (media?: Question['media']) => {
-    if (!media) return null;
-
-    const className = "max-w-full h-auto mb-4 rounded-lg";
-    
-    switch (media.type) {
-      case 'image':
-        return <img src={media.url} alt="Question media" className={className} />;
-      case 'video':
-        return <video src={media.url} controls className={className} />;
-      case 'audio':
-        return <audio src={media.url} controls className="w-full mb-4" />;
-      default:
+  const renderContent = (text: string) => {
+    const parts = text.split('/');
+    return parts.map((part, index) => {
+      if (index === 0 && !text.startsWith('/')) {
+        return <p key={index} className="mb-4">{part}</p>;
+      }
+      
+      if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
+        // This is an image filename
+        const mediaItem = question.qbank?.media?.find(m => m.name === part);
+        if (mediaItem) {
+          return (
+            <img
+              key={index}
+              src={mediaItem.url}
+              alt={part}
+              className="max-w-full h-auto mb-4 rounded-lg"
+            />
+          );
+        }
         return null;
-    }
+      }
+      
+      if (part) {
+        return <p key={index} className="mb-4">{part}</p>;
+      }
+      
+      return null;
+    });
   };
 
   return (
     <div className="dark:text-gray-100">
-      {question.media?.showWith === 'question' && renderMedia(question.media)}
-      
       <div ref={contentRef}>
-        <h2 className="text-2xl font-bold mb-6">{question.question}</h2>
+        {renderContent(question.question)}
       </div>
       
       <div className="space-y-4">
@@ -61,8 +73,6 @@ const QuestionView = ({
           />
         ))}
       </div>
-
-      {isAnswered && question.media?.showWith === 'answer' && renderMedia(question.media)}
     </div>
   );
 };
