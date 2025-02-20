@@ -87,6 +87,17 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
     }
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    setNewMedia(prev => ({
+      ...prev,
+      url
+    }));
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -111,19 +122,18 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
                 Add Media
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Add New Media</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Media Type</Label>
-                  <Select
-                    value={newMedia.type}
-                    onValueChange={(value: 'image' | 'audio' | 'video') => setNewMedia(prev => ({ ...prev, type: value }))}
-                  >
+                  <Select value={newMedia.type} onValueChange={(value: 'image' | 'audio' | 'video') => 
+                    setNewMedia(prev => ({ ...prev, type: value }))
+                  }>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select media type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="image">Image</SelectItem>
@@ -134,15 +144,23 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Media URL</Label>
-                  <Input
-                    placeholder="Enter media URL"
-                    value={newMedia.url}
-                    onChange={(e) => setNewMedia(prev => ({ ...prev, url: e.target.value }))}
-                  />
+                  <Label>Upload Media</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="file"
+                      accept={`${newMedia.type}/*`}
+                      onChange={handleFileUpload}
+                      className="flex-1"
+                    />
+                  </div>
+                  {newMedia.url && newMedia.type === 'image' && (
+                    <img src={newMedia.url} alt="Preview" className="max-h-40 object-contain" />
+                  )}
                 </div>
 
-                <Button onClick={handleSubmit}>Add Media</Button>
+                <Button onClick={handleSubmit} className="w-full">
+                  Add Media
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
