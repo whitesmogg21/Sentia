@@ -1,14 +1,20 @@
-
 import { useMemo } from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend, ScatterChart, Scatter } from "recharts";
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  BarChart, Bar, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, 
+  Legend, ScatterChart, Scatter, AreaChart, Area, ComposedChart, Cell, Pie, PieChart 
+} from "recharts";
 import { QuizHistory } from "../types/quiz";
 import CircularProgress from "../components/CircularProgress";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CalendarHeatmap } from "@/components/charts/CalendarHeatmap";
 
 interface PerformanceProps {
   quizHistory: QuizHistory[];
 }
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
 const Performance = ({ quizHistory }: PerformanceProps) => {
   // Transform quiz history data to percentage scores over time
@@ -43,17 +49,19 @@ const Performance = ({ quizHistory }: PerformanceProps) => {
       tag,
       accuracy: (stats.correct / stats.total) * 100,
       questionsAttempted: stats.total,
+      correct: stats.correct,
+      incorrect: stats.total - stats.correct,
     }));
   }, [quizHistory]);
 
   // Calculate time-based performance trends
   const timeBasedPerformance = useMemo(() => {
-    const performanceByMonth: { [key: string]: { total: number; correct: number } } = {};
+    const performanceByMonth: { [key: string]: { total: number; correct: number; avgTimeSpent: number } } = {};
     
     quizHistory.forEach(quiz => {
       const monthYear = new Date(quiz.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
       if (!performanceByMonth[monthYear]) {
-        performanceByMonth[monthYear] = { total: 0, correct: 0 };
+        performanceByMonth[monthYear] = { total: 0, correct: 0, avgTimeSpent: 0 };
       }
       performanceByMonth[monthYear].total += quiz.questionAttempts.length;
       performanceByMonth[monthYear].correct += quiz.questionAttempts.filter(a => a.isCorrect).length;
@@ -63,42 +71,43 @@ const Performance = ({ quizHistory }: PerformanceProps) => {
       month,
       accuracy: (stats.correct / stats.total) * 100,
       questionsAttempted: stats.total,
+      avgTimeSpent: stats.avgTimeSpent,
     }));
   }, [quizHistory]);
 
-  // Calculate overall accuracy
-  const overallAccuracy = useMemo(() => {
-    const totalCorrect = quizHistory.reduce((acc, quiz) => 
-      acc + quiz.questionAttempts.filter(attempt => attempt.isCorrect).length, 0);
-    const totalAttempts = quizHistory.reduce((acc, quiz) => 
-      acc + quiz.questionAttempts.filter(attempt => attempt.selectedAnswer !== null).length, 0);
+  // Calculate overall statistics
+  const overallStats = useMemo(() => {
+    const total = quizHistory.reduce((acc, quiz) => acc + quiz.questionAttempts.length, 0);
+    const correct = quizHistory.reduce((acc, quiz) => 
+      acc + quiz.questionAttempts.filter(a => a.isCorrect).length, 0);
+    const skipped = quizHistory.reduce((acc, quiz) => 
+      acc + quiz.questionAttempts.filter(a => a.selectedAnswer === null).length, 0);
     
-    return totalAttempts > 0 ? (totalCorrect / totalAttempts) * 100 : 0;
+    return [
+      { name: 'Correct', value: correct },
+      { name: 'Incorrect', value: total - correct - skipped },
+      { name: 'Skipped', value: skipped },
+    ];
   }, [quizHistory]);
-
-  // Calculate weak areas (tags with < 60% accuracy)
-  const weakAreas = useMemo(() => {
-    return tagPerformance.filter(tag => tag.accuracy < 60)
-      .sort((a, b) => a.accuracy - b.accuracy);
-  }, [tagPerformance]);
 
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Performance Analytics</h1>
       
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="topics">Topics</TabsTrigger>
           <TabsTrigger value="trends">Trends</TabsTrigger>
           <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="advanced">Advanced</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-6">
+        <TabsContent value="overview">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Overall Performance</h3>
-              <CircularProgress percentage={overallAccuracy} />
+              <CircularProgress percentage={overallStats[0].value} />
             </Card>
 
             <Card className="p-6">
@@ -118,7 +127,7 @@ const Performance = ({ quizHistory }: PerformanceProps) => {
           </div>
         </TabsContent>
 
-        <TabsContent value="topics" className="space-y-6">
+        <TabsContent value="topics">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Topic Performance</h3>
@@ -157,7 +166,7 @@ const Performance = ({ quizHistory }: PerformanceProps) => {
           </div>
         </TabsContent>
 
-        <TabsContent value="trends" className="space-y-6">
+        <TabsContent value="trends">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Monthly Progress</h3>
@@ -198,27 +207,99 @@ const Performance = ({ quizHistory }: PerformanceProps) => {
 
         <TabsContent value="details" className="space-y-6">
           <Card className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Areas Needing Improvement</h3>
-            <div className="space-y-4">
-              {weakAreas.map((area) => (
-                <div key={area.tag} className="flex justify-between items-center">
-                  <span className="font-medium">{area.tag}</span>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground">
-                      {area.questionsAttempted} questions attempted
-                    </span>
-                    <div className="w-24 bg-secondary rounded-full h-2">
-                      <div
-                        className="bg-destructive h-2 rounded-full"
-                        style={{ width: `${area.accuracy}%` }}
-                      />
-                    </div>
-                    <span className="text-sm">{Math.round(area.accuracy)}%</span>
-                  </div>
-                </div>
-              ))}
+            <h3 className="text-lg font-semibold mb-4">Performance Distribution</h3>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={overallStats}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {overallStats.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Topic Performance Breakdown</h3>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={tagPerformance}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="tag" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="correct" stackId="a" fill="#00C49F" name="Correct" />
+                    <Bar dataKey="incorrect" stackId="a" fill="#FF8042" name="Incorrect" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Progress Over Time</h3>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={timeBasedPerformance}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Area 
+                      type="monotone" 
+                      dataKey="accuracy" 
+                      stroke="#8884d8" 
+                      fill="#8884d8" 
+                      fillOpacity={0.3}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="advanced" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Daily Activity Heatmap</h3>
+              <div className="h-[300px]">
+                <CalendarHeatmap data={quizHistory} />
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Tag Performance Matrix</h3>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ScatterChart>
+                    <CartesianGrid />
+                    <XAxis type="number" dataKey="questionsAttempted" name="Questions Attempted" />
+                    <YAxis type="number" dataKey="accuracy" name="Accuracy %" />
+                    <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                    <Scatter name="Topics" data={tagPerformance} fill="#8884d8">
+                      {tagPerformance.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Scatter>
+                  </ScatterChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
