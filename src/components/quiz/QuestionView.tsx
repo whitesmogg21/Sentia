@@ -2,6 +2,9 @@
 import { Question } from "@/types/quiz";
 import QuizOption from "../QuizOption";
 import React, { useRef, useEffect, useState } from 'react';
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Image, ZoomIn, ZoomOut, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface QuestionViewProps {
   question: Question;
@@ -10,6 +13,55 @@ interface QuestionViewProps {
   isPaused: boolean;
   onAnswerClick: (index: number) => void;
 }
+
+interface ImageModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  imageUrl: string;
+  altText: string;
+}
+
+const ImageModal = ({ isOpen, onClose, imageUrl, altText }: ImageModalProps) => {
+  const [scale, setScale] = useState(1);
+
+  const handleZoomIn = () => {
+    setScale(prev => Math.min(prev + 0.2, 3));
+  };
+
+  const handleZoomOut = () => {
+    setScale(prev => Math.max(prev - 0.2, 0.5));
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl w-[90vw] h-[90vh] flex flex-col">
+        <div className="absolute right-4 top-4 flex gap-2">
+          <Button variant="ghost" size="icon" onClick={handleZoomIn}>
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={handleZoomOut}>
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex-1 overflow-auto flex items-center justify-center p-4">
+          <img
+            src={imageUrl}
+            alt={altText}
+            style={{
+              transform: `scale(${scale})`,
+              transition: 'transform 0.2s ease-in-out',
+              maxWidth: '100%',
+              height: 'auto'
+            }}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const QuestionView = ({
   question,
@@ -20,6 +72,7 @@ const QuestionView = ({
 }: QuestionViewProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [mediaLibrary, setMediaLibrary] = useState<any[]>([]);
+  const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
 
   useEffect(() => {
     const savedMedia = localStorage.getItem('mediaLibrary');
@@ -28,11 +81,15 @@ const QuestionView = ({
     }
   }, []);
 
+  const handleImageClick = (imageData: string, imageName: string) => {
+    setSelectedImage({ url: imageData, name: imageName });
+  };
+
   const renderContent = (text: string) => {
     const parts = text.split('/');
     return parts.map((part, index) => {
       if (index === 0 && !text.startsWith('/')) {
-        return <p key={index} className="mb-4">{part}</p>;
+        return <span key={index} className="mr-2">{part}</span>;
       }
       
       if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
@@ -40,28 +97,51 @@ const QuestionView = ({
         const mediaItem = mediaLibrary.find(m => m.name === part);
         if (mediaItem) {
           return (
-            <img
+            <Button
               key={index}
-              src={mediaItem.data}
-              alt={part}
-              className="max-w-full h-auto mb-4 rounded-lg"
-            />
+              variant="ghost"
+              size="icon"
+              className="mx-1 inline-flex items-center"
+              onClick={() => handleImageClick(mediaItem.data, mediaItem.name)}
+            >
+              <Image className="h-4 w-4" />
+            </Button>
           );
         }
         return null;
       }
       
       if (part) {
-        return <p key={index} className="mb-4">{part}</p>;
+        return <span key={index} className="mr-2">{part}</span>;
       }
       
       return null;
     });
   };
 
+  const renderOption = (option: string) => {
+    // Check if the option is just an image filename
+    if (option.match(/^[^\/]*\.(png|jpg|jpeg|gif)$/i)) {
+      const mediaItem = mediaLibrary.find(m => m.name === option);
+      if (mediaItem) {
+        return (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="mx-1"
+            onClick={() => handleImageClick(mediaItem.data, mediaItem.name)}
+          >
+            <Image className="h-4 w-4" />
+          </Button>
+        );
+      }
+    }
+    return option;
+  };
+
   return (
     <div className="dark:text-gray-100">
-      <div ref={contentRef}>
+      <div ref={contentRef} className="mb-4">
         {renderContent(question.question)}
       </div>
       
@@ -69,7 +149,7 @@ const QuestionView = ({
         {question.options.map((option, index) => (
           <QuizOption
             key={index}
-            option={option}
+            option={renderOption(option)}
             selected={selectedAnswer === index}
             correct={
               isAnswered
@@ -81,6 +161,15 @@ const QuestionView = ({
           />
         ))}
       </div>
+
+      {selectedImage && (
+        <ImageModal
+          isOpen={true}
+          onClose={() => setSelectedImage(null)}
+          imageUrl={selectedImage.url}
+          altText={selectedImage.name}
+        />
+      )}
     </div>
   );
 };
