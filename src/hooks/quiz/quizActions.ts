@@ -1,3 +1,4 @@
+
 import { Question, QuizHistory } from "@/types/quiz";
 import { QuizState } from "./types";
 import { qbanks } from "@/data/questions";
@@ -68,7 +69,7 @@ export const createQuizHistory = (
       selectedAnswer: index === state.currentQuestionIndex ? optionIndex : q.attempts?.[0]?.selectedAnswer ?? null,
       isCorrect: index === state.currentQuestionIndex ? optionIndex === q.correctAnswer : q.attempts?.[0]?.isCorrect ?? false,
       isFlagged: Boolean(q.isFlagged),
-      tags: q.tags || [] // Provide empty array as default
+      tags: q.tags
     }))
   };
 };
