@@ -1,5 +1,4 @@
-
-import { BarChart, Clock, Home, Library, ChevronRight } from "lucide-react";
+import { BarChart, Clock, Home, Library } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Sidebar,
@@ -10,8 +9,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarRail,
-  SidebarMenuAction,
 } from "@/components/ui/sidebar";
 import QBankDropdown from "@/components/sidebar/QBankDropdown";
 
@@ -37,24 +34,18 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarContent>
-        <SidebarRail />
         <SidebarGroup>
           <SidebarGroupLabel>Quiz App</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
+                  <SidebarMenuButton asChild>
                     <Link to={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
-                  <SidebarMenuAction asChild showOnHover>
-                    <Link to={item.url}>
-                      <ChevronRight className="h-4 w-4" />
-                    </Link>
-                  </SidebarMenuAction>
                 </SidebarMenuItem>
               ))}
               <QBankDropdown />
