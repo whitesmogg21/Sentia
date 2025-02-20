@@ -20,7 +20,7 @@ export interface QuestionAttempt {
   selectedAnswer: number | null;
   isCorrect: boolean;
   date: string;
-  tags?: string[];
+  tags: string[];
   isFlagged: boolean;
 }
 
@@ -43,6 +43,7 @@ export interface QuizHistory {
     selectedAnswer: number | null;
     isCorrect: boolean;
     isFlagged: boolean;
+    tags: string[];
   }[];
 }
 

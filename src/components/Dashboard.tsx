@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { QBank, QuizHistory, QuestionFilter } from "../types/quiz";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import { motion } from "framer-motion";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -17,6 +17,8 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { Trash2 } from "lucide-react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { CalendarHeatmap } from "./charts/CalendarHeatmap";
+import ProgressBar from "./ProgressBar";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -34,8 +36,8 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   const [filters, setFilters] = useState<QuestionFilter>({
     unused: false,
     used: false,
-    incorrect: false,
     correct: false,
+    incorrect: false,
     flagged: false,
     omitted: false,
   });
@@ -160,6 +162,44 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     localStorage.removeItem('selectedQBank');
   };
 
+  const totalAttempts = useMemo(() => quizHistory.reduce((acc, quiz) => acc + quiz.questionAttempts.length, 0), [quizHistory]);
+  const correctAttempts = useMemo(() => quizHistory.reduce((acc, quiz) => 
+    acc + quiz.questionAttempts.filter(a => a.isCorrect).length, 0), [quizHistory]);
+  
+  const totalQuestions = useMemo(() => qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0), [qbanks]);
+  const questionsAttempted = useMemo(() => new Set(quizHistory.flatMap(quiz => 
+    quiz.questionAttempts.map(a => a.questionId)
+  )).size, [quizHistory]);
+
+  // Calculate tag performance
+  const tagStats = useMemo(() => {
+    const stats: { [key: string]: { correct: number; total: number } } = {};
+    quizHistory.forEach(quiz => {
+      quiz.questionAttempts.forEach(attempt => {
+        const question = qbanks.find(qbank => qbank.questions.find(q => q.id === attempt.questionId))
+          ?.questions.find(q => q.id === attempt.questionId);
+        const tags = question?.tags || [];
+
+        tags.forEach(tag => {
+          if (!stats[tag]) stats[tag] = { correct: 0, total: 0 };
+          stats[tag].total += 1;
+          if (attempt.isCorrect) stats[tag].correct += 1;
+        });
+      });
+    });
+    return stats;
+  }, [qbanks, quizHistory]);
+
+  const tagPerformance = useMemo(() => {
+    return Object.entries(tagStats).map(([tag, stats]) => ({
+      tag,
+      score: (stats.correct / stats.total) * 100
+    }));
+  }, [tagStats]);
+
+  const overallAccuracyCalc = useMemo(() => totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0, [correctAttempts, totalAttempts]);
+  const completionRate = useMemo(() => totalQuestions > 0 ? (questionsAttempted / totalQuestions) * 100 : 0, [questionsAttempted, totalQuestions]);
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center mb-6">
@@ -184,8 +224,44 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         className="space-y-6"
       >
         <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-card rounded-2xl shadow-lg p-6 flex items-center justify-center">
-            <CircularProgress percentage={overallAccuracy} />
+          <div className="space-y-6">
+            {/* Heatmap */}
+            <Card className="p-4">
+              <CalendarHeatmap data={quizHistory} />
+            </Card>
+            
+            {/* Progress Circles */}
+            <div className="grid grid-cols-3 gap-4">
+              <Card className="p-4 flex flex-col items-center">
+                <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
+                <CircularProgress percentage={overallAccuracyCalc} size="small" />
+              </Card>
+              
+              <Card className="p-4 flex flex-col items-center">
+                <h3 className="text-sm font-medium mb-2">Completion Rate</h3>
+                <CircularProgress percentage={completionRate} size="small" />
+              </Card>
+              
+              <Card className="p-4 flex flex-col items-center">
+                <h3 className="text-sm font-medium mb-2">Tag Performance</h3>
+                <div className="w-[100px] h-[100px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={tagPerformance}>
+                      <PolarGrid />
+                      <PolarAngleAxis dataKey="tag" />
+                      <PolarRadiusAxis domain={[0, 100]} />
+                      <Radar
+                        name="Score"
+                        dataKey="score"
+                        stroke="hsl(var(--primary))"
+                        fill="hsl(var(--primary))"
+                        fillOpacity={0.6}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            </div>
           </div>
 
           <div className="bg-card rounded-2xl shadow-lg p-6 h-[400px]">
