@@ -30,9 +30,9 @@ const Performance = ({ quizHistory }: PerformanceProps) => {
     
     quizHistory.forEach(quiz => {
       quiz.questionAttempts.forEach(attempt => {
-        const question = quiz.questions?.find(q => q.id === attempt.questionId);
-        if (question) {
-          question.tags.forEach(tag => {
+        // Get tags from the question attempt itself since it's part of QuizHistory
+        if (attempt.tags) {
+          attempt.tags.forEach(tag => {
             if (!tagStats[tag]) {
               tagStats[tag] = { correct: 0, total: 0 };
             }

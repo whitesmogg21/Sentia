@@ -1,4 +1,3 @@
-
 export interface Question {
   id: number;
   question: string;
@@ -17,9 +16,12 @@ export interface Question {
 }
 
 export interface QuestionAttempt {
+  questionId: number;
   selectedAnswer: number | null;
   isCorrect: boolean;
   date: string;
+  tags?: string[];
+  isFlagged: boolean;
 }
 
 export interface QuizState {
