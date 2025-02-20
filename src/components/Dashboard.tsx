@@ -13,12 +13,14 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import CircularProgress from "./CircularProgress";
 import { useNavigate } from "react-router-dom";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { CalendarHeatmap } from "./charts/CalendarHeatmap";
-import ProgressBar from "./ProgressBar";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -189,11 +191,45 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   }, [qbanks, quizHistory]);
 
   const tagPerformance = useMemo(() => {
-    return Object.entries(tagStats).map(([tag, stats]) => ({
-      tag,
-      score: (stats.correct / stats.total) * 100
-    }));
-  }, [tagStats]);
+    const tagStats: { [key: string]: { correct: number; total: number } } = {};
+    
+    const uniqueTags = new Set<string>();
+    qbanks.forEach(qbank => {
+      qbank.questions.forEach(question => {
+        question.tags.forEach(tag => uniqueTags.add(tag));
+      });
+    });
+
+    uniqueTags.forEach(tag => {
+      tagStats[tag] = { correct: 0, total: 0 };
+    });
+
+    quizHistory.forEach(quiz => {
+      quiz.questionAttempts.forEach(attempt => {
+        const question = qbanks
+          .flatMap(qbank => qbank.questions)
+          .find(q => q.id === attempt.questionId);
+          
+        if (question) {
+          question.tags.forEach(tag => {
+            tagStats[tag].total += 1;
+            if (attempt.isCorrect) {
+              tagStats[tag].correct += 1;
+            }
+          });
+        }
+      });
+    });
+
+    return Object.entries(tagStats)
+      .filter(([_, stats]) => stats.total > 0)
+      .map(([tag, stats]) => ({
+        tag,
+        score: stats.total > 0 ? (stats.correct / stats.total) * 100 : 0,
+        correct: stats.correct,
+        total: stats.total,
+      }));
+  }, [qbanks, quizHistory]);
 
   const overallAccuracyCalc = useMemo(() => totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0, [correctAttempts, totalAttempts]);
   const completionRate = useMemo(() => totalQuestions > 0 ? (questionsAttempted / totalQuestions) * 100 : 0, [questionsAttempted, totalQuestions]);
@@ -240,11 +276,34 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
               
               <Card className="p-4 flex flex-col items-center">
                 <h3 className="text-sm font-medium mb-2">Tag Performance</h3>
-                <div className="w-[100px] h-[100px]">
+                <div className="w-[100px] h-[100px] relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart data={tagPerformance}>
                       <PolarGrid />
-                      <PolarAngleAxis dataKey="tag" />
+                      <PolarAngleAxis 
+                        dataKey="tag" 
+                        tick={({ x, y, payload }) => (
+                          <g transform={`translate(${x},${y})`}>
+                            <HoverCard>
+                              <HoverCardTrigger>
+                                <circle cx={0} cy={0} r={4} fill="hsl(var(--primary))" />
+                              </HoverCardTrigger>
+                              <HoverCardContent className="w-60">
+                                <div className="space-y-2">
+                                  <p className="text-sm font-medium">{payload.value}</p>
+                                  <p className="text-sm">
+                                    Score: {tagPerformance.find(t => t.tag === payload.value)?.score.toFixed(1)}%
+                                  </p>
+                                  <p className="text-sm">
+                                    Correct: {tagPerformance.find(t => t.tag === payload.value)?.correct} / 
+                                    {tagPerformance.find(t => t.tag === payload.value)?.total}
+                                  </p>
+                                </div>
+                              </HoverCardContent>
+                            </HoverCard>
+                          </g>
+                        )}
+                      />
                       <PolarRadiusAxis domain={[0, 100]} />
                       <Radar
                         name="Score"
