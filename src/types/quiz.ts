@@ -1,3 +1,4 @@
+
 export interface Question {
   id: number;
   question: string;
@@ -20,7 +21,7 @@ export interface QuestionAttempt {
   selectedAnswer: number | null;
   isCorrect: boolean;
   date: string;
-  tags: string[];
+  tags?: string[]; // Made tags optional for backward compatibility
   isFlagged: boolean;
 }
 

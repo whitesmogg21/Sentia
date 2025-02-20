@@ -46,14 +46,14 @@ export const CalendarHeatmap = ({ data }: CalendarHeatmapProps) => {
 
   const getIntensityClass = (value: number, count: number) => {
     if (count === 0) return "bg-[#ebedf0] dark:bg-gray-900";
-    const intensity = Math.min(value / count, 100) / 20; // Normalize to 0-5 range
+    const intensity = Math.min(value / count, 100) / 20;
     return [
-      "bg-[#ebedf0] dark:bg-gray-900", // 0
-      "bg-[#9be9a8] dark:bg-green-900", // 1
-      "bg-[#40c463] dark:bg-green-700", // 2
-      "bg-[#30a14e] dark:bg-green-600", // 3
-      "bg-[#216e39] dark:bg-green-500", // 4
-      "bg-[#1b4c2a] dark:bg-green-400", // 5
+      "bg-[#ebedf0] dark:bg-gray-900",
+      "bg-[#9be9a8] dark:bg-green-900",
+      "bg-[#40c463] dark:bg-green-700",
+      "bg-[#30a14e] dark:bg-green-600",
+      "bg-[#216e39] dark:bg-green-500",
+      "bg-[#1b4c2a] dark:bg-green-400",
     ][Math.floor(intensity)];
   };
 
@@ -84,29 +84,29 @@ export const CalendarHeatmap = ({ data }: CalendarHeatmapProps) => {
   };
 
   return (
-    <div className="p-4">
-      <div className="flex flex-col gap-2">
-        <div className="text-sm text-muted-foreground">Activity over the past year</div>
-        <div className="flex gap-1">
+    <div className="p-2 overflow-x-auto">
+      <div className="flex flex-col gap-1 min-w-fit">
+        <div className="text-xs text-muted-foreground">Activity over the past year</div>
+        <div className="flex gap-[2px]">
           {weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className="flex flex-col gap-1">
+            <div key={weekIndex} className="flex flex-col gap-[2px]">
               {week.map((day, dayIndex) => (
                 <div
                   key={`${weekIndex}-${dayIndex}`}
-                  className={`w-3 h-3 rounded-sm ${getIntensityClass(day.value, day.questionsCount)}`}
+                  className={`w-2 h-2 rounded-sm ${getIntensityClass(day.value, day.questionsCount)}`}
                   title={getTooltipText(day)}
                 />
               ))}
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
           <span>Less</span>
-          <div className="flex gap-1">
+          <div className="flex gap-[2px]">
             {[0, 1, 2, 3, 4, 5].map((level) => (
               <div
                 key={level}
-                className={`w-3 h-3 rounded-sm ${getIntensityClass(level * 20, 1)}`}
+                className={`w-2 h-2 rounded-sm ${getIntensityClass(level * 20, 1)}`}
               />
             ))}
           </div>
