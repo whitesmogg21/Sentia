@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +25,7 @@ interface MediaItem {
   name: string;
   url: string;
   tags: string[];
+  data: string; // Base64 data URL
 }
 
 const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
@@ -33,6 +34,14 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
   const [newName, setNewName] = useState("");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  // Load media items from localStorage on component mount
+  useEffect(() => {
+    const savedMedia = localStorage.getItem('mediaLibrary');
+    if (savedMedia) {
+      setMediaItems(JSON.parse(savedMedia));
+    }
+  }, []);
 
   useEffect(() => {
     // Extract images mentioned in questions and their tags
@@ -43,7 +52,7 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
         const matches = question.question.match(/\/([^\/]+\.(?:png|jpg|jpeg|gif))/g);
         if (matches) {
           matches.forEach(match => {
-            const imageName = match.slice(1); // Remove leading /
+            const imageName = match.slice(1);
             if (!extractedMedia.has(imageName)) {
               extractedMedia.set(imageName, new Set());
             }
@@ -57,28 +66,45 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
 
     // Update media items with extracted tags
     setMediaItems(prev => {
-      return prev.map(item => {
+      const updated = prev.map(item => {
         const tags = extractedMedia.get(item.name);
         return {
           ...item,
           tags: tags ? Array.from(tags) : item.tags
         };
       });
+      localStorage.setItem('mediaLibrary', JSON.stringify(updated));
+      return updated;
     });
   }, [qbanks]);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
-    const newMediaItems = files.map(file => ({
-      id: `${Date.now()}-${file.name}`,
-      name: file.name,
-      url: URL.createObjectURL(file),
-      tags: []
+    const newMediaItems = await Promise.all(files.map(async (file) => {
+      // Convert file to base64
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+
+      return {
+        id: `${Date.now()}-${file.name}`,
+        name: file.name,
+        url: URL.createObjectURL(file),
+        data: dataUrl,
+        tags: []
+      };
     }));
 
-    setMediaItems(prev => [...prev, ...newMediaItems]);
+    setMediaItems(prev => {
+      const updated = [...prev, ...newMediaItems];
+      localStorage.setItem('mediaLibrary', JSON.stringify(updated));
+      return updated;
+    });
+
     toast({
       title: "Success",
       description: `${files.length} files uploaded successfully`
@@ -86,7 +112,12 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
   };
 
   const handleDelete = (id: string) => {
-    setMediaItems(prev => prev.filter(item => item.id !== id));
+    setMediaItems(prev => {
+      const updated = prev.filter(item => item.id !== id);
+      localStorage.setItem('mediaLibrary', JSON.stringify(updated));
+      return updated;
+    });
+
     toast({
       title: "Success",
       description: "Media deleted successfully"
@@ -102,13 +133,15 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
   const handleSaveEdit = () => {
     if (!editingItem) return;
 
-    setMediaItems(prev =>
-      prev.map(item =>
+    setMediaItems(prev => {
+      const updated = prev.map(item =>
         item.id === editingItem.id
           ? { ...item, name: newName }
           : item
-      )
-    );
+      );
+      localStorage.setItem('mediaLibrary', JSON.stringify(updated));
+      return updated;
+    });
 
     setIsEditDialogOpen(false);
     setEditingItem(null);
@@ -170,7 +203,7 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
               <TableRow key={item.id}>
                 <TableCell>
                   <img
-                    src={item.url}
+                    src={item.data}
                     alt={item.name}
                     className="w-16 h-16 object-cover rounded"
                   />

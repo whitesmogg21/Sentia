@@ -1,7 +1,7 @@
 
 import { Question } from "@/types/quiz";
 import QuizOption from "../QuizOption";
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 
 interface QuestionViewProps {
   question: Question;
@@ -19,6 +19,14 @@ const QuestionView = ({
   onAnswerClick
 }: QuestionViewProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
+  const [mediaLibrary, setMediaLibrary] = useState<any[]>([]);
+
+  useEffect(() => {
+    const savedMedia = localStorage.getItem('mediaLibrary');
+    if (savedMedia) {
+      setMediaLibrary(JSON.parse(savedMedia));
+    }
+  }, []);
 
   const renderContent = (text: string) => {
     const parts = text.split('/');
@@ -29,12 +37,12 @@ const QuestionView = ({
       
       if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
         // This is an image filename
-        const mediaItem = question.qbank?.media?.find(m => m.name === part);
+        const mediaItem = mediaLibrary.find(m => m.name === part);
         if (mediaItem) {
           return (
             <img
               key={index}
-              src={mediaItem.url}
+              src={mediaItem.data}
               alt={part}
               className="max-w-full h-auto mb-4 rounded-lg"
             />
