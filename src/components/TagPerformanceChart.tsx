@@ -75,12 +75,12 @@ export const TagPerformanceChart = ({ qbanks, quizHistory }: TagPerformanceChart
   return (
     <Card className="p-4 flex flex-col items-center">
       <h3 className="text-sm font-medium mb-2">Performance by Tag</h3>
-      <div className="w-[300px] h-[300px]">
+      <div className="w-[100px] h-[100px]">
         <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={tagPerformance}>
+          <RadarChart data={tagPerformance} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
             <PolarGrid 
               stroke="hsl(var(--muted-foreground))" 
-              strokeOpacity={0.3}
+              strokeOpacity={0.2}
             />
             <PolarAngleAxis
               dataKey="tag"
@@ -91,7 +91,7 @@ export const TagPerformanceChart = ({ qbanks, quizHistory }: TagPerformanceChart
                       <circle
                         cx={0}
                         cy={0}
-                        r={4}
+                        r={3}
                         fill="hsl(var(--muted-foreground))"
                         opacity={0.5}
                         style={{ cursor: 'pointer' }}
@@ -100,28 +100,14 @@ export const TagPerformanceChart = ({ qbanks, quizHistory }: TagPerformanceChart
                     <HoverCardContent 
                       side="right" 
                       align="start" 
-                      className="w-[200px] bg-card"
+                      className="w-[150px] bg-card"
                     >
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium">{payload.value}</p>
-                        <div className="text-sm text-muted-foreground">
-                          <p>Score: {tagPerformance[index].score.toFixed(1)}%</p>
-                          <p>Correct: {tagPerformance[index].correct}</p>
-                          <p>Total: {tagPerformance[index].total}</p>
-                        </div>
-                      </div>
+                      <p className="text-sm font-medium">{payload.value}</p>
                     </HoverCardContent>
                   </HoverCard>
                 </g>
               )}
               tickFormatter={() => ''}
-            />
-            <PolarRadiusAxis
-              angle={90}
-              domain={[0, 100]}
-              stroke="hsl(var(--muted-foreground))"
-              strokeOpacity={0.3}
-              tick={{ fill: "hsl(var(--muted-foreground))" }}
             />
             <Radar
               name="Score"
