@@ -1,4 +1,3 @@
-
 import { useMemo } from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend, ScatterChart, Scatter } from "recharts";
 import { QuizHistory } from "../types/quiz";
@@ -24,18 +23,16 @@ const Performance = ({ quizHistory }: PerformanceProps) => {
     
     quizHistory.forEach(quiz => {
       quiz.questionAttempts.forEach(attempt => {
-        const question = quiz.questions?.find(q => q.id === attempt.questionId);
-        if (question) {
-          question.tags.forEach(tag => {
-            if (!tagStats[tag]) {
-              tagStats[tag] = { correct: 0, total: 0 };
-            }
-            tagStats[tag].total += 1;
-            if (attempt.isCorrect) {
-              tagStats[tag].correct += 1;
-            }
-          });
-        }
+        const questionTags = quiz.questionAttempts.find(q => q.questionId === attempt.questionId)?.tags || [];
+        questionTags.forEach(tag => {
+          if (!tagStats[tag]) {
+            tagStats[tag] = { correct: 0, total: 0 };
+          }
+          tagStats[tag].total += 1;
+          if (attempt.isCorrect) {
+            tagStats[tag].correct += 1;
+          }
+        });
       });
     });
 
