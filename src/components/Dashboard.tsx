@@ -76,7 +76,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       });
     });
 
-    // Get all questions that are flagged
     qbanks.forEach(qbank => {
       qbank.questions.forEach(question => {
         if (question.isFlagged) {
@@ -107,7 +106,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 
   const chartData = useMemo(() => 
     quizHistory.map((quiz, index) => ({
-      quizNumber: index + 1,
+      attemptNumber: index + 1,
       score: (quiz.score / quiz.totalQuestions) * 100,
       date: quiz.date,
     })), [quizHistory]);
@@ -171,7 +170,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     quiz.questionAttempts.map(a => a.questionId)
   )).size, [quizHistory]);
 
-  // Calculate tag performance
   const tagStats = useMemo(() => {
     const stats: { [key: string]: { correct: number; total: number } } = {};
     quizHistory.forEach(quiz => {
@@ -225,12 +223,10 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       >
         <div className="grid md:grid-cols-2 gap-6">
           <div className="space-y-6">
-            {/* Heatmap */}
             <Card className="p-4">
               <CalendarHeatmap data={quizHistory} />
             </Card>
             
-            {/* Progress Circles */}
             <div className="grid grid-cols-3 gap-4">
               <Card className="p-4 flex flex-col items-center">
                 <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
@@ -265,12 +261,13 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           </div>
 
           <div className="bg-card rounded-2xl shadow-lg p-6 h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <h3 className="text-lg font-medium mb-4">Last Quiz Performance</h3>
+            <ResponsiveContainer width="100%" height="90%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis 
-                  dataKey="quizNumber" 
-                  label={{ value: 'Quiz Number', position: 'bottom' }}
+                  dataKey="attemptNumber" 
+                  label={{ value: 'Attempt Number', position: 'bottom' }}
                   className="text-foreground"
                 />
                 <YAxis 
@@ -280,7 +277,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
                 />
                 <Tooltip 
                   formatter={(value: number) => [`${value.toFixed(1)}%`, 'Score']}
-                  labelFormatter={(label) => `Quiz ${label}`}
+                  labelFormatter={(label) => `Attempt ${label}`}
                   contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
                   labelStyle={{ color: 'hsl(var(--foreground))' }}
                 />

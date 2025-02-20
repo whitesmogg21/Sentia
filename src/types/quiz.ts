@@ -21,7 +21,7 @@ export interface QuestionAttempt {
   selectedAnswer: number | null;
   isCorrect: boolean;
   date: string;
-  tags?: string[]; // Made tags optional for backward compatibility
+  tags: string[];
   isFlagged: boolean;
 }
 
