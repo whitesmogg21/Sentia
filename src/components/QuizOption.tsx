@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Check, Strikethrough } from "lucide-react";
 
 interface QuizOptionProps {
-  option: string;
+  option: React.ReactNode;
   selected: boolean;
   correct?: boolean;
   onClick: () => void;

@@ -119,24 +119,34 @@ const QuestionView = ({
     });
   };
 
-  const renderOption = (option: string) => {
-    // Check if the option is just an image filename
-    if (option.match(/^[^\/]*\.(png|jpg|jpeg|gif)$/i)) {
-      const mediaItem = mediaLibrary.find(m => m.name === option);
-      if (mediaItem) {
-        return (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="mx-1"
-            onClick={() => handleImageClick(mediaItem.data, mediaItem.name)}
-          >
-            <Image className="h-4 w-4" />
-          </Button>
-        );
+  const renderOptionContent = (text: string): React.ReactNode[] => {
+    const parts = text.split('/');
+    return parts.map((part, index) => {
+      if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
+        // This is an image filename
+        const mediaItem = mediaLibrary.find(m => m.name === part);
+        if (mediaItem) {
+          return (
+            <Button
+              key={index}
+              variant="ghost"
+              size="icon"
+              className="mx-1 inline-flex items-center"
+              onClick={() => handleImageClick(mediaItem.data, mediaItem.name)}
+            >
+              <Image className="h-4 w-4" />
+            </Button>
+          );
+        }
+        return null;
       }
-    }
-    return option;
+      
+      if (part) {
+        return <span key={index} className="mr-2">{part}</span>;
+      }
+      
+      return null;
+    }).filter(Boolean);
   };
 
   return (
@@ -146,20 +156,23 @@ const QuestionView = ({
       </div>
       
       <div className="space-y-4">
-        {question.options.map((option, index) => (
-          <QuizOption
-            key={index}
-            option={renderOption(option)}
-            selected={selectedAnswer === index}
-            correct={
-              isAnswered
-                ? index === question.correctAnswer
-                : undefined
-            }
-            onClick={() => onAnswerClick(index)}
-            disabled={isAnswered || isPaused}
-          />
-        ))}
+        {question.options.map((option, index) => {
+          const optionContent = renderOptionContent(option);
+          return (
+            <QuizOption
+              key={index}
+              option={<div className="flex items-center">{optionContent}</div>}
+              selected={selectedAnswer === index}
+              correct={
+                isAnswered
+                  ? index === question.correctAnswer
+                  : undefined
+              }
+              onClick={() => onAnswerClick(index)}
+              disabled={isAnswered || isPaused}
+            />
+          );
+        })}
       </div>
 
       {selectedImage && (
