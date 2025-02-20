@@ -1,4 +1,3 @@
-
 import { Question, QuizHistory } from "@/types/quiz";
 import { QuizState } from "./types";
 import { qbanks } from "@/data/questions";
@@ -90,7 +89,7 @@ export const handleQuestionAttempt = (
     isCorrect,
     date: new Date().toISOString(),
     isFlagged: Boolean(question.isFlagged),
-    tags: question.tags || [] // Provide empty array as default
+    tags: question.tags
   };
 
   question.attempts = [

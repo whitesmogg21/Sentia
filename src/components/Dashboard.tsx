@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { QBank, QuizHistory, QuestionFilter } from "../types/quiz";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { motion } from "framer-motion";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
@@ -16,11 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { CalendarHeatmap } from "./charts/CalendarHeatmap";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
+import { TagPerformanceChart } from "./TagPerformanceChart";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -278,41 +274,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
                 <h3 className="text-sm font-medium mb-2">Tag Performance</h3>
                 <div className="w-[100px] h-[100px] relative">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={tagPerformance}>
-                      <PolarGrid />
-                      <PolarAngleAxis 
-                        dataKey="tag" 
-                        tick={({ x, y, payload }) => (
-                          <g transform={`translate(${x},${y})`}>
-                            <HoverCard>
-                              <HoverCardTrigger>
-                                <circle cx={0} cy={0} r={4} fill="hsl(var(--primary))" />
-                              </HoverCardTrigger>
-                              <HoverCardContent className="w-60">
-                                <div className="space-y-2">
-                                  <p className="text-sm font-medium">{payload.value}</p>
-                                  <p className="text-sm">
-                                    Score: {tagPerformance.find(t => t.tag === payload.value)?.score.toFixed(1)}%
-                                  </p>
-                                  <p className="text-sm">
-                                    Correct: {tagPerformance.find(t => t.tag === payload.value)?.correct} / 
-                                    {tagPerformance.find(t => t.tag === payload.value)?.total}
-                                  </p>
-                                </div>
-                              </HoverCardContent>
-                            </HoverCard>
-                          </g>
-                        )}
-                      />
-                      <PolarRadiusAxis domain={[0, 100]} />
-                      <Radar
-                        name="Score"
-                        dataKey="score"
-                        stroke="hsl(var(--primary))"
-                        fill="hsl(var(--primary))"
-                        fillOpacity={0.6}
-                      />
-                    </RadarChart>
+                    <TagPerformanceChart qbanks={qbanks} quizHistory={quizHistory} />
                   </ResponsiveContainer>
                 </div>
               </Card>
