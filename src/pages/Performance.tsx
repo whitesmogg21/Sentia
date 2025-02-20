@@ -54,6 +54,30 @@ const Performance = ({ quizHistory }: PerformanceProps) => {
     }));
   }, [quizHistory]);
 
+  // Add new transformed data for tag scores
+  const tagScores = useMemo(() => {
+    const tagStats: { [key: string]: { correct: number; total: number } } = {};
+    
+    quizHistory.forEach(quiz => {
+      quiz.questionAttempts.forEach(attempt => {
+        attempt.tags.forEach(tag => {
+          if (!tagStats[tag]) {
+            tagStats[tag] = { correct: 0, total: 0 };
+          }
+          tagStats[tag].total += 1;
+          if (attempt.isCorrect) {
+            tagStats[tag].correct += 1;
+          }
+        });
+      });
+    });
+
+    return Object.entries(tagStats).map(([tag, stats]) => ({
+      tag,
+      score: (stats.correct / stats.total) * 100
+    }));
+  }, [quizHistory]);
+
   // Calculate time-based performance trends
   const timeBasedPerformance = useMemo(() => {
     const performanceByMonth: { [key: string]: { total: number; correct: number; avgTimeSpent: number } } = {};
@@ -112,16 +136,45 @@ const Performance = ({ quizHistory }: PerformanceProps) => {
 
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Performance Over Time</h3>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis dataKey="date" />
-                    <YAxis domain={[0, 100]} />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" />
-                  </LineChart>
-                </ResponsiveContainer>
+              <div className="h-[300px] grid grid-rows-2 gap-4">
+                <div className="w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="date" />
+                      <YAxis domain={[0, 100]} />
+                      <Tooltip />
+                      <Line 
+                        type="monotone" 
+                        dataKey="score" 
+                        stroke="hsl(var(--primary))" 
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={tagScores}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis 
+                        dataKey="tag"
+                        tick={{ fontSize: 12 }}
+                        interval={0}
+                        angle={-45}
+                        textAnchor="end"
+                      />
+                      <YAxis domain={[0, 100]} />
+                      <Tooltip 
+                        formatter={(value: number) => `${value.toFixed(1)}%`}
+                      />
+                      <Bar 
+                        dataKey="score" 
+                        fill="hsl(var(--primary))"
+                        opacity={0.8}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </Card>
           </div>

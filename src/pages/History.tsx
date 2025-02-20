@@ -1,91 +1,102 @@
+import { QBank, QuizHistory } from "@/types/quiz";
+import { useMemo } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { QuizHistory } from "../types/quiz";
-import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
-import { useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+} from "recharts";
+import { Card } from "@/components/ui/card";
 
-interface HistoryProps {
+export interface HistoryProps {
   quizHistory: QuizHistory[];
-  onClearHistory: () => void;
+  qbanks: QBank[];
 }
 
-const History = ({ quizHistory, onClearHistory }: HistoryProps) => {
-  const [showClearDialog, setShowClearDialog] = useState(false);
+const History = ({ quizHistory, qbanks }: HistoryProps) => {
+  const chartData = useMemo(() => 
+    quizHistory.map((quiz, index) => ({
+      attemptNumber: index + 1,
+      score: (quiz.score / quiz.totalQuestions) * 100,
+      date: new Date(quiz.date).toLocaleDateString(),
+    })), [quizHistory]);
 
-  const handleClearConfirm = () => {
-    onClearHistory();
-    setShowClearDialog(false);
-  };
+  const tagScores = useMemo(() => {
+    const tagStats: { [key: string]: { correct: number; total: number } } = {};
+    
+    quizHistory.forEach(quiz => {
+      quiz.questionAttempts.forEach(attempt => {
+        attempt.tags.forEach(tag => {
+          if (!tagStats[tag]) {
+            tagStats[tag] = { correct: 0, total: 0 };
+          }
+          tagStats[tag].total += 1;
+          if (attempt.isCorrect) {
+            tagStats[tag].correct += 1;
+          }
+        });
+      });
+    });
+
+    return Object.entries(tagStats).map(([tag, stats]) => ({
+      tag,
+      score: (stats.correct / stats.total) * 100
+    }));
+  }, [quizHistory]);
 
   return (
     <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <Button 
-          variant="destructive" 
-          onClick={() => setShowClearDialog(true)}
-          className="flex items-center gap-2"
-        >
-          <Trash2 className="h-4 w-4" />
-          Clear History
-        </Button>
+      <h1 className="text-2xl font-bold mb-6">Quiz History</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-4">Performance Over Time</h3>
+          <div className="h-[300px] grid grid-rows-2 gap-4">
+            <div className="w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="date" />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip />
+                  <Line 
+                    type="monotone" 
+                    dataKey="score" 
+                    stroke="hsl(var(--primary))" 
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={tagScores}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="tag"
+                    tick={{ fontSize: 12 }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                  />
+                  <YAxis domain={[0, 100]} />
+                  <Tooltip 
+                    formatter={(value: number) => `${value.toFixed(1)}%`}
+                  />
+                  <Bar 
+                    dataKey="score" 
+                    fill="hsl(var(--primary))"
+                    opacity={0.8}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </Card>
       </div>
-      <h1 className="text-2xl font-bold mb-6">Previous Quizzes</h1>
-      <div className="bg-card rounded-2xl shadow-lg p-6">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-muted/50">
-              <TableHead className="text-foreground">Date</TableHead>
-              <TableHead className="text-foreground">Question Bank</TableHead>
-              <TableHead className="text-foreground">Score</TableHead>
-              <TableHead className="text-foreground">Percentage</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {quizHistory.map((quiz) => (
-              <TableRow key={quiz.id} className="hover:bg-muted/50">
-                <TableCell className="text-foreground">{quiz.date}</TableCell>
-                <TableCell className="text-foreground">{quiz.qbankId}</TableCell>
-                <TableCell className="text-foreground">{quiz.score}/{quiz.totalQuestions}</TableCell>
-                <TableCell className="text-foreground">{((quiz.score / quiz.totalQuestions) * 100).toFixed(2)}%</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Clear Quiz History</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will reset all performance metrics and quiz history. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button 
-              onClick={handleClearConfirm}
-            >
-              Clear History
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };
