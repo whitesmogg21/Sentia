@@ -32,7 +32,15 @@ const items = [
   },
 ];
 
-export function AppSidebar({ variant = "sidebar", collapsible = "offcanvas" }) {
+type AppSidebarProps = {
+  variant?: "sidebar" | "floating" | "inset";
+  collapsible?: "offcanvas" | "icon" | "none";
+};
+
+export function AppSidebar({ 
+  variant = "sidebar", 
+  collapsible = "offcanvas" 
+}: AppSidebarProps) {
   return (
     <Sidebar variant={variant} collapsible={collapsible}>
       <SidebarContent>
