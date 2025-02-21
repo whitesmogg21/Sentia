@@ -25,6 +25,7 @@ export const DraggableWidget = ({ id, type, onRemove, isEditing, data }: Draggab
   // Reset position when editing mode is disabled
   useEffect(() => {
     if (!isEditing) {
+      // Animate back to original position
       setPosition({ x: 0, y: 0 });
     }
   }, [isEditing]);
@@ -58,10 +59,22 @@ export const DraggableWidget = ({ id, type, onRemove, isEditing, data }: Draggab
       drag={isEditing}
       dragMomentum={false}
       onDragStart={() => setIsDragging(true)}
-      onDragEnd={() => setIsDragging(false)}
-      animate={shakeAnimation}
-      style={{ x: position.x, y: position.y }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      onDragEnd={() => {
+        setIsDragging(false);
+        if (!isEditing) {
+          setPosition({ x: 0, y: 0 });
+        }
+      }}
+      animate={{
+        ...shakeAnimation,
+        x: position.x,
+        y: position.y,
+        transition: {
+          type: "spring",
+          stiffness: 300,
+          damping: 20
+        }
+      }}
       className="relative"
     >
       <Card className={cn(
