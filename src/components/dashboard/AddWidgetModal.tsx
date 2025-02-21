@@ -14,95 +14,73 @@ import CircularProgress from "@/components/CircularProgress";
 import { CalendarHeatmap } from "@/components/charts/CalendarHeatmap";
 import { TagPerformanceBarChart } from "@/components/charts/TagPerformanceBarChart";
 import { TagPerformanceChart } from "@/components/TagPerformanceChart";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
-import { QuizHistory, QBank } from "@/types/quiz";
+import { QuizHistory, QBank, Question } from "@/types/quiz";
 
 interface AddWidgetModalProps {
   onAddWidget: (type: string) => void;
 }
 
 export const AddWidgetModal = ({ onAddWidget }: AddWidgetModalProps) => {
+  // Sample data for previews with correct types
+  const previewData = {
+    accuracy: 85,
+    quizHistory: [{
+      id: '1',
+      date: new Date().toISOString(),
+      score: 80,
+      totalQuestions: 10,
+      qbankId: '1',
+      questionAttempts: [{
+        questionId: 1,
+        selectedAnswer: 1,
+        isCorrect: true,
+        isFlagged: false,
+        tags: ['Math']
+      }],
+    }] as QuizHistory[],
+    qbanks: [{
+      id: '1',
+      name: 'Sample QBank',
+      description: 'A sample question bank',
+      questions: [
+        {
+          id: 1,
+          question: 'Sample question',
+          options: ['Option 1', 'Option 2'],
+          correctAnswer: 1,
+          qbankId: '1',
+          tags: ['Math', 'Algebra', 'Geometry'],
+        },
+      ] as Question[],
+    }] as QBank[],
+    metrics: {},
+    tagPerformance: [],
+  };
+
   const widgets = [
     {
       id: 'accuracy',
-      name: 'Overall Accuracy',
+      name: 'Accuracy Circle',
       description: 'Shows overall accuracy as a circular progress indicator',
-      preview: <CircularProgress percentage={85} size="small" />,
+      preview: <CircularProgress percentage={previewData.accuracy} size="small" />,
     },
     {
       id: 'heatmap',
       name: 'Activity Heatmap',
       description: 'Displays quiz activity over time in a calendar view',
-      preview: <CalendarHeatmap data={[]} />,
+      preview: <CalendarHeatmap data={previewData.quizHistory} />,
     },
     {
       id: 'barChart',
-      name: 'Performance by Tag',
-      description: 'Shows performance across different topic tags',
-      preview: <TagPerformanceBarChart qbanks={[]} quizHistory={[]} />,
+      name: 'Performance Bar Chart',
+      description: 'Compares performance across different categories',
+      preview: <TagPerformanceBarChart qbanks={previewData.qbanks} quizHistory={previewData.quizHistory} />,
     },
     {
       id: 'spiderChart',
-      name: 'Tag Coverage',
-      description: 'Visualizes topic coverage in a radar chart',
-      preview: <TagPerformanceChart qbanks={[]} quizHistory={[]} />,
-    },
-    {
-      id: 'progressChart',
-      name: 'Progress Over Time',
-      description: 'Shows performance trends over time',
-      preview: (
-        <div className="h-[100px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={[]}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Area type="monotone" dataKey="score" stroke="#8884d8" fill="#8884d8" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      ),
-    },
-    {
-      id: 'scoreDistribution',
-      name: 'Score Distribution',
-      description: 'Shows distribution of scores across different categories',
-      preview: (
-        <div className="h-[100px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={[
-                  { name: 'Correct', value: 70 },
-                  { name: 'Incorrect', value: 20 },
-                  { name: 'Skipped', value: 10 },
-                ]}
-                cx="50%"
-                cy="50%"
-                outerRadius={40}
-                dataKey="value"
-              >
-                {['#0088FE', '#00C49F', '#FFBB28'].map((color, index) => (
-                  <Cell key={`cell-${index}`} fill={color} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      ),
+      name: 'Topic Coverage',
+      description: 'Visualizes performance across different topics in a radar chart',
+      preview: <TagPerformanceChart qbanks={previewData.qbanks} quizHistory={previewData.quizHistory} />,
     }
   ];
 
