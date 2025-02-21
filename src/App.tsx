@@ -94,7 +94,7 @@ const App = () => {
           <BrowserRouter>
             <SidebarProvider defaultOpen>
               <div className="min-h-screen flex w-full">
-                {!inQuiz && <AppSidebar variant="sidebar" collapsible="offcanvas" />}
+                {!inQuiz && <AppSidebar />}
                 <main className="flex-1">
                   <Routes>
                     <Route

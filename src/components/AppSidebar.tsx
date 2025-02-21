@@ -17,7 +17,7 @@ export function AppSidebar() {
 
   return (
     <>
-      <Sidebar>
+      <Sidebar variant="sidebar" collapsible="offcanvas">
         <SidebarContent>
           <SidebarGroup>
             <div className="flex items-center px-2">
