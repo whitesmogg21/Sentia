@@ -1,23 +1,16 @@
 import { useState, useMemo, useEffect } from "react";
-import { QBank, QuizHistory, QuestionFilter } from "../types/quiz";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { motion } from "framer-motion";
-import { Input } from "./ui/input";
-import { Button } from "./ui/button";
-import { Card } from "./ui/card";
-import { Switch } from "./ui/switch";
-import { Label } from "./ui/label";
-import { Slider } from "./ui/slider";
-import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { toast } from "@/components/ui/use-toast";
-import CircularProgress from "./CircularProgress";
-import { useNavigate } from "react-router-dom";
+import { QBank, QuizHistory } from "../types/quiz";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
-import { CalendarHeatmap } from "./charts/CalendarHeatmap";
-import { TagPerformanceChart } from "./TagPerformanceChart";
-import { TagPerformanceBarChart } from "./charts/TagPerformanceBarChart";
+import { Card } from "./ui/card";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Switch } from "./ui/switch";
+import { Slider } from "./ui/slider";
+import { toast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
+import { DraggableCanvas } from "./dashboard/DraggableCanvas";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -248,79 +241,16 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           )}
         </Button>
       </div>
-      
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-6"
-      >
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-6">
-            <Card className="p-4">
-              <CalendarHeatmap data={quizHistory} />
-            </Card>
-            
-            <div className="grid grid-cols-3 gap-4">
-              <Card className="p-4 flex flex-col items-center">
-                <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
-                <CircularProgress percentage={overallAccuracyCalc} size="small" />
-              </Card>
-              
-              <Card className="p-4 flex flex-col items-center">
-                <h3 className="text-sm font-medium mb-2">Completion Rate</h3>
-                <CircularProgress percentage={completionRate} size="small" />
-              </Card>
-              
-              <Card className="p-4 flex flex-col items-center">
-                <h3 className="text-sm font-medium mb-2">Tag Performance</h3>
-                <div className="w-[100px] h-[100px] relative">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <TagPerformanceChart qbanks={qbanks} quizHistory={quizHistory} />
-                  </ResponsiveContainer>
-                </div>
-              </Card>
-            </div>
-          </div>
 
-          <div className="bg-card rounded-2xl shadow-lg p-6 h-[400px] flex flex-col">
-            <h3 className="text-lg font-medium mb-4">Performance Overview</h3>
-            <div className="flex-1 min-h-0 grid grid-rows-2 gap-4">
-              <div className="w-full h-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis 
-                      dataKey="attemptNumber" 
-                      label={{ value: 'Attempt Number', position: 'bottom' }}
-                      className="text-foreground"
-                    />
-                    <YAxis 
-                      label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }}
-                      domain={[0, 100]}
-                      className="text-foreground"
-                    />
-                    <Tooltip 
-                      formatter={(value: number) => [`${value.toFixed(1)}%`, 'Score']}
-                      labelFormatter={(label) => `Attempt ${label}`}
-                      contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
-                      labelStyle={{ color: 'hsl(var(--foreground))' }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="score"
-                      stroke="hsl(var(--primary))"
-                      activeDot={{ r: 8 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="w-full h-full">
-                <TagPerformanceBarChart qbanks={qbanks} quizHistory={quizHistory} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
+      <DraggableCanvas 
+        data={{
+          accuracy: overallAccuracy,
+          quizHistory,
+          qbanks,
+          metrics,
+          tagPerformance
+        }}
+      />
 
       <div className="grid md:grid-cols-2 gap-6">
         <motion.div
