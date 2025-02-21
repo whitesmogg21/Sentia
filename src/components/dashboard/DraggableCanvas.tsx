@@ -54,7 +54,7 @@ export const DraggableCanvas = ({ data }: DraggableCanvasProps) => {
       ref={canvasRef}
       onClick={handleCanvasClick}
       className={cn(
-        "relative p-4 border rounded-lg bg-background cursor-pointer",
+        "relative p-4 border-2 border-primary rounded-lg bg-background cursor-pointer",
         widgets.length === 0 ? "min-h-[200px]" : "min-h-fit"
       )}
     >
@@ -76,3 +76,4 @@ export const DraggableCanvas = ({ data }: DraggableCanvasProps) => {
     </div>
   );
 };
+
