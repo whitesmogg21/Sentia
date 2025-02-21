@@ -30,11 +30,14 @@ const QuestionLibrary = ({ qbanks }: { qbanks: QBank[] }) => {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
 
+  // Safely map and filter out any invalid questions
   const allQuestions = qbanks.flatMap(qbank =>
-    qbank.questions.map(question => ({
-      ...question,
-      qbankId: qbank.id
-    }))
+    qbank.questions
+      .filter(q => q && typeof q.question === 'string' && Array.isArray(q.tags)) // Ensure required properties exist
+      .map(question => ({
+        ...question,
+        qbankId: qbank.id
+      }))
   );
 
   const handleSort = (key: string) => {
@@ -45,22 +48,25 @@ const QuestionLibrary = ({ qbanks }: { qbanks: QBank[] }) => {
   };
 
   const filteredQuestions = allQuestions.filter(question => {
-    const matchesSearch = question.question.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTag = tagFilter === "" || question.tags.some(tag => 
-      tag.toLowerCase().includes(tagFilter.toLowerCase())
-    );
+    if (!question) return false;
+    
+    const matchesSearch = question.question?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false;
+    const matchesTag = !tagFilter || question.tags?.some(tag => 
+      tag?.toLowerCase().includes(tagFilter.toLowerCase())
+    ) ?? false;
+    
     return matchesSearch && matchesTag;
   });
 
   const sortedQuestions = [...filteredQuestions].sort((a, b) => {
     if (!sortConfig.key) return 0;
 
-    let aValue = a[sortConfig.key as keyof Question];
-    let bValue = b[sortConfig.key as keyof Question];
+    let aValue = a[sortConfig.key as keyof Question] ?? '';
+    let bValue = b[sortConfig.key as keyof Question] ?? '';
 
     if (sortConfig.key === 'tags') {
-      aValue = a.tags.join(', ');
-      bValue = b.tags.join(', ');
+      aValue = a.tags?.join(', ') ?? '';
+      bValue = b.tags?.join(', ') ?? '';
     }
 
     if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
@@ -168,7 +174,7 @@ const QuestionLibrary = ({ qbanks }: { qbanks: QBank[] }) => {
                 <TableCell className="font-medium">{question.question}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
-                    {question.tags.map((tag, index) => (
+                    {question.tags?.map((tag, index) => (
                       <Badge key={index} variant="secondary">
                         {tag}
                       </Badge>
