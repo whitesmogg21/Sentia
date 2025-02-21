@@ -18,30 +18,26 @@ export function AppSidebar() {
 
   return (
     <>
-      <Sidebar>
-        <SidebarContent>
-          <SidebarGroup>
-            <div className="flex items-center px-2">
-              <SidebarGroupLabel>Quiz App</SidebarGroupLabel>
-            </div>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {items.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <Link to={item.url}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-                <QBankDropdown />
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-      </Sidebar>
+      <div className="fixed left-0 top-0 h-full w-[160px] bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg">
+        <div className="p-3 border-b border-gray-200">
+          <h3 className="font-semibold text-lg">Quiz App</h3>
+        </div>
+        <div className="overflow-y-auto h-[calc(100vh-64px)]">
+          <SidebarMenu>
+            {items.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild>
+                  <Link to={item.url}>
+                    <item.icon />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+            <QBankDropdown />
+          </SidebarMenu>
+        </div>
+      </div>
       <Button
         variant="outline"
         size="icon"
