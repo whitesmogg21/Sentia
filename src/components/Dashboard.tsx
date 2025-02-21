@@ -17,6 +17,7 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { CalendarHeatmap } from "./charts/CalendarHeatmap";
 import { TagPerformanceChart } from "./TagPerformanceChart";
+import { TagPerformanceBarChart } from "./charts/TagPerformanceBarChart";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -281,35 +282,42 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             </div>
           </div>
 
-          <div className="bg-card rounded-2xl shadow-lg p-6 h-[400px]">
-            <h3 className="text-lg font-medium mb-4">Last Quiz Performance</h3>
-            <ResponsiveContainer width="100%" height="90%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis 
-                  dataKey="attemptNumber" 
-                  label={{ value: 'Attempt Number', position: 'bottom' }}
-                  className="text-foreground"
-                />
-                <YAxis 
-                  label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }}
-                  domain={[0, 100]}
-                  className="text-foreground"
-                />
-                <Tooltip 
-                  formatter={(value: number) => [`${value.toFixed(1)}%`, 'Score']}
-                  labelFormatter={(label) => `Attempt ${label}`}
-                  contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
-                  labelStyle={{ color: 'hsl(var(--foreground))' }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="score"
-                  stroke="hsl(var(--primary))"
-                  activeDot={{ r: 8 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="bg-card rounded-2xl shadow-lg p-6 h-[400px] flex flex-col">
+            <h3 className="text-lg font-medium mb-4">Performance Overview</h3>
+            <div className="flex-1 min-h-0 grid grid-rows-2 gap-4">
+              <div className="w-full h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis 
+                      dataKey="attemptNumber" 
+                      label={{ value: 'Attempt Number', position: 'bottom' }}
+                      className="text-foreground"
+                    />
+                    <YAxis 
+                      label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }}
+                      domain={[0, 100]}
+                      className="text-foreground"
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => [`${value.toFixed(1)}%`, 'Score']}
+                      labelFormatter={(label) => `Attempt ${label}`}
+                      contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
+                      labelStyle={{ color: 'hsl(var(--foreground))' }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="score"
+                      stroke="hsl(var(--primary))"
+                      activeDot={{ r: 8 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="w-full h-full">
+                <TagPerformanceBarChart qbanks={qbanks} quizHistory={quizHistory} />
+              </div>
+            </div>
           </div>
         </div>
       </motion.div>
