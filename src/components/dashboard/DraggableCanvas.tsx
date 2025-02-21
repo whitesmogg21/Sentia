@@ -1,60 +1,45 @@
 
 import { useState } from "react";
-import { Button } from "../ui/button";
 import { DraggableWidget } from "./DraggableWidget";
-import { WidgetSelector } from "./WidgetSelector";
-import { Edit2, Check } from "lucide-react";
-
-interface Widget {
-  id: string;
-  type: string;
-}
+import { AddWidgetModal } from "./AddWidgetModal";
 
 interface DraggableCanvasProps {
-  data: any;
+  data: {
+    accuracy: number;
+    quizHistory: any[];
+    qbanks: any[];
+    metrics: any;
+    tagPerformance: any[];
+  };
 }
 
 export const DraggableCanvas = ({ data }: DraggableCanvasProps) => {
-  const [widgets, setWidgets] = useState<Widget[]>([]);
-  const [isEditing, setIsEditing] = useState(false);
+  const [widgets, setWidgets] = useState<Array<{ id: string; type: string }>>([]);
 
   const handleAddWidget = (type: string) => {
-    setWidgets([...widgets, {
+    const newWidget = {
       id: `${type}-${Date.now()}`,
-      type
-    }]);
+      type,
+    };
+    setWidgets((prev) => [...prev, newWidget]);
   };
 
-  const handleRemoveWidget = (id: string) => {
-    setWidgets(widgets.filter(widget => widget.id !== id));
+  const handleRemoveWidget = (widgetId: string) => {
+    setWidgets((prev) => prev.filter((widget) => widget.id !== widgetId));
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <WidgetSelector onAddWidget={handleAddWidget} />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsEditing(!isEditing)}
-          className="rounded-full"
-        >
-          {isEditing ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <Edit2 className="h-4 w-4" />
-          )}
-        </Button>
+    <div className="relative min-h-[400px] p-4 border rounded-lg bg-background">
+      <div className="absolute top-4 right-4">
+        <AddWidgetModal onAddWidget={handleAddWidget} />
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 min-h-[200px] p-4 border-2 border-dashed rounded-lg">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-16">
         {widgets.map((widget) => (
           <DraggableWidget
             key={widget.id}
             id={widget.id}
             type={widget.type}
             onRemove={handleRemoveWidget}
-            isEditing={isEditing}
             data={data}
           />
         ))}
