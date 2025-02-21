@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,10 +26,8 @@ const App = () => {
   const [inQuiz, setInQuiz] = useState(false);
 
   const handleQuizComplete = (history: QuizHistory) => {
-    // Update quiz history
     setQuizHistory((prev) => [...prev, history]);
 
-    // Update the qbank with the new attempts
     const selectedQBank = qbanks.find(qb => qb.id === history.qbankId);
     if (selectedQBank) {
       history.questionAttempts.forEach(attempt => {
@@ -50,7 +47,6 @@ const App = () => {
         }
       });
       
-      // Save updated qbank to localStorage
       localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
     }
 
@@ -66,7 +62,6 @@ const App = () => {
 
   const handleQuizStart = () => {
     setInQuiz(true);
-    // Reset all questions in qbanks
     qbanks.forEach(qbank => {
       qbank.questions.forEach(question => {
         question.attempts = [];
@@ -79,14 +74,12 @@ const App = () => {
 
   const handleClearHistory = () => {
     setQuizHistory([]);
-    // Reset attempts in qbanks
     qbanks.forEach(qbank => {
       qbank.questions.forEach(question => {
         question.attempts = [];
         question.isFlagged = false;
       });
     });
-    // Clear localStorage
     localStorage.removeItem('selectedQBank');
   };
 
