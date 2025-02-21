@@ -11,6 +11,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarTrigger,
+  SidebarRail,
 } from "@/components/ui/sidebar";
 import QBankDropdown from "@/components/sidebar/QBankDropdown";
 
@@ -66,6 +67,7 @@ export function AppSidebar({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarRail />
     </Sidebar>
   );
 }
