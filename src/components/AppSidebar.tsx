@@ -40,12 +40,10 @@ export function AppSidebar() {
 
   return (
     <>
-      <div 
-        className={cn(
-          "fixed left-0 top-0 h-full bg-background border-r transition-all duration-300",
-          sidebarCollapsed ? "w-0" : "w-[160px]"
-        )}
-      >
+      <div className={cn(
+        "fixed left-0 top-0 h-full w-[160px] transition-transform duration-300",
+        sidebarCollapsed && "-translate-x-[160px]"
+      )}>
         <Sidebar>
           <SidebarContent>
             <SidebarGroup>
@@ -70,27 +68,22 @@ export function AppSidebar() {
         </Sidebar>
       </div>
 
-      <div className={cn(
-        "min-h-screen transition-all duration-300",
-        sidebarCollapsed ? "ml-0" : "ml-[160px]"
-      )}>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "fixed top-4 transition-all duration-300 bg-background border",
-            sidebarCollapsed ? "left-4" : "left-[150px]"
-          )}
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          aria-label="Toggle sidebar"
-        >
-          {sidebarCollapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
-        </Button>
-      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn(
+          "fixed top-4 transition-all duration-300 bg-background border",
+          sidebarCollapsed ? "left-4" : "left-[150px]"
+        )}
+        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+        aria-label="Toggle sidebar"
+      >
+        {sidebarCollapsed ? (
+          <ChevronRight className="h-4 w-4" />
+        ) : (
+          <ChevronLeft className="h-4 w-4" />
+        )}
+      </Button>
     </>
   );
 }
