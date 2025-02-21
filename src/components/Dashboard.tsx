@@ -50,6 +50,14 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     }
   }, [qbanks]);
 
+  const handleAddWidget = (type: string) => {
+    const newWidget = {
+      id: `${type}-${Date.now()}`,
+      type,
+    };
+    setWidgets((prev) => [...prev, newWidget]);
+  };
+
   const metrics = useMemo(() => {
     const seenQuestionIds = new Set<number>();
     const correctQuestionIds = new Set<number>();
@@ -247,13 +255,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       </div>
       
       <div className="mb-4">
-        <AddWidgetModal onAddWidget={(type) => {
-          const newWidget = {
-            id: `${type}-${Date.now()}`,
-            type,
-          };
-          setWidgets((prev) => [...prev, newWidget]);
-        }} />
+        <AddWidgetModal onAddWidget={handleAddWidget} />
       </div>
 
       <DraggableCanvas 
@@ -264,13 +266,8 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           metrics,
           tagPerformance
         }}
-        onAddWidget={(type) => {
-          const newWidget = {
-            id: `${type}-${Date.now()}`,
-            type,
-          };
-          setWidgets((prev) => [...prev, newWidget]);
-        }}
+        widgets={widgets}
+        setWidgets={setWidgets}
       />
 
       <div className="grid md:grid-cols-2 gap-6">

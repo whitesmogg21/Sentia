@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Dispatch, SetStateAction } from "react";
 import { DraggableWidget } from "./DraggableWidget";
 import { cn } from "@/lib/utils";
 
@@ -11,11 +11,11 @@ interface DraggableCanvasProps {
     metrics: any;
     tagPerformance: any[];
   };
-  onAddWidget: (type: string) => void;
+  widgets: Array<{ id: string; type: string }>;
+  setWidgets: Dispatch<SetStateAction<Array<{ id: string; type: string }>>>;
 }
 
-export const DraggableCanvas = ({ data, onAddWidget }: DraggableCanvasProps) => {
-  const [widgets, setWidgets] = useState<Array<{ id: string; type: string }>>([]);
+export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
