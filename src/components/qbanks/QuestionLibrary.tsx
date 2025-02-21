@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ type SortConfig = {
 
 type Question = {
   id: number;
-  text: string;
+  question: string;
   tags: string[];
   qbankId: string;
 };
@@ -44,7 +45,7 @@ const QuestionLibrary = ({ qbanks }: { qbanks: QBank[] }) => {
   };
 
   const filteredQuestions = allQuestions.filter(question => {
-    const matchesSearch = question.text.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = question.question.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesTag = tagFilter === "" || question.tags.some(tag => 
       tag.toLowerCase().includes(tagFilter.toLowerCase())
     );
@@ -131,7 +132,7 @@ const QuestionLibrary = ({ qbanks }: { qbanks: QBank[] }) => {
               <TableHead className="w-[400px]">
                 <Button
                   variant="ghost"
-                  onClick={() => handleSort('text')}
+                  onClick={() => handleSort('question')}
                   className="hover:bg-transparent"
                 >
                   Question Text
@@ -164,7 +165,7 @@ const QuestionLibrary = ({ qbanks }: { qbanks: QBank[] }) => {
           <TableBody>
             {sortedQuestions.map((question) => (
               <TableRow key={question.id}>
-                <TableCell className="font-medium">{question.text}</TableCell>
+                <TableCell className="font-medium">{question.question}</TableCell>
                 <TableCell>
                   <div className="flex flex-wrap gap-1">
                     {question.tags.map((tag, index) => (
@@ -225,3 +226,4 @@ const QuestionLibrary = ({ qbanks }: { qbanks: QBank[] }) => {
 };
 
 export default QuestionLibrary;
+
