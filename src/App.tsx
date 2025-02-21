@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,7 +12,7 @@ import QBanks from "./pages/QBanks";
 import SelectQBank from "./pages/SelectQBank";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
-import { QuizHistory, QBank } from "./types/quiz";
+import { QuizHistory, QBank, Question } from "./types/quiz";
 import { qbanks } from "./data/questions";
 import { toast } from "@/components/ui/use-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -27,8 +26,10 @@ const App = () => {
   const [inQuiz, setInQuiz] = useState(false);
 
   const handleQuizComplete = (history: QuizHistory) => {
+    // Update quiz history
     setQuizHistory((prev) => [...prev, history]);
 
+    // Update the qbank with the new attempts
     const selectedQBank = qbanks.find(qb => qb.id === history.qbankId);
     if (selectedQBank) {
       history.questionAttempts.forEach(attempt => {
@@ -37,17 +38,15 @@ const App = () => {
           question.attempts = [
             ...(question.attempts || []),
             {
-              questionId: attempt.questionId,
               selectedAnswer: attempt.selectedAnswer,
               isCorrect: attempt.isCorrect,
-              date: new Date().toISOString(),
-              isFlagged: false,
-              tags: question.tags
+              date: new Date().toISOString()
             }
           ];
         }
       });
       
+      // Save updated qbank to localStorage
       localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
     }
 
@@ -63,6 +62,7 @@ const App = () => {
 
   const handleQuizStart = () => {
     setInQuiz(true);
+    // Reset all questions in qbanks
     qbanks.forEach(qbank => {
       qbank.questions.forEach(question => {
         question.attempts = [];
@@ -71,17 +71,18 @@ const App = () => {
     });
     localStorage.removeItem('selectedQBank');
   };
-  
   const handleQuizEnd = () => setInQuiz(false);
 
   const handleClearHistory = () => {
     setQuizHistory([]);
+    // Reset attempts in qbanks
     qbanks.forEach(qbank => {
       qbank.questions.forEach(question => {
         question.attempts = [];
         question.isFlagged = false;
       });
     });
+    // Clear localStorage
     localStorage.removeItem('selectedQBank');
   };
 
@@ -92,7 +93,7 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <SidebarProvider defaultOpen>
+            <SidebarProvider>
               <div className="min-h-screen flex w-full">
                 {!inQuiz && <AppSidebar />}
                 <main className="flex-1">
