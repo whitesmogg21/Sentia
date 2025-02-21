@@ -1,5 +1,5 @@
 
-import { BarChart, Clock, Home, Library } from "lucide-react";
+import { BarChart, Clock, Home } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Sidebar,
@@ -32,9 +32,9 @@ const items = [
   },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ variant = "sidebar", collapsible = "offcanvas" }) {
   return (
-    <Sidebar>
+    <Sidebar variant={variant} collapsible={collapsible}>
       <SidebarContent>
         <SidebarGroup>
           <div className="flex items-center justify-between px-2">
