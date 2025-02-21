@@ -300,6 +300,31 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     event.target.value = '';
   };
 
+  const resetForm = () => {
+    setNewQuestion({
+      question: "",
+      options: ["", "", "", ""],
+      correctAnswer: 0,
+      explanation: "",
+      tags: [],
+      media: {
+        type: "image",
+        url: "",
+        showWith: "question"
+      }
+    });
+    setSelectedTags([]);
+    setIsEditMode(false);
+    setEditingQuestion(null);
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (open && !isEditMode) {
+      resetForm();
+    }
+  };
+
   const filteredQuestions = qbanks.flatMap(qbank => 
     qbank.questions.filter(q => {
       if (activeFilters.length > 0 && !q.tags.some(tag => activeFilters.includes(tag))) {
@@ -389,7 +414,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               </span>
             </Button>
           </label>
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
