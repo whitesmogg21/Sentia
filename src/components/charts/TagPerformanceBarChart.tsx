@@ -7,7 +7,8 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ErrorBar
+  ErrorBar,
+  Cell
 } from 'recharts';
 import { QBank, QuizHistory } from '@/types/quiz';
 import { useMemo } from 'react';
@@ -85,6 +86,15 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
       .sort((a, b) => b.score - a.score); // Sort by score descending
   }, [qbanks, quizHistory]);
 
+  // Custom colors for bars
+  const colors = [
+    '#9b87f5', // Primary purple
+    '#8B5CF6', // Vivid purple
+    '#D946EF', // Magenta pink
+    '#F97316', // Bright orange
+    '#0EA5E9', // Ocean blue
+  ];
+
   if (tagPerformance.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -98,38 +108,51 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={tagPerformance}
-          margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
-          barGap={0}
-          barCategoryGap="20%"
+          margin={{ top: 20, right: 40, left: 40, bottom: 60 }}
+          barGap={4}
+          barCategoryGap="12%"
         >
-          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.3} />
+          <CartesianGrid 
+            strokeDasharray="3 3" 
+            className="stroke-muted" 
+            opacity={0.2} 
+            horizontal={true}
+            vertical={false}
+          />
           <XAxis
             dataKey="tag"
             angle={-45}
             textAnchor="end"
-            height={70}
-            tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
+            height={80}
+            tick={{ fill: "hsl(var(--foreground))", fontSize: 13 }}
             interval={0}
-            tickMargin={5}
+            tickMargin={8}
           />
           <YAxis
             domain={[0, 100]}
-            tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
-            tickMargin={8}
+            tick={{ fill: "hsl(var(--foreground))", fontSize: 13 }}
+            tickMargin={10}
+            padding={{ top: 10 }}
             label={{
               value: "Score (%)",
               angle: -90,
               position: "insideLeft",
               fill: "hsl(var(--foreground))",
-              style: { textAnchor: 'middle' }
+              style: { 
+                textAnchor: 'middle',
+                fontSize: '14px',
+                marginLeft: '10px'
+              }
             }}
           />
           <Tooltip
+            cursor={{ fill: 'hsl(var(--accent))', opacity: 0.1 }}
             contentStyle={{
               backgroundColor: "hsl(var(--card))",
               border: "1px solid hsl(var(--border))",
-              borderRadius: "0.5rem",
-              padding: "8px",
+              borderRadius: "0.75rem",
+              padding: "12px",
+              boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)"
             }}
             formatter={(value: number, name: string, props: any) => [
               `${value}% ± ${props.payload.errorPlus}%`,
@@ -139,23 +162,27 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
           />
           <Bar
             dataKey="score"
-            fill="hsl(var(--primary))"
-            fillOpacity={0.8}
-            radius={[4, 4, 0, 0]}
+            fillOpacity={0.85}
+            radius={[6, 6, 0, 0]}
           >
+            {tagPerformance.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+            ))}
             <ErrorBar
               dataKey="errorMinus"
               direction="y"
               stroke="hsl(var(--foreground))"
-              strokeWidth={1}
-              opacity={0.5}
+              strokeWidth={1.5}
+              opacity={0.4}
+              width={8}
             />
             <ErrorBar
               dataKey="errorPlus"
               direction="y"
               stroke="hsl(var(--foreground))"
-              strokeWidth={1}
-              opacity={0.5}
+              strokeWidth={1.5}
+              opacity={0.4}
+              width={8}
             />
           </Bar>
         </BarChart>
