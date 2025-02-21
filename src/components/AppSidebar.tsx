@@ -1,4 +1,5 @@
-import { BarChart, Clock, Home, Library } from "lucide-react";
+
+import { BarChart, Clock, Home, Library, ChevronLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Sidebar,
@@ -9,8 +10,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import QBankDropdown from "@/components/sidebar/QBankDropdown";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const items = [
   {
@@ -31,11 +35,27 @@ const items = [
 ];
 
 export function AppSidebar() {
+  const { toggleSidebar, state } = useSidebar();
+
   return (
     <Sidebar>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Quiz App</SidebarGroupLabel>
+          <div className="flex items-center justify-between p-2">
+            <SidebarGroupLabel>Quiz App</SidebarGroupLabel>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-8 w-8 rounded-full hover:bg-accent transition-all",
+                state === "collapsed" && "rotate-180"
+              )}
+              onClick={toggleSidebar}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="sr-only">Toggle sidebar</span>
+            </Button>
+          </div>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
@@ -56,3 +76,4 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+
