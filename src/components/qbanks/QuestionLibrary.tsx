@@ -1,13 +1,13 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit, Trash2, Filter } from "lucide-react";
+import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit, Trash2, Filter, Sun, Moon } from "lucide-react";
 import { Question, QBank } from "@/types/quiz";
 import { toast } from "@/components/ui/use-toast";
+import { useTheme } from "@/components/ThemeProvider";
 import {
   Table,
   TableBody,
@@ -33,6 +33,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const { theme, setTheme } = useTheme();
   const [newQuestion, setNewQuestion] = useState<Partial<Question>>({
     question: "",
     options: ["", "", "", ""],
@@ -53,7 +54,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [exactMatch, setExactMatch] = useState(false);
 
   const existingTags = Array.from(new Set(
-    qbanks.flatMap(qbank => qbank.questions.flatMap(q => q.tags))
+    qbanks.flatMap(qbank => qbank.questions.flatMap(q => q.tags || []))
   ));
 
   const handleAddTag = (tag: string) => {
@@ -533,6 +534,17 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               </div>
             </DialogContent>
           </Dialog>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+          >
+            {theme === "light" ? (
+              <Moon className="h-4 w-4" />
+            ) : (
+              <Sun className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </div>
 
@@ -642,4 +654,3 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 };
 
 export default QuestionLibrary;
-
