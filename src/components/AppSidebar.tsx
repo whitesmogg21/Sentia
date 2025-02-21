@@ -1,52 +1,23 @@
 
 import { BarChart, Clock, Home, PanelLeftClose } from "lucide-react";
 import { Link } from "react-router-dom";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 import QBankDropdown from "@/components/sidebar/QBankDropdown";
 
 const items = [
-  {
-    title: "Dashboard",
-    url: "/",
-    icon: Home,
-  },
-  {
-    title: "Performance",
-    url: "/performance",
-    icon: BarChart,
-  },
-  {
-    title: "Previous Quizzes",
-    url: "/history",
-    icon: Clock,
-  },
+  { title: "Dashboard", url: "/", icon: Home },
+  { title: "Performance", url: "/performance", icon: BarChart },
+  { title: "Previous Quizzes", url: "/history", icon: Clock },
 ];
 
-type AppSidebarProps = {
-  variant?: "sidebar" | "floating" | "inset";
-  collapsible?: "offcanvas" | "icon" | "none";
-};
-
-export function AppSidebar({ 
-  variant = "sidebar", 
-  collapsible = "offcanvas" 
-}: AppSidebarProps) {
+export function AppSidebar() {
   const { toggleSidebar } = useSidebar();
 
   return (
     <>
-      <Sidebar variant={variant} collapsible={collapsible}>
+      <Sidebar>
         <SidebarContent>
           <SidebarGroup>
             <div className="flex items-center px-2">
