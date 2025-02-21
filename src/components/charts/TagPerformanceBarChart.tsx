@@ -132,13 +132,13 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
           >
             <ErrorBar
               dataKey="errorMinus"
-              direction="minus"
+              direction="y"
               stroke="hsl(var(--foreground))"
               strokeWidth={1}
             />
             <ErrorBar
               dataKey="errorPlus"
-              direction="plus"
+              direction="y"
               stroke="hsl(var(--foreground))"
               strokeWidth={1}
             />
@@ -148,4 +148,3 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
     </div>
   );
 };
-
