@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,7 +13,7 @@ import QBanks from "./pages/QBanks";
 import SelectQBank from "./pages/SelectQBank";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
-import { QuizHistory, QBank, Question } from "./types/quiz";
+import { QuizHistory, QBank } from "./types/quiz";
 import { qbanks } from "./data/questions";
 import { toast } from "@/components/ui/use-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -38,9 +39,12 @@ const App = () => {
           question.attempts = [
             ...(question.attempts || []),
             {
+              questionId: attempt.questionId,
               selectedAnswer: attempt.selectedAnswer,
               isCorrect: attempt.isCorrect,
-              date: new Date().toISOString()
+              date: new Date().toISOString(),
+              isFlagged: attempt.isFlagged,
+              tags: question.tags
             }
           ];
         }
