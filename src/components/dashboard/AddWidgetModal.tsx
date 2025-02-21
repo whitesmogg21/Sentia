@@ -14,6 +14,7 @@ import CircularProgress from "@/components/CircularProgress";
 import { CalendarHeatmap } from "@/components/charts/CalendarHeatmap";
 import { TagPerformanceBarChart } from "@/components/charts/TagPerformanceBarChart";
 import { TagPerformanceChart } from "@/components/TagPerformanceChart";
+import { QuizHistory, QBank, Question } from "@/types/quiz";
 
 interface AddWidgetModalProps {
   onAddWidget: (type: string) => void;
@@ -29,19 +30,29 @@ export const AddWidgetModal = ({ onAddWidget }: AddWidgetModalProps) => {
       score: 80,
       totalQuestions: 10,
       qbankId: '1',
-      questionAttempts: [{ isCorrect: true }, { isCorrect: false }],
-    }],
+      questionAttempts: [{
+        questionId: 1,
+        selectedAnswer: 1,
+        isCorrect: true,
+        isFlagged: false,
+        tags: ['Math']
+      }],
+    }] as QuizHistory[],
     qbanks: [{
       id: '1',
       name: 'Sample QBank',
       description: 'A sample question bank',
       questions: [
         {
-          id: '1',
+          id: 1,
+          question: 'Sample question',
+          options: ['Option 1', 'Option 2'],
+          correctAnswer: 1,
+          qbankId: '1',
           tags: ['Math', 'Algebra', 'Geometry'],
         },
-      ],
-    }],
+      ] as Question[],
+    }] as QBank[],
     metrics: {},
     tagPerformance: [],
   };
@@ -112,4 +123,3 @@ export const AddWidgetModal = ({ onAddWidget }: AddWidgetModalProps) => {
     </Dialog>
   );
 };
-

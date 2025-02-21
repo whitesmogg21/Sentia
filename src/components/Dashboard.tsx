@@ -13,6 +13,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { DraggableCanvas } from "./dashboard/DraggableCanvas";
 import { QuestionFilter } from "@/types/quiz";
+import { AddWidgetModal } from "./dashboard/AddWidgetModal";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -36,6 +37,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     omitted: false,
   });
   const { theme, setTheme } = useTheme();
+  const [widgets, setWidgets] = useState<Array<{ id: string; type: string }>>([]);
 
   useEffect(() => {
     const storedQBank = localStorage.getItem('selectedQBank');
@@ -228,7 +230,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-2">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <Button
           variant="ghost"
@@ -243,6 +245,16 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           )}
         </Button>
       </div>
+      
+      <div className="mb-4">
+        <AddWidgetModal onAddWidget={(type) => {
+          const newWidget = {
+            id: `${type}-${Date.now()}`,
+            type,
+          };
+          setWidgets((prev) => [...prev, newWidget]);
+        }} />
+      </div>
 
       <DraggableCanvas 
         data={{
@@ -251,6 +263,13 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           qbanks,
           metrics,
           tagPerformance
+        }}
+        onAddWidget={(type) => {
+          const newWidget = {
+            id: `${type}-${Date.now()}`,
+            type,
+          };
+          setWidgets((prev) => [...prev, newWidget]);
         }}
       />
 
