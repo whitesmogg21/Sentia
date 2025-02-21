@@ -77,11 +77,12 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
         return {
           tag,
           score: Math.round(mean),
-          errorPlus: Math.min(100 - mean, stdError * 1.96),
-          errorMinus: Math.min(mean, stdError * 1.96),
+          errorPlus: Math.round(Math.min(100 - mean, stdError * 1.96)),
+          errorMinus: Math.round(Math.min(mean, stdError * 1.96)),
           totalQuestions: stats.total,
         };
-      });
+      })
+      .sort((a, b) => b.score - a.score); // Sort by score descending
   }, [qbanks, quizHistory]);
 
   if (tagPerformance.length === 0) {
@@ -98,23 +99,29 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
         <BarChart
           data={tagPerformance}
           margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
+          barGap={0}
+          barCategoryGap="20%"
         >
-          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.3} />
           <XAxis
             dataKey="tag"
             angle={-45}
             textAnchor="end"
             height={70}
             tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
+            interval={0}
+            tickMargin={5}
           />
           <YAxis
             domain={[0, 100]}
             tick={{ fill: "hsl(var(--foreground))", fontSize: 12 }}
+            tickMargin={8}
             label={{
               value: "Score (%)",
               angle: -90,
               position: "insideLeft",
               fill: "hsl(var(--foreground))",
+              style: { textAnchor: 'middle' }
             }}
           />
           <Tooltip
@@ -122,25 +129,33 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
               backgroundColor: "hsl(var(--card))",
               border: "1px solid hsl(var(--border))",
               borderRadius: "0.5rem",
+              padding: "8px",
             }}
-            formatter={(value: number) => [`${value}%`, "Score"]}
+            formatter={(value: number, name: string, props: any) => [
+              `${value}% ± ${props.payload.errorPlus}%`,
+              "Score",
+            ]}
+            labelFormatter={(label) => `Tag: ${label}`}
           />
           <Bar
             dataKey="score"
             fill="hsl(var(--primary))"
             fillOpacity={0.8}
+            radius={[4, 4, 0, 0]}
           >
             <ErrorBar
               dataKey="errorMinus"
               direction="y"
               stroke="hsl(var(--foreground))"
               strokeWidth={1}
+              opacity={0.5}
             />
             <ErrorBar
               dataKey="errorPlus"
               direction="y"
               stroke="hsl(var(--foreground))"
               strokeWidth={1}
+              opacity={0.5}
             />
           </Bar>
         </BarChart>
@@ -148,3 +163,4 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
     </div>
   );
 };
+
