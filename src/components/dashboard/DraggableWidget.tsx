@@ -25,19 +25,18 @@ export const DraggableWidget = ({ id, type, onRemove, isEditing, data }: Draggab
   // Reset position when editing mode is disabled
   useEffect(() => {
     if (!isEditing) {
-      // Animate back to original position
       setPosition({ x: 0, y: 0 });
     }
   }, [isEditing]);
 
-  // Shake animation when editing mode is active
-  const shakeAnimation = isEditing ? {
-    rotate: [0, -1, 1, -1, 0],
+  const shakeAnimation = {
+    rotate: isEditing ? [-1, 1, -1, 1, 0] : 0,
     transition: {
       duration: 0.5,
-      repeat: Infinity,
+      repeat: isEditing ? Infinity : 0,
+      repeatType: "loop" as const
     }
-  } : {};
+  };
 
   const renderWidget = () => {
     switch (type) {
@@ -66,13 +65,16 @@ export const DraggableWidget = ({ id, type, onRemove, isEditing, data }: Draggab
         }
       }}
       animate={{
-        ...shakeAnimation,
+        rotate: shakeAnimation.rotate,
         x: position.x,
         y: position.y,
         transition: {
-          type: "spring",
-          stiffness: 300,
-          damping: 20
+          rotate: shakeAnimation.transition,
+          default: {
+            type: "spring",
+            stiffness: 300,
+            damping: 20
+          }
         }
       }}
       className="relative"
