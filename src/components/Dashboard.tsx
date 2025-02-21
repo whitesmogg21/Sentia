@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { QBank, QuizHistory } from "../types/quiz";
 import { Moon, Sun } from "lucide-react";
+import { motion } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
 import { Card } from "./ui/card";
 import { Button } from "./ui/button";
@@ -11,6 +12,7 @@ import { Slider } from "./ui/slider";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { DraggableCanvas } from "./dashboard/DraggableCanvas";
+import { QuestionFilter } from "@/types/quiz";
 
 interface DashboardProps {
   qbanks: QBank[];
