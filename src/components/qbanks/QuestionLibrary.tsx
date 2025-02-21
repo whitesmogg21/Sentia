@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -535,7 +536,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
             </DialogContent>
           </Dialog>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
           >
