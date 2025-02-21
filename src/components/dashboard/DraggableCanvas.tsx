@@ -3,6 +3,7 @@ import { useState } from "react";
 import { DraggableWidget } from "./DraggableWidget";
 import { AddWidgetModal } from "./AddWidgetModal";
 import { Button } from "../ui/button";
+import { cn } from "@/lib/utils";
 
 interface DraggableCanvasProps {
   data: {
@@ -31,7 +32,10 @@ export const DraggableCanvas = ({ data }: DraggableCanvasProps) => {
   };
 
   return (
-    <div className="relative min-h-[400px] p-4 border rounded-lg bg-background">
+    <div className={cn(
+      "relative p-4 border rounded-lg bg-background",
+      widgets.length === 0 ? "min-h-[200px]" : "min-h-fit"
+    )}>
       <div className="absolute top-4 right-4 flex gap-2">
         <Button 
           variant="outline" 
@@ -56,3 +60,4 @@ export const DraggableCanvas = ({ data }: DraggableCanvasProps) => {
     </div>
   );
 };
+

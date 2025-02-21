@@ -20,25 +20,28 @@ interface AddWidgetModalProps {
 }
 
 export const AddWidgetModal = ({ onAddWidget }: AddWidgetModalProps) => {
-  // Sample data for previews
+  // Sample data for previews with correct types
   const previewData = {
     accuracy: 85,
-    quizHistory: [
-      {
-        date: new Date().toISOString(),
-        questionAttempts: [{ isCorrect: true }, { isCorrect: false }],
-      },
-    ],
-    qbanks: [
-      {
-        questions: [
-          {
-            id: '1',
-            tags: ['Math', 'Algebra', 'Geometry'],
-          },
-        ],
-      },
-    ],
+    quizHistory: [{
+      id: '1',
+      date: new Date().toISOString(),
+      score: 80,
+      totalQuestions: 10,
+      qbankId: '1',
+      questionAttempts: [{ isCorrect: true }, { isCorrect: false }],
+    }],
+    qbanks: [{
+      id: '1',
+      name: 'Sample QBank',
+      description: 'A sample question bank',
+      questions: [
+        {
+          id: '1',
+          tags: ['Math', 'Algebra', 'Geometry'],
+        },
+      ],
+    }],
     metrics: {},
     tagPerformance: [],
   };
@@ -109,3 +112,4 @@ export const AddWidgetModal = ({ onAddWidget }: AddWidgetModalProps) => {
     </Dialog>
   );
 };
+
