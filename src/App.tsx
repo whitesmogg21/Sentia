@@ -1,5 +1,6 @@
+
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -26,10 +27,8 @@ const App = () => {
   const [inQuiz, setInQuiz] = useState(false);
 
   const handleQuizComplete = (history: QuizHistory) => {
-    // Update quiz history
     setQuizHistory((prev) => [...prev, history]);
 
-    // Update the qbank with the new attempts
     const selectedQBank = qbanks.find(qb => qb.id === history.qbankId);
     if (selectedQBank) {
       history.questionAttempts.forEach(attempt => {
@@ -38,15 +37,17 @@ const App = () => {
           question.attempts = [
             ...(question.attempts || []),
             {
+              questionId: attempt.questionId,
               selectedAnswer: attempt.selectedAnswer,
               isCorrect: attempt.isCorrect,
-              date: new Date().toISOString()
+              date: new Date().toISOString(),
+              isFlagged: false,
+              tags: question.tags
             }
           ];
         }
       });
       
-      // Save updated qbank to localStorage
       localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
     }
 
@@ -62,7 +63,6 @@ const App = () => {
 
   const handleQuizStart = () => {
     setInQuiz(true);
-    // Reset all questions in qbanks
     qbanks.forEach(qbank => {
       qbank.questions.forEach(question => {
         question.attempts = [];
@@ -71,18 +71,17 @@ const App = () => {
     });
     localStorage.removeItem('selectedQBank');
   };
+  
   const handleQuizEnd = () => setInQuiz(false);
 
   const handleClearHistory = () => {
     setQuizHistory([]);
-    // Reset attempts in qbanks
     qbanks.forEach(qbank => {
       qbank.questions.forEach(question => {
         question.attempts = [];
         question.isFlagged = false;
       });
     });
-    // Clear localStorage
     localStorage.removeItem('selectedQBank');
   };
 
