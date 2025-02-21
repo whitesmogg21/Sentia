@@ -40,8 +40,7 @@ export function AppSidebar() {
       </div>
       <Button
         variant="outline"
-        size="icon"
-        className="fixed left-[160px] top-1/2 z-50 -translate-y-1/2 h-8 w-4 rounded-l-none border-l-0 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+        className="fixed z-50 top-1/2 -translate-y-1/2 left-[160px] flex h-6 w-6 items-center justify-center rounded-full border bg-background p-0 text-foreground shadow-sm transition-transform hover:scale-105 hover:bg-accent hover:text-accent-foreground"
         onClick={toggleSidebar}
       >
         <ChevronLeft className="h-4 w-4" />
