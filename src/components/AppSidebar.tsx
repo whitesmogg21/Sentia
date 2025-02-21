@@ -1,7 +1,6 @@
-
-import { BarChart, Clock, Home, Library, ChevronLeft, ChevronRight } from "lucide-react";
+import { Clock, Home, Library, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import QBankDropdown from "@/components/sidebar/QBankDropdown";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,10 +10,6 @@ const items = [{
   title: "Dashboard",
   url: "/",
   icon: Home
-}, {
-  title: "Performance",
-  url: "/performance",
-  icon: BarChart
 }, {
   title: "Previous Quizzes",
   url: "/history",

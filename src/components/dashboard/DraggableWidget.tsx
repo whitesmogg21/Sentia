@@ -7,6 +7,18 @@ import CircularProgress from "../CircularProgress";
 import { CalendarHeatmap } from "../charts/CalendarHeatmap";
 import { TagPerformanceBarChart } from "../charts/TagPerformanceBarChart";
 import { TagPerformanceChart } from "../TagPerformanceChart";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from 'recharts';
 import { Card } from "../ui/card";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +34,6 @@ export const DraggableWidget = ({ id, type, onRemove, isEditing, data }: Draggab
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
 
-  // Reset position when editing mode is disabled
   useEffect(() => {
     if (!isEditing) {
       setPosition({ x: 0, y: 0 });
@@ -48,6 +59,54 @@ export const DraggableWidget = ({ id, type, onRemove, isEditing, data }: Draggab
         return <TagPerformanceBarChart qbanks={data.qbanks || []} quizHistory={data.quizHistory || []} />;
       case 'spiderChart':
         return <TagPerformanceChart qbanks={data.qbanks || []} quizHistory={data.quizHistory || []} />;
+      case 'progressChart':
+        return (
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data.quizHistory || []}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.2} />
+                <XAxis dataKey="date" />
+                <YAxis domain={[0, 100]} />
+                <Tooltip />
+                <Area
+                  type="monotone"
+                  dataKey="score"
+                  stroke="hsl(var(--primary))"
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.3}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        );
+      case 'scoreDistribution':
+        const colors = ['#0088FE', '#00C49F', '#FFBB28'];
+        const scoreData = [
+          { name: 'Correct', value: data.metrics?.correct || 0 },
+          { name: 'Incorrect', value: data.metrics?.incorrect || 0 },
+          { name: 'Skipped', value: data.metrics?.omitted || 0 },
+        ];
+        return (
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={scoreData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  dataKey="value"
+                  label
+                >
+                  {scoreData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        );
       default:
         return <div>Unknown widget type</div>;
     }
