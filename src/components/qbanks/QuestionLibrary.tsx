@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -582,23 +583,23 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 
       <div className="rounded-md border">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-primary">
             <TableRow>
-              <TableHead className="cursor-pointer" onClick={() => handleSort('question')}>
+              <TableHead className="cursor-pointer text-primary-foreground hover:text-primary-foreground/90" onClick={() => handleSort('question')}>
                 Question
                 <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort('correctAnswerText')}>
+              <TableHead className="cursor-pointer text-primary-foreground hover:text-primary-foreground/90" onClick={() => handleSort('correctAnswerText')}>
                 Correct Answer
                 <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead>Other Choices</TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort('tags')}>
+              <TableHead className="text-primary-foreground">Other Choices</TableHead>
+              <TableHead className="cursor-pointer text-primary-foreground hover:text-primary-foreground/90" onClick={() => handleSort('tags')}>
                 Tags
                 <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead>Explanation</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="text-primary-foreground">Explanation</TableHead>
+              <TableHead className="text-primary-foreground">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -641,3 +642,4 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 };
 
 export default QuestionLibrary;
+
