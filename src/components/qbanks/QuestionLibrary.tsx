@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit } from "lucide-react";
+import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit, Filter } from "lucide-react";
 import { Question, QBank } from "@/types/quiz";
 import { toast } from "@/components/ui/use-toast";
 import {
@@ -24,7 +24,7 @@ interface QuestionLibraryProps {
 }
 
 type SortConfig = {
-  key: keyof Question | 'correctAnswerText' | null;
+  key: keyof Question | 'correctAnswerText' | 'tags' | null;
   direction: 'asc' | 'desc';
 };
 
@@ -48,6 +48,8 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [exactMatch, setExactMatch] = useState(false);
 
   const existingTags = Array.from(new Set(
     qbanks.flatMap(qbank => qbank.questions.flatMap(q => q.tags))
@@ -299,15 +301,37 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   };
 
   const filteredQuestions = qbanks.flatMap(qbank => 
-    qbank.questions.filter(q => 
-      q.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      q.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
+    qbank.questions.filter(q => {
+      if (activeFilters.length > 0 && !q.tags.some(tag => activeFilters.includes(tag))) {
+        return false;
+      }
+
+      if (searchQuery) {
+        if (exactMatch) {
+          const searchWords = searchQuery.toLowerCase().split(' ');
+          const questionWords = q.question.toLowerCase().split(' ');
+          return searchWords.every(word => questionWords.includes(word));
+        } else {
+          return q.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                 q.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+        }
+      }
+
+      return true;
+    })
   );
 
   const sortedQuestions = [...filteredQuestions].sort((a, b) => {
     if (!sortConfig.key) return 0;
     
+    if (sortConfig.key === 'tags') {
+      const aTags = a.tags.join(', ');
+      const bTags = b.tags.join(', ');
+      return sortConfig.direction === 'asc'
+        ? aTags.localeCompare(bTags)
+        : bTags.localeCompare(aTags);
+    }
+
     let aValue = sortConfig.key === 'correctAnswerText' 
       ? a.options[a.correctAnswer]
       : a[sortConfig.key];
@@ -322,6 +346,14 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     }
     return 0;
   });
+
+  const handleToggleFilter = (tag: string) => {
+    setActiveFilters(prev =>
+      prev.includes(tag)
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
 
   return (
     <div className="p-6">
@@ -464,12 +496,49 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         </div>
       </div>
 
-      <div className="mb-6">
-        <Input
-          placeholder="Search questions by text or tags..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      <div className="mb-6 space-y-4">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Search questions by text..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Button
+              variant={exactMatch ? "default" : "outline"}
+              onClick={() => setExactMatch(!exactMatch)}
+              className="whitespace-nowrap"
+            >
+              Exact Match
+            </Button>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {exactMatch ? "Showing exact word matches only" : "Showing partial matches"}
+          </div>
+        </div>
+
+        <div>
+          <Label className="mb-2 block">Filter by Tags</Label>
+          <div className="flex flex-wrap gap-2">
+            {existingTags.map(tag => (
+              <Button
+                key={tag}
+                variant={activeFilters.includes(tag) ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleToggleFilter(tag)}
+                className="gap-2"
+              >
+                <Tag className="w-3 h-3" />
+                {tag}
+              </Button>
+            ))}
+          </div>
+          {activeFilters.length > 0 && (
+            <div className="mt-2 text-sm text-muted-foreground">
+              Showing questions with tags: {activeFilters.join(', ')}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="rounded-md border">
@@ -485,7 +554,10 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                 <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
               <TableHead>Other Choices</TableHead>
-              <TableHead>Tags</TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('tags')}>
+                Tags
+                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
               <TableHead>Explanation</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
