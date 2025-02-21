@@ -28,14 +28,14 @@ export function AppSidebar() {
     <div className="relative">
       <div className={cn(
         "transition-all duration-300",
-        sidebarCollapsed ? "ml-0" : "ml-[150px]"
+        sidebarCollapsed ? "ml-0" : "ml-[160px]"
       )}>
         {/* Main content container */}
       </div>
 
       <div className={cn(
-        "fixed left-0 top-0 h-full w-[150px] transition-transform duration-300",
-        sidebarCollapsed && "-translate-x-[150px]"
+        "fixed left-0 top-0 h-full w-[160px] transition-transform duration-300",
+        sidebarCollapsed && "-translate-x-[160px]"
       )}>
         <Sidebar>
           <SidebarContent className="px-0 rounded-md">
