@@ -1,10 +1,11 @@
 
-import { BarChart, Clock, Home, PanelLeftClose } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 import QBankDropdown from "@/components/sidebar/QBankDropdown";
+import { BarChart, Clock, Home } from "lucide-react";
 
 const items = [
   { title: "Dashboard", url: "/", icon: Home },
@@ -17,7 +18,7 @@ export function AppSidebar() {
 
   return (
     <>
-      <Sidebar variant="sidebar" collapsible="offcanvas">
+      <Sidebar>
         <SidebarContent>
           <SidebarGroup>
             <div className="flex items-center px-2">
@@ -42,12 +43,12 @@ export function AppSidebar() {
         </SidebarContent>
       </Sidebar>
       <Button
-        variant="ghost"
+        variant="outline"
         size="icon"
-        className="fixed left-[256px] top-2 z-50 h-8 w-8 rounded-r-none border bg-background px-0 hover:bg-accent hover:text-accent-foreground"
+        className="fixed left-[160px] top-1/2 z-50 -translate-y-1/2 h-8 w-4 rounded-l-none border-l-0 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
         onClick={toggleSidebar}
       >
-        <PanelLeftClose className="h-4 w-4" />
+        <ChevronLeft className="h-4 w-4" />
         <span className="sr-only">Toggle Sidebar</span>
       </Button>
     </>
