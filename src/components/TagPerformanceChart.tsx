@@ -7,12 +7,8 @@ import {
   PolarRadiusAxis,
   Radar,
   ResponsiveContainer,
+  Tooltip,
 } from 'recharts';
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
 import { Card } from './ui/card';
 import { QBank, QuizHistory } from '@/types/quiz';
 
@@ -25,6 +21,7 @@ export const TagPerformanceChart = ({ qbanks, quizHistory }: TagPerformanceChart
   const tagPerformance = useMemo(() => {
     const tagStats: { [key: string]: { correct: number; total: number } } = {};
     
+    // First collect all unique tags from qbanks
     const uniqueTags = new Set<string>();
     qbanks.forEach(qbank => {
       qbank.questions.forEach(question => {
@@ -32,10 +29,12 @@ export const TagPerformanceChart = ({ qbanks, quizHistory }: TagPerformanceChart
       });
     });
 
+    // Initialize statistics for all tags
     uniqueTags.forEach(tag => {
       tagStats[tag] = { correct: 0, total: 0 };
     });
 
+    // Calculate statistics from quiz history
     quizHistory.forEach(quiz => {
       quiz.questionAttempts.forEach(attempt => {
         const question = qbanks
@@ -53,61 +52,60 @@ export const TagPerformanceChart = ({ qbanks, quizHistory }: TagPerformanceChart
       });
     });
 
+    // Transform stats into array format for RadarChart
     return Object.entries(tagStats)
       .filter(([_, stats]) => stats.total > 0)
       .map(([tag, stats]) => ({
         tag,
-        score: stats.total > 0 ? (stats.correct / stats.total) * 100 : 0,
-        correct: stats.correct,
-        total: stats.total,
+        score: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+        totalQuestions: stats.total,
+        correctAnswers: stats.correct,
       }));
   }, [qbanks, quizHistory]);
 
   if (tagPerformance.length === 0) {
     return (
-      <Card className="p-4 flex flex-col items-center">
-        <h3 className="text-sm font-medium mb-2">Performance by Tag</h3>
+      <Card className="p-4 flex flex-col items-center justify-center h-full">
         <p className="text-sm text-muted-foreground">No tag data available</p>
       </Card>
     );
   }
 
   return (
-    <Card className="p-4 flex flex-col items-center">
-      <h3 className="text-sm font-medium mb-2">Performance by Tag</h3>
-      <div className="w-[100px] h-[100px]">
+    <Card className="p-4 flex flex-col items-center h-full aspect-square">
+      <h3 className="text-sm font-medium mb-2">Tag Performance</h3>
+      <div className="w-full h-[calc(100%-2rem)] min-h-[100px]">
         <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={tagPerformance} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+          <RadarChart
+            data={tagPerformance}
+            margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
+          >
             <PolarGrid 
-              stroke="hsl(var(--muted-foreground))" 
+              stroke="hsl(var(--muted-foreground))"
               strokeOpacity={0.2}
             />
             <PolarAngleAxis
               dataKey="tag"
-              tick={({ x, y, payload, index }) => (
-                <g transform={`translate(${x},${y})`}>
-                  <HoverCard>
-                    <HoverCardTrigger asChild>
-                      <circle
-                        cx={0}
-                        cy={0}
-                        r={3}
-                        fill="hsl(var(--muted-foreground))"
-                        opacity={0.5}
-                        style={{ cursor: 'pointer' }}
-                      />
-                    </HoverCardTrigger>
-                    <HoverCardContent 
-                      side="right" 
-                      align="start" 
-                      className="w-[150px] bg-card"
-                    >
-                      <p className="text-sm font-medium">{payload.value}</p>
-                    </HoverCardContent>
-                  </HoverCard>
-                </g>
-              )}
-              tickFormatter={() => ''}
+              tick={{ 
+                fill: "hsl(var(--foreground))",
+                fontSize: 10
+              }}
+            />
+            <PolarRadiusAxis
+              angle={90}
+              domain={[0, 100]}
+              tick={{ 
+                fill: "hsl(var(--foreground))",
+                fontSize: 10
+              }}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "0.5rem",
+              }}
+              formatter={(value: number, name: string) => [`${value}%`, name]}
             />
             <Radar
               name="Score"
