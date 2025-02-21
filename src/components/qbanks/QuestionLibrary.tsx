@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit, Filter } from "lucide-react";
+import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit, Trash2, Filter } from "lucide-react";
 import { Question, QBank } from "@/types/quiz";
 import { toast } from "@/components/ui/use-toast";
 import {
@@ -355,6 +355,20 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     );
   };
 
+  const handleDelete = (questionId: number) => {
+    qbanks.forEach(qbank => {
+      const questionIndex = qbank.questions.findIndex(q => q.id === questionId);
+      if (questionIndex !== -1) {
+        qbank.questions.splice(questionIndex, 1);
+      }
+    });
+
+    toast({
+      title: "Success",
+      description: "Question deleted successfully",
+    });
+  };
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -575,13 +589,22 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                 <TableCell>{question.tags.join('; ')}</TableCell>
                 <TableCell>{question.explanation || '-'}</TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleEdit(question)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(question)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(question.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
