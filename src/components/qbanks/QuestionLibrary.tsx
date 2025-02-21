@@ -539,6 +539,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
             variant="ghost"
             size="icon"
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            className="rounded-full"
           >
             {theme === "light" ? (
               <Moon className="h-4 w-4" />
