@@ -1,7 +1,7 @@
 
-import { Clock, Home, Library, ChevronLeft, ChevronRight } from "lucide-react";
+import { BarChart, Clock, Home, Library, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import QBankDropdown from "@/components/sidebar/QBankDropdown";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,10 @@ const items = [{
   url: "/",
   icon: Home
 }, {
+  title: "Performance",
+  url: "/performance",
+  icon: BarChart
+}, {
   title: "Previous Quizzes",
   url: "/history",
   icon: Clock
@@ -21,16 +25,16 @@ export function AppSidebar() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   return (
-    <>
+    <div className="relative">
       <div className={cn(
-        "min-h-screen transition-all duration-300",
+        "transition-all duration-300",
         sidebarCollapsed ? "ml-0" : "ml-[160px]"
       )}>
         {/* Main content container */}
       </div>
 
       <div className={cn(
-        "fixed left-0 top-0 h-full w-[160px] bg-background transition-transform duration-300",
+        "fixed left-0 top-0 h-full w-[160px] transition-transform duration-300",
         sidebarCollapsed && "-translate-x-[160px]"
       )}>
         <Sidebar>
@@ -67,6 +71,6 @@ export function AppSidebar() {
       >
         {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </Button>
-    </>
+    </div>
   );
 }
