@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { Button } from "../ui/button";
 import CircularProgress from "../CircularProgress";
@@ -20,6 +20,14 @@ interface DraggableWidgetProps {
 
 export const DraggableWidget = ({ id, type, onRemove, isEditing, data }: DraggableWidgetProps) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  // Reset position when editing mode is disabled
+  useEffect(() => {
+    if (!isEditing) {
+      setPosition({ x: 0, y: 0 });
+    }
+  }, [isEditing]);
 
   // Shake animation when editing mode is active
   const shakeAnimation = isEditing ? {
@@ -52,23 +60,27 @@ export const DraggableWidget = ({ id, type, onRemove, isEditing, data }: Draggab
       onDragStart={() => setIsDragging(true)}
       onDragEnd={() => setIsDragging(false)}
       animate={shakeAnimation}
+      style={{ x: position.x, y: position.y }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
       className="relative"
     >
       <Card className={cn(
-        "p-4 cursor-move",
-        isDragging && "shadow-lg",
-        isEditing && "border-dashed border-2"
+        "p-4",
+        isEditing ? "cursor-move border-dashed border-2" : "cursor-default",
+        isDragging && "shadow-lg"
       )}>
-        {isEditing && (
-          <Button
-            variant="destructive"
-            size="icon"
-            className="absolute -top-2 -right-2 rounded-full z-10"
-            onClick={() => onRemove(id)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
+        <AnimatePresence>
+          {isEditing && (
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute -top-2 -right-2 rounded-full z-10"
+              onClick={() => onRemove(id)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </AnimatePresence>
         {renderWidget()}
       </Card>
     </motion.div>
