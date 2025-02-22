@@ -25,12 +25,12 @@ export function AppSidebar() {
       <div
         className={cn(
           "fixed left-0 top-0 h-full bg-background border-r border-border transition-transform duration-300 z-40",
-          sidebarCollapsed ? "-translate-x-[240px]" : "translate-x-0",
-          "w-[240px]"
+          sidebarCollapsed ? "-translate-x-[200px]" : "translate-x-0",
+          "w-[200px]"
         )}
       >
         <Sidebar>
-          <SidebarContent className="px-2">
+          <SidebarContent className="px-4">
             <SidebarGroup>
               <SidebarGroupLabel>Quiz App</SidebarGroupLabel>
               <SidebarGroupContent>
@@ -58,7 +58,7 @@ export function AppSidebar() {
         size="icon"
         className={cn(
           "fixed top-4 z-50 transition-all duration-300 bg-background border",
-          sidebarCollapsed ? "left-4" : "left-[216px]"
+          sidebarCollapsed ? "left-4" : "left-[180px]"
         )}
         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         aria-label="Toggle sidebar"
@@ -69,7 +69,7 @@ export function AppSidebar() {
       <div
         className={cn(
           "flex-1 transition-all duration-300",
-          sidebarCollapsed ? "ml-0" : "ml-[240px]"
+          sidebarCollapsed ? "ml-0" : "ml-[200px]"
         )}
       >
         {/* Main content container */}
