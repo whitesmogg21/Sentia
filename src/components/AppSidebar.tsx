@@ -23,7 +23,7 @@ export function AppSidebar() {
   return <div className="relative h-screen">
       <div className={cn(
         "fixed left-0 top-0 h-full bg-background border-r border-border transition-transform duration-300 z-40", 
-        sidebarCollapsed ? "-translate-x-[250px]" : "translate-x-0", 
+        sidebarCollapsed ? "-translate-x-[258px]" : "translate-x-0", 
         "w-[220px]"
       )}>
         <Sidebar>
