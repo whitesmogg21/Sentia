@@ -28,17 +28,37 @@ interface DraggableWidgetProps {
   onRemove: (id: string) => void;
   isEditing: boolean;
   data: any;
+  initialPosition?: { x: number; y: number };
+  onDrag: (x: number, y: number) => void;
 }
 
-export const DraggableWidget = ({ id, type, onRemove, isEditing, data }: DraggableWidgetProps) => {
+export const DraggableWidget = ({ 
+  id, 
+  type, 
+  onRemove, 
+  isEditing, 
+  data,
+  initialPosition,
+  onDrag
+}: DraggableWidgetProps) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState(initialPosition || { x: 0, y: 0 });
 
   useEffect(() => {
-    if (!isEditing) {
-      setPosition({ x: 0, y: 0 });
+    if (initialPosition) {
+      setPosition(initialPosition);
     }
-  }, [isEditing]);
+  }, [initialPosition]);
+
+  const handleDragEnd = (event: any, info: any) => {
+    setIsDragging(false);
+    const newPosition = {
+      x: position.x + info.offset.x,
+      y: position.y + info.offset.y
+    };
+    setPosition(newPosition);
+    onDrag(newPosition.x, newPosition.y);
+  };
 
   const shakeAnimation = {
     rotate: isEditing ? [-1, 1, -1, 1, 0] : 0,
@@ -117,12 +137,7 @@ export const DraggableWidget = ({ id, type, onRemove, isEditing, data }: Draggab
       drag={isEditing}
       dragMomentum={false}
       onDragStart={() => setIsDragging(true)}
-      onDragEnd={() => {
-        setIsDragging(false);
-        if (!isEditing) {
-          setPosition({ x: 0, y: 0 });
-        }
-      }}
+      onDragEnd={handleDragEnd}
       animate={{
         rotate: shakeAnimation.rotate,
         x: position.x,
