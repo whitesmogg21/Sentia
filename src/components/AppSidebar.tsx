@@ -21,7 +21,7 @@ export function AppSidebar() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   return (
-    <>
+    <div className="relative h-screen">
       <div
         className={cn(
           "fixed left-0 top-0 h-full bg-background border-r border-border transition-transform duration-300 z-40",
@@ -66,14 +66,14 @@ export function AppSidebar() {
         {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </Button>
 
-      <div
+      <main
         className={cn(
-          "flex-1 transition-all duration-300",
+          "min-h-screen transition-all duration-300 p-6",
           sidebarCollapsed ? "ml-0" : "ml-[200px]"
         )}
       >
         {/* Main content container */}
-      </div>
-    </>
+      </main>
+    </div>
   );
 }
