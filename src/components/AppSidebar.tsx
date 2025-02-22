@@ -1,3 +1,4 @@
+
 import { Clock, Home, Library, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
@@ -20,32 +21,30 @@ export function AppSidebar() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   return (
-    <div className="relative">
-      <div className={cn(
-        "transition-all duration-300",
-        sidebarCollapsed ? "ml-0" : "ml-[160px]"
-      )}>
-        {/* Main content container */}
-      </div>
-
-      <div className={cn(
-        "fixed left-0 top-0 h-full w-[160px] transition-transform duration-300",
-        sidebarCollapsed && "-translate-x-[160px]"
-      )}>
+    <>
+      <div
+        className={cn(
+          "fixed left-0 top-0 h-full bg-background border-r border-border transition-transform duration-300 z-40",
+          sidebarCollapsed ? "-translate-x-[240px]" : "translate-x-0",
+          "w-[240px]"
+        )}
+      >
         <Sidebar>
-          <SidebarContent className="px-0 rounded-md">
+          <SidebarContent className="px-2">
             <SidebarGroup>
               <SidebarGroupLabel>Quiz App</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {items.map(item => <SidebarMenuItem key={item.title}>
+                  {items.map(item => 
+                    <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton asChild>
                         <Link to={item.url}>
-                          <item.icon />
+                          <item.icon className="h-4 w-4" />
                           <span>{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
-                    </SidebarMenuItem>)}
+                    </SidebarMenuItem>
+                  )}
                   <QBankDropdown />
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -58,14 +57,23 @@ export function AppSidebar() {
         variant="ghost"
         size="icon"
         className={cn(
-          "fixed top-4 transition-all duration-300 bg-background border",
-          sidebarCollapsed ? "left-4" : "left-[150px]"
+          "fixed top-4 z-50 transition-all duration-300 bg-background border",
+          sidebarCollapsed ? "left-4" : "left-[216px]"
         )}
         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         aria-label="Toggle sidebar"
       >
         {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </Button>
-    </div>
+
+      <div
+        className={cn(
+          "flex-1 transition-all duration-300",
+          sidebarCollapsed ? "ml-0" : "ml-[240px]"
+        )}
+      >
+        {/* Main content container */}
+      </div>
+    </>
   );
 }
