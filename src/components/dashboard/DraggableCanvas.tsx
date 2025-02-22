@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect, Dispatch, SetStateAction } from "react";
 import { DraggableWidget } from "./DraggableWidget";
 import { cn } from "@/lib/utils";
+import { AddWidgetModal } from "./AddWidgetModal";
 
 interface WidgetPosition {
   id: string;
@@ -23,6 +24,7 @@ interface DraggableCanvasProps {
 
 export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasProps) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [widgetPositions, setWidgetPositions] = useState<WidgetPosition[]>(() => {
     const saved = localStorage.getItem('widgetPositions');
@@ -70,37 +72,60 @@ export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasPr
     });
   };
 
-  const handleCanvasClick = () => {
-    if (!isEditing) {
+  const handleCanvasClick = (event: React.MouseEvent) => {
+    // Only open modal if clicking directly on the canvas (not on widgets)
+    if (event.target === event.currentTarget && !isEditing) {
+      setIsModalOpen(true);
+    } else if (!isEditing) {
       setIsEditing(true);
     }
   };
 
+  const handleAddWidget = (type: string) => {
+    const newWidget = {
+      id: `${type}-${Date.now()}`,
+      type,
+    };
+    setWidgets((prev) => [...prev, newWidget]);
+    setIsModalOpen(false);
+  };
+
   return (
-    <div 
-      ref={canvasRef}
-      onClick={handleCanvasClick}
-      className={cn(
-        "relative p-4 border-2 border-primary rounded-lg bg-background cursor-pointer min-h-[200px]"
-      )}
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {widgets.map((widget) => {
-          const position = widgetPositions.find((p) => p.id === widget.id);
-          return (
-            <DraggableWidget
-              key={widget.id}
-              id={widget.id}
-              type={widget.type}
-              onRemove={handleRemoveWidget}
-              isEditing={isEditing}
-              data={data}
-              initialPosition={position}
-              onDrag={(x, y) => handleWidgetDrag(widget.id, x, y)}
-            />
-          );
-        })}
+    <>
+      <div 
+        ref={canvasRef}
+        onClick={handleCanvasClick}
+        className={cn(
+          "relative p-4 border-2 border-primary rounded-lg bg-background cursor-pointer min-h-[200px]",
+          widgets.length === 0 && "flex items-center justify-center"
+        )}
+      >
+        {widgets.length === 0 && (
+          <p className="text-muted-foreground">Click here to add widgets</p>
+        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {widgets.map((widget) => {
+            const position = widgetPositions.find((p) => p.id === widget.id);
+            return (
+              <DraggableWidget
+                key={widget.id}
+                id={widget.id}
+                type={widget.type}
+                onRemove={handleRemoveWidget}
+                isEditing={isEditing}
+                data={data}
+                initialPosition={position}
+                onDrag={(x, y) => handleWidgetDrag(widget.id, x, y)}
+              />
+            );
+          })}
+        </div>
       </div>
-    </div>
+      <AddWidgetModal 
+        onAddWidget={handleAddWidget} 
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
+      />
+    </>
   );
 };

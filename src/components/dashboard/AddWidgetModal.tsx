@@ -5,10 +5,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import CircularProgress from "@/components/CircularProgress";
 import { CalendarHeatmap } from "@/components/charts/CalendarHeatmap";
@@ -26,13 +23,14 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { QuizHistory, QBank } from "@/types/quiz";
 
 interface AddWidgetModalProps {
   onAddWidget: (type: string) => void;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export const AddWidgetModal = ({ onAddWidget }: AddWidgetModalProps) => {
+export const AddWidgetModal = ({ onAddWidget, isOpen, onOpenChange }: AddWidgetModalProps) => {
   const widgets = [
     {
       id: 'accuracy',
@@ -107,12 +105,7 @@ export const AddWidgetModal = ({ onAddWidget }: AddWidgetModalProps) => {
   ];
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2">
-          <Plus className="h-4 w-4" /> Add Widget
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[900px] h-[80vh]">
         <DialogHeader>
           <DialogTitle>Add Performance Widget</DialogTitle>
@@ -127,10 +120,6 @@ export const AddWidgetModal = ({ onAddWidget }: AddWidgetModalProps) => {
               className="p-6 cursor-pointer hover:bg-accent transition-colors"
               onClick={() => {
                 onAddWidget(widget.id);
-                const closeButton = document.querySelector('[aria-label="Close"]');
-                if (closeButton instanceof HTMLButtonElement) {
-                  closeButton.click();
-                }
               }}
             >
               <h3 className="font-semibold mb-3">{widget.name}</h3>
