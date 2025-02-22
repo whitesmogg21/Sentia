@@ -58,7 +58,7 @@ export function AppSidebar() {
         size="icon"
         className={cn(
           "fixed top-4 z-50 transition-all duration-300 bg-background border",
-          sidebarCollapsed ? "left-4" : "left-[180px]"
+          sidebarCollapsed ? "left-4" : "left-[200px]"
         )}
         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         aria-label="Toggle sidebar"
