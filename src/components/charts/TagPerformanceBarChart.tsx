@@ -1,4 +1,3 @@
-
 import {
   BarChart,
   Bar,
@@ -19,20 +18,23 @@ interface TagPerformanceBarChartProps {
 }
 
 export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBarChartProps) => {
-  const tagPerformance = useMemo(() => {
-    const tagStats: { [key: string]: { scores: number[]; total: number } } = {};
-    
-    // First collect all unique tags from qbanks
-    const uniqueTags = new Set<string>();
+  // Move uniqueTags calculation outside of tagPerformance useMemo
+  const uniqueTags = useMemo(() => {
+    const tags = new Set<string>();
     qbanks.forEach(qbank => {
       qbank.questions.forEach(question => {
-        question.tags.forEach(tag => uniqueTags.add(tag));
+        question.tags.forEach(tag => tags.add(tag));
       });
     });
+    return Array.from(tags);
+  }, [qbanks]);
 
+  const tagPerformance = useMemo(() => {
+    const tagStats: { [key: string]: { percentages: number[]; total: number } } = {};
+    
     // Initialize statistics for all tags
     uniqueTags.forEach(tag => {
-      tagStats[tag] = { scores: [], total: 0 };
+      tagStats[tag] = { percentages: [], total: 0 };
     });
 
     // Calculate statistics from quiz history
@@ -57,11 +59,11 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
         }
       });
 
-      // Calculate and store score for each tag in this quiz
+      // Calculate and store percentage for each tag in this quiz
       Object.entries(quizTagStats).forEach(([tag, stats]) => {
         if (stats.total > 0) {
-          const score = (stats.correct / stats.total) * 100;
-          tagStats[tag].scores.push(score);
+          const percentage = (stats.correct / stats.total) * 100;
+          tagStats[tag].percentages.push(percentage);
           tagStats[tag].total += stats.total;
         }
       });
@@ -69,22 +71,22 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
 
     // Transform stats into array format for BarChart with error bars
     return Object.entries(tagStats)
-      .filter(([_, stats]) => stats.scores.length > 0)
+      .filter(([_, stats]) => stats.percentages.length > 0)
       .map(([tag, stats]) => {
-        const mean = stats.scores.reduce((a, b) => a + b, 0) / stats.scores.length;
-        const variance = stats.scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / stats.scores.length;
-        const stdError = Math.sqrt(variance / stats.scores.length);
+        const mean = stats.percentages.reduce((a, b) => a + b, 0) / stats.percentages.length;
+        const variance = stats.percentages.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / stats.percentages.length;
+        const stdError = Math.sqrt(variance / stats.percentages.length);
 
         return {
           tag,
-          score: Math.round(mean),
+          percentage: Math.round(mean),
           errorPlus: Math.round(Math.min(100 - mean, stdError * 1.96)),
           errorMinus: Math.round(Math.min(mean, stdError * 1.96)),
           totalQuestions: stats.total,
         };
       })
-      .sort((a, b) => b.score - a.score); // Sort by score descending
-  }, [qbanks, quizHistory]);
+      .sort((a, b) => b.percentage - a.percentage);
+  }, [qbanks, quizHistory, uniqueTags]);
 
   // Custom colors for bars
   const colors = [
@@ -134,7 +136,7 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
             tickMargin={10}
             padding={{ top: 10 }}
             label={{
-              value: "Score (%)",
+              value: "Percentage (%)",
               angle: -90,
               position: "insideLeft",
               fill: "hsl(var(--foreground))",
@@ -156,12 +158,12 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
             }}
             formatter={(value: number, name: string, props: any) => [
               `${value}% ± ${props.payload.errorPlus}%`,
-              "Score",
+              "Percentage",
             ]}
             labelFormatter={(label) => `Tag: ${label}`}
           />
           <Bar
-            dataKey="score"
+            dataKey="percentage"
             fillOpacity={0.85}
             radius={[6, 6, 0, 0]}
           >
@@ -190,4 +192,3 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
     </div>
   );
 };
-
