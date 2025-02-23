@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { QBank, QuizHistory } from "../types/quiz";
 import { Moon, Sun } from "lucide-react";
 import { motion } from "framer-motion";
@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { DraggableCanvas } from "./dashboard/DraggableCanvas";
 import { QuestionFilter } from "@/types/quiz";
 import { AddWidgetModal } from "./dashboard/AddWidgetModal";
+import { useQuiz } from "@/hooks/quiz";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -38,6 +39,8 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   });
   const { theme, setTheme } = useTheme();
   const [widgets, setWidgets] = useState<Array<{ id: string; type: string }>>([]);
+  const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
+  const { calculateOverallAccuracy } = useQuiz({});
 
   useEffect(() => {
     const storedQBank = localStorage.getItem('selectedQBank');
@@ -104,9 +107,8 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   }, [qbanks, quizHistory]);
 
   const overallAccuracy = useMemo(() => {
-    const totalAttempted = metrics.correct + metrics.incorrect;
-    return totalAttempted > 0 ? (metrics.correct / totalAttempted) * 100 : 0;
-  }, [metrics]);
+    return calculateOverallAccuracy();
+  }, [calculateOverallAccuracy, quizHistory]);
 
   const chartData = useMemo(() => 
     quizHistory.map((quiz, index) => ({
@@ -254,10 +256,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         </Button>
       </div>
       
-      {/* <div className="mb-1">
-        <AddWidgetModal onAddWidget={handleAddWidget} />
-      </div> */}
-
       <DraggableCanvas 
         data={{
           accuracy: overallAccuracy,
@@ -268,6 +266,15 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         }}
         widgets={widgets}
         setWidgets={setWidgets}
+      />
+
+      <AddWidgetModal 
+        isOpen={isAddWidgetOpen}
+        onOpenChange={setIsAddWidgetOpen}
+        onAddWidget={(type) => {
+          handleAddWidget(type);
+          setIsAddWidgetOpen(false);
+        }}
       />
 
       <div className="grid md:grid-cols-2 gap-6">
