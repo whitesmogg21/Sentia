@@ -1,6 +1,7 @@
+
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { X, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "../ui/button";
 import CircularProgress from "../CircularProgress";
 import { CalendarHeatmap } from "../charts/CalendarHeatmap";
@@ -26,9 +27,11 @@ interface DraggableWidgetProps {
   type: string;
   onRemove: (id: string) => void;
   data: any;
-  initialPosition?: { x: number; y: number };
+  initialPosition?: { x: number; y: number; size: 'small' | 'medium' | 'large' };
   onDrag: (x: number, y: number) => void;
   canvasRef: React.RefObject<HTMLDivElement>;
+  size: 'small' | 'medium' | 'large';
+  onResize: (size: 'small' | 'medium' | 'large') => void;
 }
 
 export const DraggableWidget = ({ 
@@ -38,11 +41,13 @@ export const DraggableWidget = ({
   data,
   initialPosition,
   onDrag,
-  canvasRef
+  canvasRef,
+  size,
+  onResize
 }: DraggableWidgetProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [position, setPosition] = useState(initialPosition || { x: 0, y: 0 });
+  const [position, setPosition] = useState(initialPosition || { x: 0, y: 0, size: 'small' });
 
   useEffect(() => {
     if (initialPosition) {
@@ -50,13 +55,11 @@ export const DraggableWidget = ({
     }
   }, [initialPosition]);
 
-  // Add click handler for the widget
   const handleWidgetClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent canvas click
+    e.stopPropagation();
     setIsEditing(true);
   };
 
-  // Add click outside handler to exit edit mode
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const element = event.target as HTMLElement;
@@ -88,9 +91,16 @@ export const DraggableWidget = ({
     newX = Math.max(0, Math.min(newX, canvasBounds.width - widgetBounds.width));
     newY = Math.max(0, Math.min(newY, canvasBounds.height - widgetBounds.height));
     
-    const newPosition = { x: newX, y: newY };
+    const newPosition = { ...position, x: newX, y: newY };
     setPosition(newPosition);
     onDrag(newPosition.x, newPosition.y);
+  };
+
+  const handleResize = () => {
+    const sizes: Array<'small' | 'medium' | 'large'> = ['small', 'medium', 'large'];
+    const currentIndex = sizes.indexOf(size);
+    const nextSize = sizes[(currentIndex + 1) % sizes.length];
+    onResize(nextSize);
   };
   
   const shakeAnimation = {
@@ -102,11 +112,22 @@ export const DraggableWidget = ({
     }
   };
 
+  const getWidgetSize = () => {
+    switch (size) {
+      case 'large':
+        return 'w-[600px] h-[400px]';
+      case 'medium':
+        return 'w-[400px] h-[300px]';
+      case 'small':
+      default:
+        return 'w-[300px] h-[200px]';
+    }
+  };
+
   const renderWidget = () => {
-    // Your existing renderWidget code remains the same
     switch (type) {
       case 'accuracy':
-        return <CircularProgress percentage={data.accuracy || 0} />;
+        return <CircularProgress percentage={data.accuracy || 0} size={size === 'small' ? 'small' : 'large'} />;
       case 'heatmap':
         return <CalendarHeatmap data={data.quizHistory || []} />;
       case 'barChart':
@@ -115,8 +136,8 @@ export const DraggableWidget = ({
         return <TagPerformanceChart qbanks={data.qbanks || []} quizHistory={data.quizHistory || []} />;
       case 'progressChart':
         return (
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-full w-full">
+            <ResponsiveContainer>
               <AreaChart data={data.quizHistory || []}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" opacity={0.2} />
                 <XAxis dataKey="date" />
@@ -141,14 +162,14 @@ export const DraggableWidget = ({
           { name: 'Skipped', value: data.metrics?.omitted || 0 },
         ];
         return (
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-full w-full">
+            <ResponsiveContainer>
               <PieChart>
                 <Pie
                   data={scoreData}
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
+                  outerRadius={Math.min(position.x, position.y) / 3}
                   dataKey="value"
                   label
                 >
@@ -190,29 +211,52 @@ export const DraggableWidget = ({
           }
         }
       }}
-      className="relative"
+      className={cn(
+        "absolute",
+        getWidgetSize(),
+        "transition-all duration-300"
+      )}
     >
       <Card className={cn(
-        "p-4",
+        "p-4 h-full",
         isEditing ? "cursor-move border-dashed border-2" : "cursor-default",
         isDragging && "shadow-lg"
       )}>
         <AnimatePresence>
           {isEditing && (
-            <Button
-              variant="destructive"
-              size="icon"
-              className="absolute -top-2 -right-2 rounded-full z-10"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemove(id);
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <>
+              <Button
+                variant="destructive"
+                size="icon"
+                className="absolute -top-2 -right-2 rounded-full z-10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(id);
+                }}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute -bottom-2 -right-2 rounded-full z-10"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleResize();
+                }}
+              >
+                {size === 'large' ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
+            </>
           )}
         </AnimatePresence>
-        {renderWidget()}
+        <div className="w-full h-full">
+          {renderWidget()}
+        </div>
       </Card>
     </motion.div>
   );
