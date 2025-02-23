@@ -52,7 +52,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
-  const [exactMatch, setExactMatch] = useState(false);
 
   const existingTags = Array.from(new Set(
     qbanks.flatMap(qbank => qbank.questions.flatMap(q => q.tags || []))
@@ -333,18 +332,17 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       if (activeFilters.length > 0 && !q.tags.some(tag => activeFilters.includes(tag))) {
         return false;
       }
-
+  
       if (searchQuery) {
-        if (exactMatch) {
-          const searchWords = searchQuery.toLowerCase().split(' ');
-          const questionWords = q.question.toLowerCase().split(' ');
-          return searchWords.every(word => questionWords.includes(word));
-        } else {
-          return q.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                 q.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
-        }
+        const searchTerm = searchQuery.toLowerCase();
+        return (
+          q.question.toLowerCase().includes(searchTerm) ||
+          q.options.some(option => option.toLowerCase().includes(searchTerm)) ||
+          (q.explanation && q.explanation.toLowerCase().includes(searchTerm)) ||
+          q.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+        );
       }
-
+  
       return true;
     })
   );
@@ -554,45 +552,20 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <Input
-              placeholder="Search questions by text..."
+              placeholder="Search questions, answers, tags or explanations..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-            <Button
-              variant={exactMatch ? "default" : "outline"}
-              onClick={() => setExactMatch(!exactMatch)}
-              className="whitespace-nowrap"
-            >
-              Exact Match
-            </Button>
-          </div>
-          <div className="text-sm text-muted-foreground">
-            {exactMatch ? "Showing exact word matches only" : "Showing partial matches"}
           </div>
         </div>
 
-        <div>
-          <Label className="mb-2 block">Filter by Tags</Label>
-          <div className="flex flex-wrap gap-2">
-            {existingTags.map(tag => (
-              <Button
-                key={tag}
-                variant={activeFilters.includes(tag) ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleToggleFilter(tag)}
-                className="gap-2"
-              >
-                <Tag className="w-3 h-3" />
-                {tag}
-              </Button>
-            ))}
-          </div>
+        {/* <div>
           {activeFilters.length > 0 && (
             <div className="mt-2 text-sm text-muted-foreground">
               Showing questions with tags: {activeFilters.join(', ')}
             </div>
           )}
-        </div>
+        </div> */}
       </div>
 
       <div className="rounded-md border">

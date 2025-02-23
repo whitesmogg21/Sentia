@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, Dispatch, SetStateAction } from "react";
 import { DraggableWidget } from "./DraggableWidget";
 import { cn } from "@/lib/utils";
@@ -23,7 +22,7 @@ interface DraggableCanvasProps {
 }
 
 export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasProps) => {
-  const [isEditing, setIsEditing] = useState(false);
+  // const [isEditing, setIsEditing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [widgetPositions, setWidgetPositions] = useState<WidgetPosition[]>(() => {
@@ -31,16 +30,16 @@ export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasPr
     return saved ? JSON.parse(saved) : [];
   });
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (canvasRef.current && !canvasRef.current.contains(event.target as Node)) {
-        setIsEditing(false);
-      }
-    };
+  // useEffect(() => {
+  //   const handleClickOutside = (event: MouseEvent) => {
+  //     if (canvasRef.current && !canvasRef.current.contains(event.target as Node)) {
+  //       setIsEditing(false);
+  //     }
+  //   };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  //   document.addEventListener('mousedown', handleClickOutside);
+  //   return () => document.removeEventListener('mousedown', handleClickOutside);
+  // }, []);
 
   useEffect(() => {
     const savedWidgets = localStorage.getItem('dashboardWidgets');
@@ -57,9 +56,8 @@ export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasPr
     localStorage.setItem('widgetPositions', JSON.stringify(widgetPositions));
   }, [widgetPositions]);
 
-  const handleRemoveWidget = (widgetId: string) => {
-    setWidgets((prev) => prev.filter((widget) => widget.id !== widgetId));
-    setWidgetPositions((prev) => prev.filter((pos) => pos.id !== widgetId));
+  const handleRemoveWidget = (id: string) => {
+    setWidgets(prev => prev.filter(widget => widget.id !== id));
   };
 
   const handleWidgetDrag = (widgetId: string, x: number, y: number) => {
@@ -73,11 +71,9 @@ export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasPr
   };
 
   const handleCanvasClick = (event: React.MouseEvent) => {
-    // Only open modal if clicking directly on the canvas (not on widgets)
-    if (event.target === event.currentTarget && !isEditing) {
+    // Only open modal if clicking directly on the canvas background
+    if (event.target === event.currentTarget) {
       setIsModalOpen(true);
-    } else if (!isEditing) {
-      setIsEditing(true);
     }
   };
 
@@ -85,8 +81,13 @@ export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasPr
     const newWidget = {
       id: `${type}-${Date.now()}`,
       type,
+      position: { x: 0, y: 0 }
     };
-    setWidgets((prev) => [...prev, newWidget]);
+    setWidgets(prev => [...prev, newWidget]);
+  };
+
+  const handleWidgetAdd = (type: string) => {
+    handleAddWidget(type);
     setIsModalOpen(false);
   };
 
@@ -96,33 +97,34 @@ export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasPr
         ref={canvasRef}
         onClick={handleCanvasClick}
         className={cn(
-          "relative p-4 border-2 border-primary rounded-lg bg-background cursor-pointer min-h-[200px]",
-          widgets.length === 0 && "flex items-center justify-center"
+          "relative p-4 border-2 border-primary rounded-lg bg-background min-h-[200px]",
+          widgets.length === 0 ? "cursor-pointer" : "cursor-default"
         )}
       >
         {widgets.length === 0 && (
           <p className="text-muted-foreground">Click here to add widgets</p>
         )}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pointer-events-none">
           {widgets.map((widget) => {
             const position = widgetPositions.find((p) => p.id === widget.id);
             return (
-              <DraggableWidget
-                key={widget.id}
-                id={widget.id}
-                type={widget.type}
-                onRemove={handleRemoveWidget}
-                isEditing={isEditing}
-                data={data}
-                initialPosition={position}
-                onDrag={(x, y) => handleWidgetDrag(widget.id, x, y)}
-              />
+              <div key={widget.id} className="pointer-events-auto">
+                <DraggableWidget
+                  id={widget.id}
+                  type={widget.type}
+                  onRemove={handleRemoveWidget}
+                  data={data}
+                  initialPosition={position}
+                  onDrag={(x, y) => handleWidgetDrag(widget.id, x, y)}
+                  canvasRef={canvasRef}
+                />
+              </div>
             );
           })}
         </div>
       </div>
       <AddWidgetModal 
-        onAddWidget={handleAddWidget} 
+        onAddWidget={handleWidgetAdd} 
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
       />

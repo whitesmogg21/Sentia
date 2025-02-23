@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
@@ -26,22 +25,23 @@ interface DraggableWidgetProps {
   id: string;
   type: string;
   onRemove: (id: string) => void;
-  isEditing: boolean;
   data: any;
   initialPosition?: { x: number; y: number };
   onDrag: (x: number, y: number) => void;
+  canvasRef: React.RefObject<HTMLDivElement>;
 }
 
 export const DraggableWidget = ({ 
   id, 
   type, 
   onRemove, 
-  isEditing, 
   data,
   initialPosition,
-  onDrag
+  onDrag,
+  canvasRef
 }: DraggableWidgetProps) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [position, setPosition] = useState(initialPosition || { x: 0, y: 0 });
 
   useEffect(() => {
@@ -50,16 +50,49 @@ export const DraggableWidget = ({
     }
   }, [initialPosition]);
 
+  // Add click handler for the widget
+  const handleWidgetClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent canvas click
+    setIsEditing(true);
+  };
+
+  // Add click outside handler to exit edit mode
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const element = event.target as HTMLElement;
+      if (!element.closest(`[data-widget-id="${id}"]`)) {
+        setIsEditing(false);
+      }
+    };
+
+    if (isEditing) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isEditing, id]);
+
   const handleDragEnd = (event: any, info: any) => {
     setIsDragging(false);
-    const newPosition = {
-      x: position.x + info.offset.x,
-      y: position.y + info.offset.y
-    };
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const canvasBounds = canvas.getBoundingClientRect();
+    const widgetElement = event.target as HTMLElement;
+    const widgetBounds = widgetElement.getBoundingClientRect();
+    
+    const padding = 16;
+    let newX = position.x + info.offset.x;
+    let newY = position.y + info.offset.y;
+    
+    newX = Math.max(0, Math.min(newX, canvasBounds.width - widgetBounds.width));
+    newY = Math.max(0, Math.min(newY, canvasBounds.height - widgetBounds.height));
+    
+    const newPosition = { x: newX, y: newY };
     setPosition(newPosition);
     onDrag(newPosition.x, newPosition.y);
   };
-
+  
   const shakeAnimation = {
     rotate: isEditing ? [-1, 1, -1, 1, 0] : 0,
     transition: {
@@ -70,6 +103,7 @@ export const DraggableWidget = ({
   };
 
   const renderWidget = () => {
+    // Your existing renderWidget code remains the same
     switch (type) {
       case 'accuracy':
         return <CircularProgress percentage={data.accuracy || 0} />;
@@ -134,8 +168,12 @@ export const DraggableWidget = ({
 
   return (
     <motion.div
+      data-widget-id={id}
+      onClick={handleWidgetClick}
       drag={isEditing}
       dragMomentum={false}
+      dragConstraints={canvasRef}
+      dragElastic={0}
       onDragStart={() => setIsDragging(true)}
       onDragEnd={handleDragEnd}
       animate={{
@@ -146,8 +184,9 @@ export const DraggableWidget = ({
           rotate: shakeAnimation.transition,
           default: {
             type: "spring",
-            stiffness: 300,
-            damping: 20
+            stiffness: 500,
+            damping: 50,
+            restDelta: 0.001
           }
         }
       }}
@@ -164,7 +203,10 @@ export const DraggableWidget = ({
               variant="destructive"
               size="icon"
               className="absolute -top-2 -right-2 rounded-full z-10"
-              onClick={() => onRemove(id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove(id);
+              }}
             >
               <X className="h-4 w-4" />
             </Button>
