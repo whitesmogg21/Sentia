@@ -55,6 +55,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [tagSearchQuery, setTagSearchQuery] = useState("");
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
+  const [selectAll, setSelectAll] =  useState(false);
 
   const existingTags = Array.from(new Set(
     qbanks.flatMap(qbank => qbank.questions.flatMap(q => q.tags || []))
@@ -284,6 +285,15 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 
     reader.readAsArrayBuffer(file);
     event.target.value = '';
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedQuestions([]);
+    } else {
+      setSelectedQuestions(sortedQuestions);
+    }
+    setSelectAll(!selectAll);
   };
 
   const filteredQuestions = qbanks.flatMap(qbank => 
@@ -616,7 +626,12 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">
-                Select
+                <input
+                  type="checkbox"
+                  checked={selectAll}
+                  onChange={handleSelectAll}
+                  className="w-4 h-4"
+                />
               </TableHead>
               <TableHead className="cursor-pointer" onClick={() => handleSort('question')}>
                 Question
