@@ -102,22 +102,18 @@ export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasPr
   };
 
   const handleAddWidget = (type: string) => {
-    if (widgets.length >= 10) return;
     const newWidget = {
       id: `${type}-${Date.now()}`,
       type,
     };
     setWidgets(prev => [...prev, newWidget]);
-  };
-
-  const handleWidgetAdd = (type: string) => {
-    handleAddWidget(type);
     setIsModalOpen(false);
   };
 
+  // Calculate the minimum height based on widget count
   const minHeight = Math.max(
-    500,  // minimum height
-    Math.ceil(widgets.length / 3) * 300  // dynamic height based on widget count
+    300, // default minimum height when empty
+    Math.ceil(widgets.length / 3) * 250 // dynamically increase height based on widget count
   );
 
   return (
@@ -127,14 +123,14 @@ export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasPr
         onClick={handleCanvasClick}
         className={cn(
           "relative p-4 border-2 border-primary rounded-lg bg-background",
-          "transition-all duration-300 ease-in-out",
+          "transition-all duration-300 ease-in-out min-h-[300px]",
           widgets.length === 0 ? "cursor-pointer" : "cursor-default"
         )}
         style={{ minHeight: `${minHeight}px` }}
       >
         {widgets.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-muted-foreground/50 text-lg">
+            <p className="text-muted-foreground text-lg opacity-50">
               Click here to add widgets
             </p>
           </div>
@@ -161,10 +157,11 @@ export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasPr
         </div>
       </div>
       <AddWidgetModal 
-        onAddWidget={handleWidgetAdd} 
+        onAddWidget={handleAddWidget} 
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
       />
     </>
   );
 };
+
