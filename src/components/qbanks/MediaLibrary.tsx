@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash, Edit2, Search } from "lucide-react";
+import { Plus, Trash, Edit2, Search, Filter, Check } from "lucide-react";
 import { QBank } from "@/types/quiz";
 import { toast } from "@/components/ui/use-toast";
 import {
@@ -34,8 +33,10 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
   const [editingItem, setEditingItem] = useState<MediaItem | null>(null);
   const [newName, setNewName] = useState("");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [showTagFilterModal, setShowTagFilterModal] = useState(false);
+  const [tagSearchQuery, setTagSearchQuery] = useState("");
+  const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
 
-  // Load media items from localStorage on component mount
   useEffect(() => {
     const savedMedia = localStorage.getItem('mediaLibrary');
     if (savedMedia) {
@@ -44,7 +45,6 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
   }, []);
 
   useEffect(() => {
-    // Extract images mentioned in questions and their tags
     const extractedMedia = new Map<string, Set<string>>();
     
     qbanks.forEach(qbank => {
@@ -64,7 +64,6 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
       });
     });
 
-    // Update media items with extracted tags
     setMediaItems(prev => {
       const updated = prev.map(item => {
         const tags = extractedMedia.get(item.name);
@@ -83,7 +82,6 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
     if (files.length === 0) return;
 
     const newMediaItems = await Promise.all(files.map(async (file) => {
-      // Convert file to base64
       const reader = new FileReader();
       const dataUrl = await new Promise<string>((resolve) => {
         reader.onload = () => resolve(reader.result as string);
@@ -153,9 +151,27 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
     });
   };
 
+  const allTags = Array.from(new Set(
+    mediaItems.flatMap(item => item.tags)
+  )).sort();
+
+  const filteredTags = allTags.filter(tag =>
+    tag.toLowerCase().includes(tagSearchQuery.toLowerCase())
+  );
+
+  const handleTagFilterToggle = (tag: string) => {
+    setSelectedFilterTags(prev =>
+      prev.includes(tag)
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
   const filteredMedia = mediaItems.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+    (selectedFilterTags.length === 0 || item.tags.some(tag => selectedFilterTags.includes(tag))) &&
+    (searchQuery === "" || 
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
   return (
@@ -163,14 +179,26 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Media Library</h1>
         <div className="flex gap-4">
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="relative flex gap-2">
             <Input
               placeholder="Search by name or tags..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-8"
             />
+            <Button
+              variant="outline"
+              onClick={() => setShowTagFilterModal(true)}
+              className="flex items-center gap-2"
+            >
+              <Filter className="w-4 h-4" />
+              Filter by Tags
+              {selectedFilterTags.length > 0 && (
+                <span className="ml-2 bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+                  {selectedFilterTags.length}
+                </span>
+              )}
+            </Button>
           </div>
           <Button asChild>
             <label>
@@ -187,6 +215,36 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
           </Button>
         </div>
       </div>
+
+      <Dialog open={showTagFilterModal} onOpenChange={setShowTagFilterModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Filter by Tags</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              placeholder="Search tags..."
+              value={tagSearchQuery}
+              onChange={(e) => setTagSearchQuery(e.target.value)}
+            />
+            <div className="max-h-[60vh] overflow-y-auto space-y-2">
+              {filteredTags.map(tag => (
+                <Button
+                  key={tag}
+                  variant={selectedFilterTags.includes(tag) ? "default" : "outline"}
+                  className="mr-2 mb-2"
+                  onClick={() => handleTagFilterToggle(tag)}
+                >
+                  {tag}
+                  {selectedFilterTags.includes(tag) && (
+                    <Check className="ml-2 h-4 w-4" />
+                  )}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="rounded-md border">
         <Table>

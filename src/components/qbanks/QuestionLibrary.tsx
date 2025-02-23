@@ -1,14 +1,15 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit, Trash2, Filter, Sun, Moon } from "lucide-react";
+import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit, Trash2, Filter, Sun, Moon, Download } from "lucide-react";
 import { Question, QBank } from "@/types/quiz";
 import { toast } from "@/components/ui/use-toast";
 import { useTheme } from "@/components/ThemeProvider";
+import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
 import {
   Table,
   TableBody,
@@ -18,17 +19,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import MediaSelector from "./MediaSelector";
-import Papa from 'papaparse';
-import * as XLSX from 'xlsx';
 
 interface QuestionLibraryProps {
   qbanks: QBank[];
 }
-
-type SortConfig = {
-  key: keyof Question | 'correctAnswerText' | 'tags' | null;
-  direction: 'asc' | 'desc';
-};
 
 const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -52,6 +46,10 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [showTagFilterModal, setShowTagFilterModal] = useState(false);
+  const [tagSearchQuery, setTagSearchQuery] = useState("");
+  const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
+  const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
 
   const existingTags = Array.from(new Set(
     qbanks.flatMap(qbank => qbank.questions.flatMap(q => q.tags || []))
@@ -347,6 +345,99 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     })
   );
 
+  const allTags = Array.from(new Set(
+    qbanks.flatMap(qbank => 
+      qbank.questions.flatMap(q => q.tags)
+    )
+  )).sort();
+
+  const filteredTags = allTags.filter(tag =>
+    tag.toLowerCase().includes(tagSearchQuery.toLowerCase())
+  );
+
+  const handleTagFilterToggle = (tag: string) => {
+    setSelectedFilterTags(prev =>
+      prev.includes(tag)
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
+  const handleQuestionSelect = (question: Question) => {
+    setSelectedQuestions(prev =>
+      prev.some(q => q.id === question.id)
+        ? prev.filter(q => q.id !== question.id)
+        : [...prev, question]
+    );
+  };
+
+  const handleExport = async () => {
+    try {
+      const wb = XLSX.utils.book_new();
+      
+      const exportData = selectedQuestions.map(q => [
+        q.question,
+        q.options[q.correctAnswer],
+        q.options.filter((_, i) => i !== q.correctAnswer).join(';'),
+        q.tags.join(';'),
+        q.explanation || ''
+      ]);
+
+      const ws = XLSX.utils.aoa_to_sheet([
+        ['Question', 'Correct Answer', 'Other Options', 'Tags', 'Explanation'],
+        ...exportData
+      ]);
+      XLSX.utils.book_append_sheet(wb, ws, 'Questions');
+
+      const zip = new JSZip();
+      
+      const excelBuffer = XLSX.write(wb, { type: 'array' });
+      zip.file('questions.xlsx', excelBuffer);
+
+      const mediaFolder = zip.folder('media');
+      const imagePromises = selectedQuestions
+        .map(q => q.question.match(/\/([^\/]+\.(?:png|jpg|jpeg|gif))/g))
+        .flat()
+        .filter(Boolean)
+        .map(async imagePath => {
+          if (!imagePath) return;
+          const imageName = imagePath.slice(1);
+          const mediaItem = mediaItems.find(item => item.name === imageName);
+          if (mediaItem && mediaFolder) {
+            const response = await fetch(mediaItem.data);
+            const blob = await response.blob();
+            mediaFolder.file(imageName, blob);
+          }
+        });
+
+      await Promise.all(imagePromises);
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = window.URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'questions_export.zip';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: `Exported ${selectedQuestions.length} questions successfully`,
+      });
+
+      setSelectedQuestions([]);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export questions",
+        variant: "destructive"
+      });
+    }
+  };
+
   const sortedQuestions = [...filteredQuestions].sort((a, b) => {
     if (!sortConfig.key) return 0;
     
@@ -400,21 +491,25 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Question Library</h1>
         <div className="flex gap-2">
-          <Input
-            type="file"
-            accept=".xlsx"
-            onChange={handleExcelUpload}
-            className="hidden"
-            id="excel-upload"
-          />
-          <label htmlFor="excel-upload">
-            <Button variant="outline" asChild>
-              <span>
-                <Upload className="w-4 h-4 mr-2" />
-                Import Excel
+          <Button
+            variant="outline"
+            onClick={() => setShowTagFilterModal(true)}
+            className="flex items-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            Filter by Tags
+            {selectedFilterTags.length > 0 && (
+              <span className="ml-2 bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+                {selectedFilterTags.length}
               </span>
+            )}
+          </Button>
+          {selectedQuestions.length > 0 && (
+            <Button onClick={handleExport} className="flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              Export Selected ({selectedQuestions.length})
             </Button>
-          </label>
+          )}
           <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button>
@@ -548,6 +643,36 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         </div>
       </div>
 
+      <Dialog open={showTagFilterModal} onOpenChange={setShowTagFilterModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Filter by Tags</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              placeholder="Search tags..."
+              value={tagSearchQuery}
+              onChange={(e) => setTagSearchQuery(e.target.value)}
+            />
+            <div className="max-h-[60vh] overflow-y-auto space-y-2">
+              {filteredTags.map(tag => (
+                <Button
+                  key={tag}
+                  variant={selectedFilterTags.includes(tag) ? "default" : "outline"}
+                  className="mr-2 mb-2"
+                  onClick={() => handleTagFilterToggle(tag)}
+                >
+                  {tag}
+                  {selectedFilterTags.includes(tag) && (
+                    <Check className="ml-2 h-4 w-4" />
+                  )}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="mb-6 space-y-4">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
@@ -558,20 +683,15 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
             />
           </div>
         </div>
-
-        {/* <div>
-          {activeFilters.length > 0 && (
-            <div className="mt-2 text-sm text-muted-foreground">
-              Showing questions with tags: {activeFilters.join(', ')}
-            </div>
-          )}
-        </div> */}
       </div>
 
       <div className="rounded-md border">
         <Table>
           <TableHeader className="bg-primary">
             <TableRow>
+              <TableHead className="w-12 text-primary-foreground">
+                Select
+              </TableHead>
               <TableHead className="cursor-pointer text-primary-foreground hover:text-primary-foreground/90" onClick={() => handleSort('question')}>
                 Question
                 <ArrowUpDown className="ml-2 h-4 w-4 inline" />
@@ -592,6 +712,14 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           <TableBody>
             {sortedQuestions.map((question) => (
               <TableRow key={question.id}>
+                <TableCell>
+                  <input
+                    type="checkbox"
+                    checked={selectedQuestions.some(q => q.id === question.id)}
+                    onChange={() => handleQuestionSelect(question)}
+                    className="w-4 h-4"
+                  />
+                </TableCell>
                 <TableCell className="font-medium">{question.question}</TableCell>
                 <TableCell>{question.options[question.correctAnswer]}</TableCell>
                 <TableCell>
