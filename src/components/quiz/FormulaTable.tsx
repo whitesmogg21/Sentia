@@ -5,11 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { PlusCircle, Function, Search } from "lucide-react";
+import { PlusCircle, Calculator, Search } from "lucide-react";
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
-
-<lov-add-dependency>katex@latest</lov-add-dependency>
 
 interface Formula {
   id: string;
@@ -71,7 +69,7 @@ const FormulaTable = () => {
           className="bg-background border"
           aria-label="Open formula reference"
         >
-          <Function className="h-4 w-4" />
+          <Calculator className="h-4 w-4" />
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-[400px] sm:w-[540px]">
