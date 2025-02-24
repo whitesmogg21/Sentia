@@ -2,27 +2,17 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ProgressBar } from "@/components/ui/progress";
+import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Question } from "@/types/quiz";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Check, ChevronsRight, Flag, Pause, Play, Redo, Timer, TimerOff } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Check, ChevronsRight, Flag, Pause, Play, Timer } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { ColorPicker } from "@/components/ColorPicker";
-import { FormulaTable } from "./FormulaTable";
-import { LabValuesTable } from "./LabValuesTable";
+import { default as FormulaTable } from "./FormulaTable";
+import { default as LabValuesTable } from "./LabValuesTable";
 
 interface QuizContentProps {
   currentQuestion: Question;
@@ -101,7 +91,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
             Question {currentQuestionIndex + 1} of {totalQuestions}
           </CardTitle>
           <CardDescription>
-            {currentQuestion.category} - {currentQuestion.difficulty}
+            {currentQuestion.type || "Multiple Choice"} - {currentQuestion.difficulty || "Medium"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -122,42 +112,42 @@ const QuizContent: React.FC<QuizContentProps> = ({
 
           <ScrollArea className="h-[150px] md:h-[200px] lg:h-[250px] w-full rounded-md border">
             <div className="p-4">
-              {currentQuestion.questionText}
+              {currentQuestion.question}
             </div>
           </ScrollArea>
 
-          {currentQuestion.image && (
+          {currentQuestion.media?.url && (
             <img
-              src={currentQuestion.image}
+              src={currentQuestion.media.url}
               alt="Question Image"
               className="w-full rounded-md"
             />
           )}
 
           <div className="grid gap-2">
-            {currentQuestion.answers.map((answer) => (
+            {currentQuestion.options.map((option, index) => (
               <Button
-                key={answer}
+                key={option}
                 variant={
                   isAnswered
-                    ? answer === currentQuestion.correctAnswer
+                    ? index === currentQuestion.correctAnswer
                       ? 'default'
-                      : selectedAnswer === answer
+                      : selectedAnswer === index
                         ? 'destructive'
                         : 'secondary'
-                    : selectedAnswer === answer
+                    : selectedAnswer === index
                       ? 'secondary'
                       : 'outline'
                 }
-                onClick={() => onAnswerClick(answer)}
+                onClick={() => onAnswerClick(option)}
                 disabled={isAnswered}
                 className={cn(
-                  selectedColor && selectedAnswer === answer ? `bg-[${selectedColor}]` : '',
+                  selectedColor && selectedAnswer === index ? `bg-[${selectedColor}]` : '',
                   "justify-start"
                 )}
               >
-                {answer}
-                {isAnswered && answer === currentQuestion.correctAnswer && (
+                {option}
+                {isAnswered && index === currentQuestion.correctAnswer && (
                   <Check className="ml-auto h-4 w-4" />
                 )}
               </Button>
@@ -202,7 +192,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
           <Button
             variant="secondary"
             onClick={() => onNavigate('next')}
-            disabled={isAnswered === false}
+            disabled={!isAnswered}
           >
             Next <ChevronsRight className="ml-2 h-4 w-4" />
           </Button>
