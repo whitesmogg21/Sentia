@@ -16,7 +16,7 @@ interface DraggableWidgetProps {
   onWidgetAdd?: () => void;
 }
 
-const DraggableWidget = ({
+export const DraggableWidget = ({
   id,
   type,
   onDragStart,
@@ -65,5 +65,3 @@ const DraggableWidget = ({
     </motion.div>
   );
 };
-
-export default DraggableWidget;

@@ -22,24 +22,12 @@ interface DraggableCanvasProps {
 }
 
 export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasProps) => {
-  // const [isEditing, setIsEditing] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const [widgetPositions, setWidgetPositions] = useState<WidgetPosition[]>(() => {
     const saved = localStorage.getItem('widgetPositions');
     return saved ? JSON.parse(saved) : [];
   });
-
-  // useEffect(() => {
-  //   const handleClickOutside = (event: MouseEvent) => {
-  //     if (canvasRef.current && !canvasRef.current.contains(event.target as Node)) {
-  //       setIsEditing(false);
-  //     }
-  //   };
-
-  //   document.addEventListener('mousedown', handleClickOutside);
-  //   return () => document.removeEventListener('mousedown', handleClickOutside);
-  // }, []);
 
   useEffect(() => {
     const savedWidgets = localStorage.getItem('dashboardWidgets');
@@ -71,7 +59,6 @@ export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasPr
   };
 
   const handleCanvasClick = (event: React.MouseEvent) => {
-    // Only open modal if clicking directly on the canvas background
     if (event.target === event.currentTarget) {
       setIsModalOpen(true);
     }
