@@ -24,11 +24,6 @@ interface QuestionLibraryProps {
   qbanks: QBank[];
 }
 
-type SortConfig = {
-  key: 'question' | 'correctAnswerText' | 'tags' | null;
-  direction: 'asc' | 'desc';
-};
-
 const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -206,7 +201,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     });
   };
 
-  const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExcelUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -222,24 +217,39 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         const questions = rows.slice(1)
           .filter(row => row && row.length >= 2)
           .map((row: any) => {
+            if (!Array.isArray(row)) {
+              console.error('Invalid row:', row);
+              throw new Error(`Invalid row format: ${JSON.stringify(row)}`);
+            }
+
             const [question, correctAnswer, otherChoices, category, explanation] = row;
+
+            if (!question?.toString().trim() || !correctAnswer?.toString().trim()) {
+              console.error('Missing required fields:', row);
+              throw new Error(`Question and correct answer are required. Row: ${JSON.stringify(row)}`);
+            }
+
+            const questionStr = question.toString().trim();
+            const correctAnswerStr = correctAnswer.toString().trim();
+            
+            const otherAnswers = otherChoices 
+              ? otherChoices.toString().split(/[;,]/).map(s => s.trim()).filter(Boolean)
+              : [];
+          
+            const options = [correctAnswerStr, ...otherAnswers];
+
             const tags = category?.toString().trim() 
               ? [category.toString().toLowerCase().trim()] 
               : ['general'];
 
-            const options = [
-              correctAnswer.toString().trim(),
-              ...(otherChoices?.toString().split(/[;,]/).map(s => s.trim()) || [])
-            ].filter(Boolean);
-
             const newQuestion: Question = {
               id: Date.now() + Math.random(),
-              question: question.toString().trim(),
+              question: questionStr,
               options,
               correctAnswer: 0,
               qbankId: tags[0],
               tags,
-              explanation: explanation?.toString().trim() || undefined,
+              explanation: explanation?.toString().trim() || undefined,  // Add explanation if present
               attempts: []
             };
 
@@ -259,6 +269,10 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 
             return newQuestion;
           });
+
+        if (questions.length === 0) {
+          throw new Error("No valid questions found in the file");
+        }
 
         toast({
           title: "Success",
@@ -286,9 +300,34 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     event.target.value = '';
   };
 
+  const resetForm = () => {
+    setNewQuestion({
+      question: "",
+      options: ["", "", "", ""],
+      correctAnswer: 0,
+      explanation: "",
+      tags: [],
+      media: {
+        type: "image",
+        url: "",
+        showWith: "question"
+      }
+    });
+    setSelectedTags([]);
+    setIsEditMode(false);
+    setEditingQuestion(null);
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (open && !isEditMode) {
+      resetForm();
+    }
+  };
+
   const filteredQuestions = qbanks.flatMap(qbank => 
     qbank.questions.filter(q => {
-      if (selectedFilterTags.length > 0 && !q.tags.some(tag => selectedFilterTags.includes(tag))) {
+      if (activeFilters.length > 0 && !q.tags.some(tag => activeFilters.includes(tag))) {
         return false;
       }
   
@@ -305,6 +344,99 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       return true;
     })
   );
+
+  const allTags = Array.from(new Set(
+    qbanks.flatMap(qbank => 
+      qbank.questions.flatMap(q => q.tags)
+    )
+  )).sort();
+
+  const filteredTags = allTags.filter(tag =>
+    tag.toLowerCase().includes(tagSearchQuery.toLowerCase())
+  );
+
+  const handleTagFilterToggle = (tag: string) => {
+    setSelectedFilterTags(prev =>
+      prev.includes(tag)
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
+  const handleQuestionSelect = (question: Question) => {
+    setSelectedQuestions(prev =>
+      prev.some(q => q.id === question.id)
+        ? prev.filter(q => q.id !== question.id)
+        : [...prev, question]
+    );
+  };
+
+  const handleExport = async () => {
+    try {
+      const wb = XLSX.utils.book_new();
+      
+      const exportData = selectedQuestions.map(q => [
+        q.question,
+        q.options[q.correctAnswer],
+        q.options.filter((_, i) => i !== q.correctAnswer).join(';'),
+        q.tags.join(';'),
+        q.explanation || ''
+      ]);
+
+      const ws = XLSX.utils.aoa_to_sheet([
+        ['Question', 'Correct Answer', 'Other Options', 'Tags', 'Explanation'],
+        ...exportData
+      ]);
+      XLSX.utils.book_append_sheet(wb, ws, 'Questions');
+
+      const zip = new JSZip();
+      
+      const excelBuffer = XLSX.write(wb, { type: 'array' });
+      zip.file('questions.xlsx', excelBuffer);
+
+      const mediaFolder = zip.folder('media');
+      const imagePromises = selectedQuestions
+        .map(q => q.question.match(/\/([^\/]+\.(?:png|jpg|jpeg|gif))/g))
+        .flat()
+        .filter(Boolean)
+        .map(async imagePath => {
+          if (!imagePath) return;
+          const imageName = imagePath.slice(1);
+          const mediaItem = mediaItems.find(item => item.name === imageName);
+          if (mediaItem && mediaFolder) {
+            const response = await fetch(mediaItem.data);
+            const blob = await response.blob();
+            mediaFolder.file(imageName, blob);
+          }
+        });
+
+      await Promise.all(imagePromises);
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = window.URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'questions_export.zip';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: `Exported ${selectedQuestions.length} questions successfully`,
+      });
+
+      setSelectedQuestions([]);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export questions",
+        variant: "destructive"
+      });
+    }
+  };
 
   const sortedQuestions = [...filteredQuestions].sort((a, b) => {
     if (!sortConfig.key) return 0;
@@ -332,61 +464,26 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     return 0;
   });
 
-  const handleExport = async () => {
-    if (selectedQuestions.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please select questions to export",
-        variant: "destructive"
-      });
-      return;
-    }
+  const handleToggleFilter = (tag: string) => {
+    setActiveFilters(prev =>
+      prev.includes(tag)
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
 
-    try {
-      const wb = XLSX.utils.book_new();
-      
-      const exportData = selectedQuestions.map(q => [
-        q.question,
-        q.options[q.correctAnswer],
-        q.options.filter((_, i) => i !== q.correctAnswer).join(';'),
-        q.tags.join(';'),
-        q.explanation || ''
-      ]);
+  const handleDelete = (questionId: number) => {
+    qbanks.forEach(qbank => {
+      const questionIndex = qbank.questions.findIndex(q => q.id === questionId);
+      if (questionIndex !== -1) {
+        qbank.questions.splice(questionIndex, 1);
+      }
+    });
 
-      const ws = XLSX.utils.aoa_to_sheet([
-        ['Question', 'Correct Answer', 'Other Options', 'Tags', 'Explanation'],
-        ...exportData
-      ]);
-      XLSX.utils.book_append_sheet(wb, ws, 'Questions');
-
-      const zip = new JSZip();
-      const excelBuffer = XLSX.write(wb, { type: 'array' });
-      zip.file('questions.xlsx', excelBuffer);
-      
-      const content = await zip.generateAsync({ type: 'blob' });
-      const url = window.URL.createObjectURL(content);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'questions_export.zip';
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast({
-        title: "Success",
-        description: `Exported ${selectedQuestions.length} questions successfully`,
-      });
-
-      setSelectedQuestions([]);
-    } catch (error) {
-      console.error('Export error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to export questions",
-        variant: "destructive"
-      });
-    }
+    toast({
+      title: "Success",
+      description: "Question deleted successfully",
+    });
   };
 
   return (
@@ -407,31 +504,13 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               </span>
             )}
           </Button>
-          
-          <label className="flex items-center gap-2">
-            <Input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleExcelUpload}
-              className="hidden"
-              id="excel-upload"
-            />
-            <Button variant="outline" asChild>
-              <label htmlFor="excel-upload" className="cursor-pointer flex items-center gap-2">
-                <Upload className="w-4 h-4" />
-                Import Excel
-              </label>
-            </Button>
-          </label>
-
           {selectedQuestions.length > 0 && (
             <Button onClick={handleExport} className="flex items-center gap-2">
               <Download className="w-4 h-4" />
               Export Selected ({selectedQuestions.length})
             </Button>
           )}
-
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <Dialog open={isOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
@@ -549,7 +628,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               </div>
             </DialogContent>
           </Dialog>
-
           <Button
             variant="ghost"
             size="icon"
@@ -577,62 +655,58 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               onChange={(e) => setTagSearchQuery(e.target.value)}
             />
             <div className="max-h-[60vh] overflow-y-auto space-y-2">
-              {existingTags
-                .filter(tag => tag.toLowerCase().includes(tagSearchQuery.toLowerCase()))
-                .map(tag => (
-                  <Button
-                    key={tag}
-                    variant={selectedFilterTags.includes(tag) ? "default" : "outline"}
-                    className="mr-2 mb-2"
-                    onClick={() => {
-                      setSelectedFilterTags(prev =>
-                        prev.includes(tag)
-                          ? prev.filter(t => t !== tag)
-                          : [...prev, tag]
-                      );
-                    }}
-                  >
-                    {tag}
-                    {selectedFilterTags.includes(tag) && (
-                      <Check className="ml-2 h-4 w-4" />
-                    )}
-                  </Button>
-                ))}
+              {filteredTags.map(tag => (
+                <Button
+                  key={tag}
+                  variant={selectedFilterTags.includes(tag) ? "default" : "outline"}
+                  className="mr-2 mb-2"
+                  onClick={() => handleTagFilterToggle(tag)}
+                >
+                  {tag}
+                  {selectedFilterTags.includes(tag) && (
+                    <Check className="ml-2 h-4 w-4" />
+                  )}
+                </Button>
+              ))}
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      <div className="mb-6">
-        <Input
-          placeholder="Search questions, answers, tags or explanations..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      <div className="mb-6 space-y-4">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Search questions, answers, tags or explanations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="rounded-md border">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-primary">
             <TableRow>
-              <TableHead className="w-12">
+              <TableHead className="w-12 text-primary-foreground">
                 Select
               </TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort('question')}>
+              <TableHead className="cursor-pointer text-primary-foreground hover:text-primary-foreground/90" onClick={() => handleSort('question')}>
                 Question
                 <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort('correctAnswerText')}>
+              <TableHead className="cursor-pointer text-primary-foreground hover:text-primary-foreground/90" onClick={() => handleSort('correctAnswerText')}>
                 Correct Answer
                 <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead>Other Choices</TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort('tags')}>
+              <TableHead className="text-primary-foreground">Other Choices</TableHead>
+              <TableHead className="cursor-pointer text-primary-foreground hover:text-primary-foreground/90" onClick={() => handleSort('tags')}>
                 Tags
                 <ArrowUpDown className="ml-2 h-4 w-4 inline" />
               </TableHead>
-              <TableHead>Explanation</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="text-primary-foreground">Explanation</TableHead>
+              <TableHead className="text-primary-foreground">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -642,13 +716,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                   <input
                     type="checkbox"
                     checked={selectedQuestions.some(q => q.id === question.id)}
-                    onChange={() => {
-                      setSelectedQuestions(prev =>
-                        prev.some(q => q.id === question.id)
-                          ? prev.filter(q => q.id !== question.id)
-                          : [...prev, question]
-                      );
-                    }}
+                    onChange={() => handleQuestionSelect(question)}
                     className="w-4 h-4"
                   />
                 </TableCell>
@@ -673,18 +741,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        qbanks.forEach(qbank => {
-                          const index = qbank.questions.findIndex(q => q.id === question.id);
-                          if (index !== -1) {
-                            qbank.questions.splice(index, 1);
-                          }
-                        });
-                        toast({
-                          title: "Success",
-                          description: "Question deleted successfully",
-                        });
-                      }}
+                      onClick={() => handleDelete(question.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
