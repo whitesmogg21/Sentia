@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -96,9 +97,9 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <SidebarProvider>
-              <div className="min-h-screen flex w-full">
+              <div className="min-h-screen flex w-full overflow-hidden">
                 {!inQuiz && <AppSidebar />}
-                <main className="flex-1">
+                <main className="flex-1 overflow-y-auto">
                   <Routes>
                     <Route
                       path="/"
