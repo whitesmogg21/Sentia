@@ -10,6 +10,7 @@ import { ChevronLeft, ChevronRight, Maximize, Minimize, Moon, Sun } from "lucide
 import { cn } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { useTheme } from "@/components/ThemeProvider";
+import FormulaTable from "./FormulaTable";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,6 +141,7 @@ const QuizContent = ({
       )}>
         <div className="container mx-auto p-6 h-full flex flex-col">
           <div className="flex items-center justify-end gap-2 mb-4">
+            <FormulaTable />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
