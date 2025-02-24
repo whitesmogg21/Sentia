@@ -3,17 +3,29 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/componen
 import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { MutableRefObject } from "react";
 
 interface DraggableWidgetProps {
   id: string;
   type: string;
-  onDragStart: () => void;
-  onDragEnd: (e: any) => void;
-  isDragging: boolean;
+  data: {
+    accuracy: number;
+    quizHistory: any[];
+    qbanks: any[];
+    metrics: any;
+    tagPerformance: any[];
+  };
+  onDragStart?: () => void;
+  onDragEnd?: (e: any) => void;
+  isDragging?: boolean;
   style?: React.CSSProperties;
   children?: React.ReactNode;
   isPlaceholder?: boolean;
   onWidgetAdd?: () => void;
+  onRemove: (id: string) => void;
+  initialPosition?: { x: number; y: number };
+  onDrag: (x: number, y: number) => void;
+  canvasRef: MutableRefObject<HTMLDivElement | null>;
 }
 
 export const DraggableWidget = ({
@@ -25,16 +37,25 @@ export const DraggableWidget = ({
   style,
   children,
   isPlaceholder,
-  onWidgetAdd
+  onWidgetAdd,
+  onRemove,
+  data,
+  initialPosition,
+  onDrag,
+  canvasRef
 }: DraggableWidgetProps) => {
   return (
     <motion.div
       drag={!isPlaceholder}
-      dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+      dragConstraints={canvasRef}
       dragElastic={0.1}
       dragMomentum={false}
+      initial={initialPosition}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
+      onDrag={(event, info) => {
+        onDrag(info.point.x, info.point.y);
+      }}
       style={style}
       className={cn(
         "absolute cursor-grab active:cursor-grabbing",

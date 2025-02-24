@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, Dispatch, SetStateAction } from "react";
 import { DraggableWidget } from "./DraggableWidget";
 import { cn } from "@/lib/utils";
@@ -68,7 +69,6 @@ export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasPr
     const newWidget = {
       id: `${type}-${Date.now()}`,
       type,
-      position: { x: 0, y: 0 }
     };
     setWidgets(prev => [...prev, newWidget]);
   };
