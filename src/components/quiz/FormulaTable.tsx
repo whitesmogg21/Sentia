@@ -49,8 +49,7 @@ const FormulaTable = () => {
   };
 
   const filteredFormulas = formulas.filter(f => 
-    f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    f.formula.toLowerCase().includes(searchTerm.toLowerCase())
+    f.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const renderLatex = (formula: string) => {
@@ -75,14 +74,14 @@ const FormulaTable = () => {
           <Calculator className="h-4 w-4" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-[400px] sm:w-[540px]">
+      <SheetContent side="right" className="w-[400px] sm:w-[540px]">
         <SheetHeader>
           <SheetTitle>Reference</SheetTitle>
         </SheetHeader>
         <div className="flex items-center gap-2 my-4">
           <Search className="w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search references..."
+            placeholder="Search reference names..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1"
