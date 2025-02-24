@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X } from "lucide-react";
+import { MoveUpRight, X } from "lucide-react";
+// import { ArrowsMaximize, X } from "lucide-react";
 import { Button } from "../ui/button";
 import CircularProgress from "../CircularProgress";
 import { CalendarHeatmap } from "../charts/CalendarHeatmap";
@@ -29,6 +30,8 @@ interface DraggableWidgetProps {
   initialPosition?: { x: number; y: number };
   onDrag: (x: number, y: number) => void;
   canvasRef: React.RefObject<HTMLDivElement>;
+  size?: { width: number; height: number };
+  onResize?: (width: number, height: number) => void;
 }
 
 export const DraggableWidget = ({ 
@@ -38,11 +41,16 @@ export const DraggableWidget = ({
   data,
   initialPosition,
   onDrag,
-  canvasRef
+  canvasRef,
+  size: initialSize,
+  onResize
 }: DraggableWidgetProps) => {
+  const [size, setSize] = useState(initialSize || { width: 300, height: 300 });
   const [isDragging, setIsDragging] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [position, setPosition] = useState(initialPosition || { x: 0, y: 0 });
+  const [isResizing, setIsResizing] = useState(false);
+
 
   useEffect(() => {
     if (initialPosition) {
@@ -71,6 +79,31 @@ export const DraggableWidget = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isEditing, id]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      const canvasBounds = canvas.getBoundingClientRect();
+      const padding = 16;
+      
+      let newX = position.x;
+      let newY = position.y;
+      
+      // Adjust position if needed
+      newX = Math.max(padding, Math.min(newX, canvasBounds.width - size.width - padding));
+      newY = Math.max(padding, Math.min(newY, canvasBounds.height - size.height - padding));
+      
+      if (newX !== position.x || newY !== position.y) {
+        setPosition({ x: newX, y: newY });
+        onDrag(newX, newY);
+      }
+    };
+  
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [position, size, canvasRef, onDrag]);
+
   const handleDragEnd = (event: any, info: any) => {
     setIsDragging(false);
     
@@ -85,14 +118,50 @@ export const DraggableWidget = ({
     let newX = position.x + info.offset.x;
     let newY = position.y + info.offset.y;
     
-    newX = Math.max(0, Math.min(newX, canvasBounds.width - widgetBounds.width));
-    newY = Math.max(0, Math.min(newY, canvasBounds.height - widgetBounds.height));
+    // Calculate maximum bounds considering widget size
+    const maxX = canvasBounds.width - widgetBounds.width - padding;
+    const maxY = canvasBounds.height - widgetBounds.height - padding;
+    
+    // Clamp the position values
+    newX = Math.max(padding, Math.min(newX, maxX));
+    newY = Math.max(padding, Math.min(newY, maxY));
     
     const newPosition = { x: newX, y: newY };
     setPosition(newPosition);
     onDrag(newPosition.x, newPosition.y);
   };
   
+  const handleResize = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isEditing) return;
+  
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startWidth = size.width;
+    const startHeight = size.height;
+  
+    const onMouseMove = (e: MouseEvent) => {
+      const newWidth = startWidth + (e.clientX - startX);
+      const newHeight = startHeight + (e.clientY - startY);
+      
+      // Set minimum sizes
+      const width = Math.max(200, newWidth);
+      const height = Math.max(200, newHeight);
+      setSize({ width, height });
+      onResize?.(width, height);
+    };
+  
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      setIsResizing(false);
+    };
+  
+    setIsResizing(true);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
+
   const shakeAnimation = {
     rotate: isEditing ? [-1, 1, -1, 1, 0] : 0,
     transition: {
@@ -174,46 +243,56 @@ export const DraggableWidget = ({
       dragMomentum={false}
       dragConstraints={canvasRef}
       dragElastic={0}
+      dragTransition={{ bounceStiffness: 600, bounceDamping: 20 }}
       onDragStart={() => setIsDragging(true)}
       onDragEnd={handleDragEnd}
-      animate={{
-        rotate: shakeAnimation.rotate,
-        x: position.x,
-        y: position.y,
-        transition: {
-          rotate: shakeAnimation.transition,
-          default: {
-            type: "spring",
-            stiffness: 500,
-            damping: 50,
-            restDelta: 0.001
-          }
-        }
+      animate={shakeAnimation}
+      className="relative w-full h-full"
+      style={{
+        width: size.width,
+        height: size.height
       }}
-      className="relative"
     >
       <Card className={cn(
-        "p-4",
-        isEditing ? "cursor-move border-dashed border-2" : "cursor-default",
-        isDragging && "shadow-lg"
-      )}>
-        <AnimatePresence>
-          {isEditing && (
-            <Button
-              variant="destructive"
-              size="icon"
-              className="absolute -top-2 -right-2 rounded-full z-10"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemove(id);
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </AnimatePresence>
-        {renderWidget()}
-      </Card>
+          "p-4 relative",
+          isEditing ? "cursor-move border-dashed border-2" : "cursor-default",
+          isDragging && "shadow-lg"
+        )}>
+          {renderWidget()}
+          <AnimatePresence>
+            {isEditing && (
+              <>
+                {/* Delete button */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute top-2 right-2"
+                >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemove(id);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </motion.div>
+
+                {/* Resize handle */}
+                <div
+                  className="absolute bottom-0 right-0 p-2 cursor-se-resize"
+                  onMouseDown={handleResize}
+                >
+                  <MoveUpRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+              </>
+            )}
+          </AnimatePresence>
+        </Card>
     </motion.div>
   );
 };
