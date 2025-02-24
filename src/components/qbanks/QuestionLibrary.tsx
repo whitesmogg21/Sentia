@@ -253,6 +253,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   };
 
   const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault();
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -341,6 +342,14 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 
     reader.readAsArrayBuffer(file);
     event.target.value = '';
+  };
+
+  const handleSelectAllVisible = () => {
+    if (selectedQuestions.length === sortedQuestions.length) {
+      setSelectedQuestions([]);
+    } else {
+      setSelectedQuestions(sortedQuestions);
+    }
   };
 
   const filteredQuestions = qbanks.flatMap(qbank => 
@@ -742,7 +751,18 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">
-                Select
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSelectAllVisible}
+                  className="h-8 w-8"
+                >
+                  {selectedQuestions.length === sortedQuestions.length ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <div className="h-4 w-4 rounded border border-gray-400" />
+                  )}
+                </Button>
               </TableHead>
               <TableHead className="cursor-pointer" onClick={() => handleSort('question')}>
                 Question
