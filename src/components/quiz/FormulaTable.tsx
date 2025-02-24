@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { PlusCircle, Calculator, Search } from "lucide-react";
+import { PlusCircle, Calculator, Search, Trash2 } from "lucide-react";
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 
@@ -13,7 +13,6 @@ interface Formula {
   id: string;
   name: string;
   formula: string;
-  description: string;
 }
 
 const FormulaTable = () => {
@@ -23,7 +22,7 @@ const FormulaTable = () => {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [editMode, setEditMode] = useState<string | null>(null);
-  const [newFormula, setNewFormula] = useState({ name: '', formula: '', description: '' });
+  const [newFormula, setNewFormula] = useState({ name: '', formula: '' });
 
   useEffect(() => {
     localStorage.setItem('formula-references', JSON.stringify(formulas));
@@ -35,7 +34,7 @@ const FormulaTable = () => {
         id: Date.now().toString(),
         ...newFormula
       }]);
-      setNewFormula({ name: '', formula: '', description: '' });
+      setNewFormula({ name: '', formula: '' });
     }
   };
 
@@ -45,9 +44,13 @@ const FormulaTable = () => {
     ));
   };
 
+  const handleDelete = (id: string) => {
+    setFormulas(prev => prev.filter(f => f.id !== id));
+  };
+
   const filteredFormulas = formulas.filter(f => 
     f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    f.description.toLowerCase().includes(searchTerm.toLowerCase())
+    f.formula.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const renderLatex = (formula: string) => {
@@ -67,19 +70,19 @@ const FormulaTable = () => {
           variant="ghost" 
           size="icon" 
           className="bg-background border"
-          aria-label="Open formula reference"
+          aria-label="Open reference"
         >
           <Calculator className="h-4 w-4" />
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="w-[400px] sm:w-[540px]">
         <SheetHeader>
-          <SheetTitle>Formula Reference</SheetTitle>
+          <SheetTitle>Reference</SheetTitle>
         </SheetHeader>
         <div className="flex items-center gap-2 my-4">
           <Search className="w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search formulas..."
+            placeholder="Search references..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1"
@@ -90,8 +93,8 @@ const FormulaTable = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Formula</TableHead>
-                <TableHead>Description</TableHead>
+                <TableHead>Reference</TableHead>
+                <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -124,16 +127,13 @@ const FormulaTable = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    {editMode === `${f.id}-description` ? (
-                      <Input
-                        value={f.description}
-                        onChange={(e) => handleEdit(f.id, 'description', e.target.value)}
-                        onBlur={() => setEditMode(null)}
-                        autoFocus
-                      />
-                    ) : (
-                      <div onClick={() => setEditMode(`${f.id}-description`)}>{f.description}</div>
-                    )}
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleDelete(f.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -147,22 +147,15 @@ const FormulaTable = () => {
                 </TableCell>
                 <TableCell>
                   <Input
-                    placeholder="Formula (LaTeX)"
+                    placeholder="Reference (LaTeX)"
                     value={newFormula.formula}
                     onChange={(e) => setNewFormula(prev => ({ ...prev, formula: e.target.value }))}
                   />
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      placeholder="Description"
-                      value={newFormula.description}
-                      onChange={(e) => setNewFormula(prev => ({ ...prev, description: e.target.value }))}
-                    />
-                    <Button size="icon" variant="ghost" onClick={handleAdd}>
-                      <PlusCircle className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Button size="icon" variant="ghost" onClick={handleAdd}>
+                    <PlusCircle className="h-4 w-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             </TableBody>
