@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, Dispatch, SetStateAction } from "react";
 import { DraggableWidget } from "./DraggableWidget";
 import { cn } from "@/lib/utils";
@@ -47,15 +46,25 @@ export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasPr
 
   const handleRemoveWidget = (id: string) => {
     setWidgets(prev => prev.filter(widget => widget.id !== id));
+    setWidgetPositions(prev => prev.filter(pos => pos.id !== id));
   };
 
   const handleWidgetDrag = (widgetId: string, x: number, y: number) => {
+    if (!canvasRef.current) return;
+    
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const canvasLeft = canvasRect.left;
+    const canvasTop = canvasRect.top;
+    
+    const relativeX = Math.max(0, Math.min(x - canvasLeft, canvasRect.width - 250));
+    const relativeY = Math.max(0, Math.min(y - canvasTop, canvasRect.height - 200));
+    
     setWidgetPositions((prev) => {
       const existing = prev.find((p) => p.id === widgetId);
       if (existing) {
-        return prev.map((p) => p.id === widgetId ? { ...p, x, y } : p);
+        return prev.map((p) => p.id === widgetId ? { ...p, x: relativeX, y: relativeY } : p);
       }
-      return [...prev, { id: widgetId, x, y }];
+      return [...prev, { id: widgetId, x: relativeX, y: relativeY }];
     });
   };
 
@@ -78,37 +87,57 @@ export const DraggableCanvas = ({ data, widgets, setWidgets }: DraggableCanvasPr
     setIsModalOpen(false);
   };
 
+  const calculateCanvasHeight = () => {
+    if (widgets.length === 0) return 200;
+    
+    let maxY = 200;
+    
+    widgetPositions.forEach(position => {
+      const widgetBottom = position.y + 200;
+      if (widgetBottom > maxY) {
+        maxY = widgetBottom;
+      }
+    });
+    
+    return maxY + 20;
+  };
+
   return (
     <>
       <div 
         ref={canvasRef}
         onClick={handleCanvasClick}
         className={cn(
-          "relative p-4 border-2 border-primary rounded-lg bg-background min-h-[200px]",
-          widgets.length === 0 ? "cursor-pointer" : "cursor-default"
+          "relative p-4 border-2 border-primary rounded-lg bg-background",
+          widgets.length === 0 ? "cursor-pointer min-h-[200px]" : "cursor-default"
         )}
+        style={{ minHeight: `${calculateCanvasHeight()}px` }}
       >
-        {widgets.length === 0 && (
-          <p className="text-muted-foreground">Click here to add widgets</p>
-        )}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pointer-events-none">
-          {widgets.map((widget) => {
+        {widgets.length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">Click here to add widgets</p>
+        ) : (
+          widgets.map((widget) => {
             const position = widgetPositions.find((p) => p.id === widget.id);
+            
             return (
-              <div key={widget.id} className="pointer-events-auto">
-                <DraggableWidget
-                  id={widget.id}
-                  type={widget.type}
-                  onRemove={handleRemoveWidget}
-                  data={data}
-                  initialPosition={position}
-                  onDrag={(x, y) => handleWidgetDrag(widget.id, x, y)}
-                  canvasRef={canvasRef}
-                />
-              </div>
+              <DraggableWidget
+                key={widget.id}
+                id={widget.id}
+                type={widget.type}
+                onRemove={handleRemoveWidget}
+                data={data}
+                initialPosition={position}
+                onDrag={(x, y) => handleWidgetDrag(widget.id, x, y)}
+                canvasRef={canvasRef}
+                style={{ 
+                  position: 'absolute',
+                  left: position ? `${position.x}px` : '0px',
+                  top: position ? `${position.y}px` : '0px',
+                }}
+              />
             );
-          })}
-        </div>
+          })
+        )}
       </div>
       <AddWidgetModal 
         onAddWidget={handleWidgetAdd} 
