@@ -5,6 +5,11 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Image, ZoomIn, ZoomOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 interface QuestionViewProps {
   question: Question;
@@ -86,93 +91,131 @@ const QuestionView = ({
   };
 
   const renderContent = (text: string) => {
-    const parts = text.split('/');
-    return parts.map((part, index) => {
-      if (index === 0 && !text.startsWith('/')) {
-        return <span key={index} className="mr-2">{part}</span>;
-      }
-      
-      if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
-        // This is an image filename
-        const mediaItem = mediaLibrary.find(m => m.name === part);
-        if (mediaItem) {
+    // Check if the text contains any image references
+    if (text.includes('/')) {
+      const parts = text.split('/');
+      return parts.map((part, index) => {
+        if (index === 0 && !text.startsWith('/')) {
           return (
-            <Button
-              key={index}
-              variant="ghost"
-              size="icon"
-              className="mx-1 inline-flex items-center"
-              onClick={() => handleImageClick(mediaItem.data, mediaItem.name)}
-            >
-              <Image className="h-4 w-4" />
-            </Button>
+            <span key={index} className="mr-2">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+              >
+                {part}
+              </ReactMarkdown>
+            </span>
           );
         }
+        
+        if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
+          // This is an image filename
+          const mediaItem = mediaLibrary.find(m => m.name === part);
+          if (mediaItem) {
+            return (
+              <Button
+                key={index}
+                variant="ghost"
+                size="icon"
+                className="mx-1 inline-flex items-center"
+                onClick={() => handleImageClick(mediaItem.data, mediaItem.name)}
+              >
+                <Image className="h-4 w-4" />
+              </Button>
+            );
+          }
+          return null;
+        }
+        
+        if (part) {
+          return (
+            <span key={index} className="mr-2">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm, remarkMath]}
+                rehypePlugins={[rehypeKatex]}
+              >
+                {part}
+              </ReactMarkdown>
+            </span>
+          );
+        }
+        
         return null;
-      }
-      
-      if (part) {
-        return <span key={index} className="mr-2">{part}</span>;
-      }
-      
-      return null;
-    });
+      });
+    } else {
+      // No image references, render the entire text as markdown
+      return (
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[rehypeKatex]}
+        >
+          {text}
+        </ReactMarkdown>
+      );
+    }
   };
 
-  const renderOptionContent = (text: string): React.ReactNode[] => {
-    const parts = text.split('/');
-    return parts.map((part, index) => {
-      if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
-        // This is an image filename
-        const mediaItem = mediaLibrary.find(m => m.name === part);
-        if (mediaItem) {
-          return (
-            <Button
-              key={index}
-              variant="ghost"
-              size="icon"
-              className="mx-1 inline-flex items-center"
-              onClick={() => handleImageClick(mediaItem.data, mediaItem.name)}
-            >
-              <Image className="h-4 w-4" />
-            </Button>
-          );
-        }
-        return null;
-      }
-      
-      if (part) {
-        return <span key={index} className="mr-2">{part}</span>;
-      }
-      
-      return null;
-    }).filter(Boolean);
+  const processOptionContent = (text: string): React.ReactNode => {
+    // If text contains image references
+    if (text.includes('/')) {
+      const parts = text.split('/');
+      return (
+        <div className="flex items-center">
+          {parts.map((part, index) => {
+            if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
+              // This is an image filename
+              const mediaItem = mediaLibrary.find(m => m.name === part);
+              if (mediaItem) {
+                return (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    size="icon"
+                    className="mx-1 inline-flex items-center"
+                    onClick={() => handleImageClick(mediaItem.data, mediaItem.name)}
+                  >
+                    <Image className="h-4 w-4" />
+                  </Button>
+                );
+              }
+              return null;
+            }
+            
+            if (part) {
+              return <span key={index} className="mr-2">{part}</span>;
+            }
+            
+            return null;
+          }).filter(Boolean)}
+        </div>
+      );
+    }
+    
+    // If it's just text, return it as is
+    return text;
   };
 
   return (
     <div className="dark:text-gray-100">
-      <div ref={contentRef} className="mb-4">
+      <div ref={contentRef} className="mb-4 prose dark:prose-invert max-w-none">
         {renderContent(question.question)}
       </div>
       
       <div className="space-y-4">
-        {question.options.map((option, index) => {
-          const optionContent = renderOptionContent(option);
-          return (
-            <QuizOption
-              key={index}
-              option={<div className="flex items-center">{optionContent}</div>}
-              selected={selectedAnswer === index}
-              correct={
-                isAnswered
-                  ? index === question.correctAnswer
-                  : undefined
-              }
-              onClick={() => onAnswerClick(index)}
-              disabled={isAnswered || isPaused}
-            />
-          );
-        })}
+        {question.options.map((option, index) => (
+          <QuizOption
+            key={index}
+            option={processOptionContent(option)}
+            selected={selectedAnswer === index}
+            correct={
+              isAnswered
+                ? index === question.correctAnswer
+                : undefined
+            }
+            onClick={() => onAnswerClick(index)}
+            disabled={isAnswered || isPaused}
+          />
+        ))}
       </div>
 
       {selectedImage && (
