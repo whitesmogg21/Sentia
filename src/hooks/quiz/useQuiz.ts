@@ -1,103 +1,12 @@
 
-import { useReducer, useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { Question } from "@/types/quiz";
 import { UseQuizProps, QuizState } from "./types";
 import { initializeQuiz, createQuizHistory, handleQuestionAttempt } from "./quizActions";
 import { qbanks } from "@/data/questions";
 
-// Action types
-type QuizAction = 
-  | { type: "START_QUIZ"; payload: Partial<QuizState> }
-  | { type: "ANSWER_QUESTION"; payload: { optionIndex: number; isCorrect: boolean; timeout?: boolean } }
-  | { type: "NEXT_QUESTION" }
-  | { type: "SHOW_SCORE" }
-  | { type: "QUIT_QUIZ" }
-  | { type: "RESTART_QUIZ"; payload: QuizState }
-  | { type: "TOGGLE_PAUSE" }
-  | { type: "TOGGLE_FLAG" }
-  | { type: "NAVIGATE"; payload: number }
-  | { type: "SET_TIMER"; payload: number }
-  | { type: "ANSWER_TIMEOUT" };
-
-const quizReducer = (state: QuizState, action: QuizAction): QuizState => {
-  switch (action.type) {
-    case "START_QUIZ":
-      return { ...state, ...action.payload, inQuiz: true };
-    
-    case "ANSWER_QUESTION":
-      return {
-        ...state,
-        currentQuestions: handleQuestionAttempt(
-          state.currentQuestions,
-          state.currentQuestionIndex,
-          action.payload.optionIndex,
-          action.payload.timeout
-        ),
-        selectedAnswer: action.payload.optionIndex,
-        isAnswered: true,
-        score: action.payload.isCorrect ? state.score + 1 : state.score,
-        showExplanation: state.tutorMode
-      };
-    
-    case "NEXT_QUESTION":
-      return {
-        ...state,
-        currentQuestionIndex: state.currentQuestionIndex + 1,
-        selectedAnswer: null,
-        isAnswered: false,
-        showExplanation: false,
-        timePerQuestion: state.timerEnabled ? 0 : state.timePerQuestion
-      };
-    
-    case "SHOW_SCORE":
-      return { ...state, showScore: true };
-    
-    case "QUIT_QUIZ":
-      return { ...state, inQuiz: false, showScore: true };
-    
-    case "RESTART_QUIZ":
-      return action.payload;
-    
-    case "TOGGLE_PAUSE":
-      return { ...state, isPaused: !state.isPaused };
-    
-    case "TOGGLE_FLAG":
-      const newQuestions = [...state.currentQuestions];
-      const question = newQuestions[state.currentQuestionIndex];
-      question.isFlagged = !question.isFlagged;
-      return { ...state, currentQuestions: newQuestions };
-    
-    case "NAVIGATE":
-      return {
-        ...state,
-        currentQuestionIndex: action.payload,
-        selectedAnswer: null,
-        isAnswered: false,
-        showExplanation: false
-      };
-    
-    case "SET_TIMER":
-      return { ...state, timePerQuestion: action.payload };
-    
-    case "ANSWER_TIMEOUT":
-      return {
-        ...state,
-        currentQuestions: handleQuestionAttempt(
-          state.currentQuestions,
-          state.currentQuestionIndex,
-          null,
-          true
-        ),
-        isAnswered: true
-      };
-    
-    default:
-      return state;
-  }
-};
-
 export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps) => {
-  const [state, dispatch] = useReducer(quizReducer, {
+  const [state, setState] = useState<QuizState>({
     currentQuestionIndex: 0,
     score: 0,
     showScore: false,
@@ -113,31 +22,28 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     initialTimeLimit: 60,
   });
 
-  // Cache for quiz history to avoid frequent localStorage access
-  const [quizHistoryCache, setQuizHistoryCache] = useState<any[]>([]);
-  
-  // Initialize cache from localStorage
-  useEffect(() => {
-    const storedQuizHistory = localStorage.getItem('quizHistory');
-    if (storedQuizHistory) {
-      setQuizHistoryCache(JSON.parse(storedQuizHistory));
-    }
-  }, []);
-
+  // Calculate overall accuracy from all attempts in qbanks
   const calculateOverallAccuracy = () => {
-    // Use the cached quiz history instead of reading from localStorage
-    if (quizHistoryCache.length === 0) {
-      return 0;
-    }
+    let totalCorrect = 0;
+    let totalAttempts = 0;
 
-    // Calculate the sum of all quiz accuracies
-    const totalAccuracy = quizHistoryCache.reduce((sum, quiz) => {
-      const quizAccuracy = (quiz.score / quiz.totalQuestions) * 100;
-      return sum + quizAccuracy;
-    }, 0);
+    qbanks.forEach(qbank => {
+      qbank.questions.forEach(question => {
+        if (question.attempts && question.attempts.length > 0) {
+          // Count all attempts, including repeats
+          totalAttempts += question.attempts.length;
+          // Count correct attempts
+          question.attempts.forEach(attempt => {
+            if (attempt.isCorrect) {
+              totalCorrect++;
+            }
+          });
+        }
+      });
+    });
 
-    // Return the average accuracy across all quizzes
-    return totalAccuracy / quizHistoryCache.length;
+    // Return 0 if no attempts, otherwise calculate percentage
+    return totalAttempts === 0 ? 0 : (totalCorrect / totalAttempts) * 100;
   };
 
   const getCurrentQuestion = () => state.currentQuestions[state.currentQuestionIndex];
@@ -145,7 +51,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   const handleStartQuiz = (qbankId: string, questionCount: number, isTutorMode: boolean, withTimer: boolean, timeLimit: number) => {
     const initialState = initializeQuiz(qbankId, questionCount, isTutorMode, withTimer, timeLimit);
     if (initialState) {
-      dispatch({ type: "START_QUIZ", payload: initialState });
+      setState(prev => ({ ...prev, ...initialState }));
       onQuizStart?.();
     }
   };
@@ -154,24 +60,12 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     const currentQuestion = getCurrentQuestion();
     if (!currentQuestion) return;
 
-    dispatch({ type: "ANSWER_TIMEOUT" });
-    
-    // We're using a timeout to ensure the state update above is processed
-    setTimeout(() => {
-      if (state.currentQuestionIndex === state.currentQuestions.length - 1) {
-        const quizHistory = createQuizHistory(state, null);
-        onQuizComplete?.(quizHistory);
-        dispatch({ type: "SHOW_SCORE" });
-      } else {
-        dispatch({ type: "NEXT_QUESTION" });
-        
-        if (state.timerEnabled) {
-          setTimeout(() => {
-            dispatch({ type: "SET_TIMER", payload: state.initialTimeLimit });
-          }, 10);
-        }
-      }
-    }, 0);
+    setState(prev => ({
+      ...prev,
+      currentQuestions: handleQuestionAttempt(prev.currentQuestions, prev.currentQuestionIndex, null, true)
+    }));
+
+    proceedToNextQuestion(null);
   };
 
   const handleAnswerClick = (optionIndex: number) => {
@@ -182,10 +76,14 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
 
     const isCorrect = optionIndex === currentQuestion.correctAnswer;
 
-    dispatch({ 
-      type: "ANSWER_QUESTION", 
-      payload: { optionIndex, isCorrect } 
-    });
+    setState(prev => ({
+      ...prev,
+      currentQuestions: handleQuestionAttempt(prev.currentQuestions, prev.currentQuestionIndex, optionIndex),
+      selectedAnswer: optionIndex,
+      isAnswered: true,
+      score: isCorrect ? prev.score + 1 : prev.score,
+      showExplanation: prev.tutorMode
+    }));
 
     if (!state.tutorMode) {
       proceedToNextQuestion(optionIndex);
@@ -195,18 +93,21 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   const proceedToNextQuestion = (optionIndex: number | null) => {
     if (state.currentQuestionIndex === state.currentQuestions.length - 1) {
       const quizHistory = createQuizHistory(state, optionIndex);
-      
-      // Update the quiz history cache
-      setQuizHistoryCache(prev => [...prev, quizHistory]);
-      
       onQuizComplete?.(quizHistory);
-      dispatch({ type: "SHOW_SCORE" });
+      setState(prev => ({ ...prev, showScore: true }));
     } else {
-      dispatch({ type: "NEXT_QUESTION" });
+      setState(prev => ({
+        ...prev,
+        currentQuestionIndex: prev.currentQuestionIndex + 1,
+        selectedAnswer: null,
+        isAnswered: false,
+        showExplanation: false,
+        timePerQuestion: prev.timerEnabled ? 0 : prev.timePerQuestion
+      }));
       
       if (state.timerEnabled) {
         setTimeout(() => {
-          dispatch({ type: "SET_TIMER", payload: state.initialTimeLimit });
+          setState(prev => ({ ...prev, timePerQuestion: prev.initialTimeLimit }));
         }, 10);
       }
     }
@@ -215,41 +116,45 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   const handleQuit = () => {
     const quizHistory = createQuizHistory(state, state.selectedAnswer);
     onQuizComplete?.(quizHistory);
-    dispatch({ type: "QUIT_QUIZ" });
+    setState(prev => ({ 
+      ...prev, 
+      showScore: true,
+      inQuiz: true  // Add this line to ensure we stay in quiz mode
+    }));
   };
 
   const handlePause = () => {
-    dispatch({ type: "TOGGLE_PAUSE" });
+    setState(prev => ({ ...prev, isPaused: !prev.isPaused }));
   };
 
   const handleRestart = () => {
-    dispatch({
-      type: "RESTART_QUIZ",
-      payload: {
-        currentQuestionIndex: 0,
-        score: 0,
-        showScore: false,
-        selectedAnswer: null,
-        isAnswered: false,
-        inQuiz: false,
-        currentQuestions: [],
-        tutorMode: false,
-        showExplanation: false,
-        isPaused: false,
-        timerEnabled: false,
-        timePerQuestion: 0,
-        initialTimeLimit: 0
-      }
+    setState({
+      currentQuestionIndex: 0,
+      score: 0,
+      showScore: false,
+      selectedAnswer: null,
+      isAnswered: false,
+      inQuiz: false,
+      currentQuestions: [],
+      tutorMode: false,
+      showExplanation: false,
+      isPaused: false,
+      timerEnabled: false,
+      timePerQuestion: 0,
+      initialTimeLimit: 0
     });
     onQuizEnd?.();
   };
 
   const handleQuizNavigation = (direction: 'prev' | 'next') => {
     if (direction === 'prev' && state.currentQuestionIndex > 0) {
-      dispatch({ 
-        type: "NAVIGATE", 
-        payload: state.currentQuestionIndex - 1 
-      });
+      setState(prev => ({
+        ...prev,
+        currentQuestionIndex: prev.currentQuestionIndex - 1,
+        selectedAnswer: null,
+        isAnswered: false,
+        showExplanation: false
+      }));
     } else if (direction === 'next' && state.currentQuestionIndex < state.currentQuestions.length - 1) {
       proceedToNextQuestion(state.selectedAnswer);
     }
@@ -259,17 +164,22 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     const currentQuestion = getCurrentQuestion();
     if (!currentQuestion) return;
 
-    dispatch({ type: "TOGGLE_FLAG" });
+    setState(prev => {
+      const newQuestions = [...prev.currentQuestions];
+      const question = newQuestions[prev.currentQuestionIndex];
+      question.isFlagged = !question.isFlagged;
 
-    // Update the flag in the original qbank
-    const selectedQBank = qbanks.find(qb => qb.id === currentQuestion.qbankId);
-    if (selectedQBank) {
-      const originalQuestion = selectedQBank.questions.find(q => q.id === currentQuestion.id);
-      if (originalQuestion) {
-        originalQuestion.isFlagged = !currentQuestion.isFlagged;
-        localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
+      const selectedQBank = qbanks.find(qb => qb.id === question.qbankId);
+      if (selectedQBank) {
+        const originalQuestion = selectedQBank.questions.find(q => q.id === question.id);
+        if (originalQuestion) {
+          originalQuestion.isFlagged = question.isFlagged;
+          localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
+        }
       }
-    }
+
+      return { ...prev, currentQuestions: newQuestions };
+    });
   };
 
   return {
@@ -286,7 +196,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     timerEnabled: state.timerEnabled,
     timePerQuestion: state.timePerQuestion,
     isFlagged: getCurrentQuestion()?.isFlagged || false,
-    calculateOverallAccuracy,
+    calculateOverallAccuracy, // Export the accuracy calculation function
     handleStartQuiz,
     handleAnswerTimeout,
     handleAnswerClick,

@@ -14,7 +14,6 @@ import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { QuestionFilter } from "@/types/quiz";
 import { useQuiz } from "@/hooks/quiz";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -84,8 +83,10 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     const totalQuestions = qbanks.reduce((acc, qbank) => 
       acc + qbank.questions.length, 0);
 
+    const unusedCount = totalQuestions - seenQuestionIds.size;
+
     return {
-      unused: totalQuestions - seenQuestionIds.size,
+      unused: unusedCount,
       used: seenQuestionIds.size,
       correct: correctQuestionIds.size,
       incorrect: incorrectQuestionIds.size,
@@ -96,35 +97,14 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 
   const overallAccuracy = useMemo(() => {
     return calculateOverallAccuracy();
-  }, [calculateOverallAccuracy]);
+  }, [calculateOverallAccuracy, quizHistory]);
 
-  const qbankScoreData = useMemo(() => {
-    // Create a map to store cumulative scores and question counts per QBank
-    const qbankResults = new Map<string, { score: number; total: number; name: string }>();
-
-    // First initialize all qbanks with zero values
-    qbanks.forEach(qbank => {
-      qbankResults.set(qbank.id, { score: 0, total: 0, name: qbank.name });
-    });
-
-    // Sum up scores and question counts from quiz history
-    quizHistory.forEach(quiz => {
-      const qbankData = qbankResults.get(quiz.qbankId);
-      if (qbankData) {
-        qbankData.score += quiz.score;
-        qbankData.total += quiz.totalQuestions;
-        qbankResults.set(quiz.qbankId, qbankData);
-      }
-    });
-
-    // Convert to array format with percentage calculation for chart
-    return Array.from(qbankResults.values())
-      .filter(result => result.total > 0) // Only include QBanks with attempts
-      .map(result => ({
-        name: result.name,
-        percentage: ((result.score / result.total) * 100).toFixed(1)
-      }));
-  }, [qbanks, quizHistory]);
+  const chartData = useMemo(() => 
+    quizHistory.map((quiz, index) => ({
+      attemptNumber: index + 1,
+      score: (quiz.score / quiz.totalQuestions) * 100,
+      date: quiz.date,
+    })), [quizHistory]);
 
   const filteredQuestions = useMemo(() => {
     if (!selectedQBank) return [];
@@ -160,6 +140,13 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     }
   };
 
+  const toggleFilter = (key: keyof QuestionFilter) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
   const handleQBankSelection = () => {
     navigate('/select-qbank');
   };
@@ -169,25 +156,76 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     localStorage.removeItem('selectedQBank');
   };
 
-  const totalAttempts = useMemo(() => 
-    quizHistory.reduce((acc, quiz) => acc + quiz.questionAttempts.length, 0), 
-    [quizHistory]
-  );
+  const totalAttempts = useMemo(() => quizHistory.reduce((acc, quiz) => acc + quiz.questionAttempts.length, 0), [quizHistory]);
+  const correctAttempts = useMemo(() => quizHistory.reduce((acc, quiz) => 
+    acc + quiz.questionAttempts.filter(a => a.isCorrect).length, 0), [quizHistory]);
   
-  const correctAttempts = useMemo(() => 
-    quizHistory.reduce((acc, quiz) => acc + quiz.questionAttempts.filter(a => a.isCorrect).length, 0), 
-    [quizHistory]
-  );
-  
-  const totalQuestions = useMemo(() => 
-    qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0), 
-    [qbanks]
-  );
-  
-  const questionsAttempted = useMemo(() => 
-    new Set(quizHistory.flatMap(quiz => quiz.questionAttempts.map(a => a.questionId))).size, 
-    [quizHistory]
-  );
+  const totalQuestions = useMemo(() => qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0), [qbanks]);
+  const questionsAttempted = useMemo(() => new Set(quizHistory.flatMap(quiz => 
+    quiz.questionAttempts.map(a => a.questionId)
+  )).size, [quizHistory]);
+
+  const tagStats = useMemo(() => {
+    const stats: { [key: string]: { correct: number; total: number } } = {};
+    quizHistory.forEach(quiz => {
+      quiz.questionAttempts.forEach(attempt => {
+        const question = qbanks.find(qbank => qbank.questions.find(q => q.id === attempt.questionId))
+          ?.questions.find(q => q.id === attempt.questionId);
+        const tags = question?.tags || [];
+
+        tags.forEach(tag => {
+          if (!stats[tag]) stats[tag] = { correct: 0, total: 0 };
+          stats[tag].total += 1;
+          if (attempt.isCorrect) stats[tag].correct += 1;
+        });
+      });
+    });
+    return stats;
+  }, [qbanks, quizHistory]);
+
+  const tagPerformance = useMemo(() => {
+    const tagStats: { [key: string]: { correct: number; total: number } } = {};
+    
+    const uniqueTags = new Set<string>();
+    qbanks.forEach(qbank => {
+      qbank.questions.forEach(question => {
+        question.tags.forEach(tag => uniqueTags.add(tag));
+      });
+    });
+
+    uniqueTags.forEach(tag => {
+      tagStats[tag] = { correct: 0, total: 0 };
+    });
+
+    quizHistory.forEach(quiz => {
+      quiz.questionAttempts.forEach(attempt => {
+        const question = qbanks
+          .flatMap(qbank => qbank.questions)
+          .find(q => q.id === attempt.questionId);
+          
+        if (question) {
+          question.tags.forEach(tag => {
+            tagStats[tag].total += 1;
+            if (attempt.isCorrect) {
+              tagStats[tag].correct += 1;
+            }
+          });
+        }
+      });
+    });
+
+    return Object.entries(tagStats)
+      .filter(([_, stats]) => stats.total > 0)
+      .map(([tag, stats]) => ({
+        tag,
+        score: stats.total > 0 ? (stats.correct / stats.total) * 100 : 0,
+        correct: stats.correct,
+        total: stats.total,
+      }));
+  }, [qbanks, quizHistory]);
+
+  const overallAccuracyCalc = useMemo(() => totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0, [correctAttempts, totalAttempts]);
+  const completionRate = useMemo(() => totalQuestions > 0 ? (questionsAttempted / totalQuestions) * 100 : 0, [questionsAttempted, totalQuestions]);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -199,57 +237,12 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           onClick={() => setTheme(theme === "light" ? "dark" : "light")}
           className="rounded-full"
         >
-          {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+          {theme === "light" ? (
+            <Moon className="h-5 w-5" />
+          ) : (
+            <Sun className="h-5 w-5" />
+          )}
         </Button>
-      </div>
-
-      {/* Performance Summary Section - Now Above QBank Selection */}
-      <div className="mt-6 p-4 bg-card border rounded-lg shadow-sm">
-        <h2 className="text-xl font-bold mb-4">Your Performance Summary</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card className="p-4">
-            <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
-            <p className="text-2xl font-bold">{overallAccuracy.toFixed(1)}%</p>
-          </Card>
-          <Card className="p-4">
-            <h3 className="text-sm font-medium mb-2">Questions Attempted</h3>
-            <p className="text-2xl font-bold">{questionsAttempted} / {totalQuestions}</p>
-          </Card>
-          <Card className="p-4">
-            <h3 className="text-sm font-medium mb-2">Total Quizzes Taken</h3>
-            <p className="text-2xl font-bold">{quizHistory.length}</p>
-          </Card>
-        </div>
-
-        {/* QBank Performance Chart */}
-        {qbankScoreData.length > 0 && (
-          <div className="mt-4">
-            <h3 className="text-lg font-bold mb-2">Performance by Question Bank</h3>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={qbankScoreData}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="name" 
-                    angle={-45} 
-                    textAnchor="end" 
-                    height={80}
-                    interval={0}
-                  />
-                  <YAxis 
-                    label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }}
-                    domain={[0, 100]}
-                  />
-                  <Tooltip formatter={(value) => [`${value}%`, 'Score']} />
-                  <Bar dataKey="percentage" fill="#9b87f5" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
       </div>
       
       <div className="grid md:grid-cols-2 gap-6 mt-8">
@@ -265,6 +258,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
                 selectedQBank ? "border-primary border-2" : "hover:border-primary/50"
               }`}
               onClick={selectedQBank ? handleUnlockQBank : handleQBankSelection}
+              onDoubleClick={selectedQBank ? handleUnlockQBank : undefined}
             >
               <div className="flex justify-between items-center">
                 <div>
@@ -302,7 +296,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
                 className="w-48"
               />
             </div>
-            
             <div className="flex items-center space-x-2">
               <Switch
                 id="tutor-mode"
@@ -311,7 +304,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
               />
               <Label htmlFor="tutor-mode">Enable Tutor Mode</Label>
             </div>
-            
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <Switch
@@ -321,7 +313,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
                 />
                 <Label htmlFor="timer-mode">Enable Timer</Label>
               </div>
-              
               {timerEnabled && (
                 <div className="space-y-2">
                   <Label>Time per Question (seconds): {timeLimit}</Label>
@@ -336,7 +327,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
                 </div>
               )}
             </div>
-            
             <Button
               onClick={handleStartQuiz}
               disabled={!selectedQBank || questionCount <= 0}
@@ -346,6 +336,24 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             </Button>
           </div>
         </motion.div>
+      </div>
+      
+      <div className="mt-6 p-4 bg-card border rounded-lg shadow-sm">
+        <h2 className="text-xl font-bold mb-4">Your Performance Summary</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="p-4">
+            <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
+            <p className="text-2xl font-bold">{overallAccuracy.toFixed(1)}%</p>
+          </Card>
+          <Card className="p-4">
+            <h3 className="text-sm font-medium mb-2">Questions Attempted</h3>
+            <p className="text-2xl font-bold">{questionsAttempted} / {totalQuestions}</p>
+          </Card>
+          <Card className="p-4">
+            <h3 className="text-sm font-medium mb-2">Total Quizzes Taken</h3>
+            <p className="text-2xl font-bold">{quizHistory.length}</p>
+          </Card>
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 
-import React, { useRef, useEffect, useState, useCallback, memo } from 'react';
 import { Question } from "@/types/quiz";
 import QuizOption from "../QuizOption";
+import React, { useRef, useEffect, useState } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Image, ZoomIn, ZoomOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,16 +21,16 @@ interface ImageModalProps {
   altText: string;
 }
 
-const ImageModal = memo(({ isOpen, onClose, imageUrl, altText }: ImageModalProps) => {
+const ImageModal = ({ isOpen, onClose, imageUrl, altText }: ImageModalProps) => {
   const [scale, setScale] = useState(1);
 
-  const handleZoomIn = useCallback(() => {
+  const handleZoomIn = () => {
     setScale(prev => Math.min(prev + 0.2, 3));
-  }, []);
+  };
 
-  const handleZoomOut = useCallback(() => {
+  const handleZoomOut = () => {
     setScale(prev => Math.max(prev - 0.2, 0.5));
-  }, []);
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -61,9 +61,7 @@ const ImageModal = memo(({ isOpen, onClose, imageUrl, altText }: ImageModalProps
       </DialogContent>
     </Dialog>
   );
-});
-
-ImageModal.displayName = 'ImageModal';
+};
 
 const QuestionView = ({
   question,
@@ -76,28 +74,18 @@ const QuestionView = ({
   const [mediaLibrary, setMediaLibrary] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
 
-  // Load media library once on mount
   useEffect(() => {
     const savedMedia = localStorage.getItem('mediaLibrary');
     if (savedMedia) {
-      try {
-        setMediaLibrary(JSON.parse(savedMedia));
-      } catch (e) {
-        console.error('Error parsing media library', e);
-        setMediaLibrary([]);
-      }
+      setMediaLibrary(JSON.parse(savedMedia));
     }
   }, []);
 
-  const handleImageClick = useCallback((imageData: string, imageName: string) => {
+  const handleImageClick = (imageData: string, imageName: string) => {
     setSelectedImage({ url: imageData, name: imageName });
-  }, []);
+  };
 
-  const handleCloseImage = useCallback(() => {
-    setSelectedImage(null);
-  }, []);
-
-  const renderContent = useCallback((text: string) => {
+  const renderContent = (text: string) => {
     const parts = text.split('/');
     return parts.map((part, index) => {
       if (index === 0 && !text.startsWith('/')) {
@@ -129,9 +117,9 @@ const QuestionView = ({
       
       return null;
     });
-  }, [mediaLibrary, handleImageClick]);
+  };
 
-  const renderOptionContent = useCallback((text: string): React.ReactNode[] => {
+  const renderOptionContent = (text: string): React.ReactNode[] => {
     const parts = text.split('/');
     return parts.map((part, index) => {
       if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
@@ -159,29 +147,38 @@ const QuestionView = ({
       
       return null;
     }).filter(Boolean);
-  }, [mediaLibrary, handleImageClick]);
+  };
 
   return (
-    <div className="flex flex-col gap-4 bg-card p-6 rounded-lg shadow max-w-4xl mx-auto">
-      <div className="prose dark:prose-invert max-w-none">
+    <div className="dark:text-gray-100">
+      <div ref={contentRef} className="mb-4">
         {renderContent(question.question)}
       </div>
-      <div className="space-y-2">
-        {question.options.map((option, index) => (
-          <QuizOption
-            key={index}
-            option={renderOptionContent(option)}
-            selected={selectedAnswer === index}
-            correct={isAnswered ? index === question.correctAnswer : undefined}
-            onClick={() => onAnswerClick(index)}
-            disabled={isAnswered || isPaused}
-          />
-        ))}
+      
+      <div className="space-y-4">
+        {question.options.map((option, index) => {
+          const optionContent = renderOptionContent(option);
+          return (
+            <QuizOption
+              key={index}
+              option={<div className="flex items-center">{optionContent}</div>}
+              selected={selectedAnswer === index}
+              correct={
+                isAnswered
+                  ? index === question.correctAnswer
+                  : undefined
+              }
+              onClick={() => onAnswerClick(index)}
+              disabled={isAnswered || isPaused}
+            />
+          );
+        })}
       </div>
+
       {selectedImage && (
         <ImageModal
-          isOpen={!!selectedImage}
-          onClose={handleCloseImage}
+          isOpen={true}
+          onClose={() => setSelectedImage(null)}
           imageUrl={selectedImage.url}
           altText={selectedImage.name}
         />
@@ -191,4 +188,3 @@ const QuestionView = ({
 };
 
 export default QuestionView;
-

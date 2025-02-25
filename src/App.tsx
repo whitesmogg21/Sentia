@@ -11,7 +11,7 @@ import History from "./pages/History";
 import QBanks from "./pages/QBanks";
 import SelectQBank from "./pages/SelectQBank";
 import NotFound from "./pages/NotFound";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { QuizHistory, QBank } from "./types/quiz";
 import { qbanks } from "./data/questions";
 import { toast } from "@/components/ui/use-toast";
@@ -25,21 +25,9 @@ const App = () => {
   const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
   const [inQuiz, setInQuiz] = useState(false);
 
-  // Load quiz history from localStorage on component mount
-  useEffect(() => {
-    const storedQuizHistory = localStorage.getItem('quizHistory');
-    if (storedQuizHistory) {
-      setQuizHistory(JSON.parse(storedQuizHistory));
-    }
-  }, []);
-
   const handleQuizComplete = (history: QuizHistory) => {
     // Update quiz history
-    const updatedHistory = [...quizHistory, history];
-    setQuizHistory(updatedHistory);
-    
-    // Store updated quiz history in localStorage
-    localStorage.setItem('quizHistory', JSON.stringify(updatedHistory));
+    setQuizHistory((prev) => [...prev, history]);
 
     // Update the qbank with the new attempts
     const selectedQBank = qbanks.find(qb => qb.id === history.qbankId);
@@ -77,15 +65,19 @@ const App = () => {
 
   const handleQuizStart = () => {
     setInQuiz(true);
+    // Reset all questions in qbanks
+    qbanks.forEach(qbank => {
+      qbank.questions.forEach(question => {
+        question.attempts = [];
+        question.isFlagged = false;
+      });
+    });
+    localStorage.removeItem('selectedQBank');
   };
-  
   const handleQuizEnd = () => setInQuiz(false);
 
   const handleClearHistory = () => {
     setQuizHistory([]);
-    // Clear quiz history from localStorage
-    localStorage.removeItem('quizHistory');
-    
     // Reset attempts in qbanks
     qbanks.forEach(qbank => {
       qbank.questions.forEach(question => {

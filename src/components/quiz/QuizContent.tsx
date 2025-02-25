@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Question } from "@/types/quiz";
 import QuestionView from "./QuestionView";
 import ExplanationView from "./ExplanationView";
@@ -72,86 +71,67 @@ const QuizContent = ({
   onTimeUp,
   onToggleFlag
 }: QuizContentProps) => {
-  const [showQuitDialog, setShowQuitDialog] = useState(false);
-  const [selectedColor, setSelectedColor] = useState(highlightColors[0]);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [showQuitDialog, setShowQuitDialog] = React.useState(false);
+  const [answeredQuestions, setAnsweredQuestions] = React.useState<Array<{ questionIndex: number; isCorrect: boolean }>>([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const { theme, setTheme } = useTheme();
+  const [selectedColor, setSelectedColor] = useState(highlightColors[0]);
 
-  // Memoize answered questions to prevent recalculation on every render
-  const answeredQuestions = useMemo(() => {
-    const questions = [];
-    for (let i = 0; i < totalQuestions; i++) {
-      if (i < currentQuestionIndex || (i === currentQuestionIndex && isAnswered)) {
-        questions.push({
-          questionIndex: i,
-          isCorrect: i === currentQuestionIndex ? 
-            (selectedAnswer === currentQuestion.correctAnswer) : 
-            false // We don't know for previous questions without the full data
-        });
+  useEffect(() => {
+    const handleMouseUp = () => {
+      const selection = window.getSelection();
+      if (!selection || selection.toString().length === 0) return;
+      
+      try {
+        const range = selection.getRangeAt(0);
+        const span = document.createElement('span');
+        span.className = `${selectedColor.class} cursor-pointer`;
+        span.onclick = (e) => {
+          const target = e.target as HTMLSpanElement;
+          const parent = target.parentNode;
+          if (parent) {
+            parent.replaceChild(document.createTextNode(target.textContent || ''), target);
+          }
+          e.stopPropagation();
+        };
+        range.surroundContents(span);
+      } catch (e) {
+        console.error('Failed to highlight:', e);
+      } finally {
+        selection.removeAllRanges();
       }
-    }
-    return questions;
-  }, [currentQuestionIndex, isAnswered, selectedAnswer, currentQuestion, totalQuestions]);
+    };
 
-  // Create a stable handleMouseUp function with useCallback
-  const handleMouseUp = useCallback(() => {
-    const selection = window.getSelection();
-    if (!selection || selection.toString().length === 0) return;
-    
-    try {
-      const range = selection.getRangeAt(0);
-      const span = document.createElement('span');
-      span.className = `${selectedColor.class} cursor-pointer`;
-      span.onclick = (e) => {
-        const target = e.target as HTMLSpanElement;
-        const parent = target.parentNode;
-        if (parent) {
-          parent.replaceChild(document.createTextNode(target.textContent || ''), target);
-        }
-        e.stopPropagation();
-      };
-      range.surroundContents(span);
-    } catch (e) {
-      console.error('Failed to highlight:', e);
-    } finally {
-      selection.removeAllRanges();
-    }
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => document.removeEventListener('mouseup', handleMouseUp);
   }, [selectedColor]);
 
-  // Use a ref for the event handler to avoid re-adding listeners
-  const mouseUpHandlerRef = useRef(handleMouseUp);
-
-  // Update the ref when the callback changes
-  useEffect(() => {
-    mouseUpHandlerRef.current = handleMouseUp;
-  }, [handleMouseUp]);
-
-  // Add event listener only once
-  useEffect(() => {
-    const handler = (e: MouseEvent) => mouseUpHandlerRef.current(e);
-    document.addEventListener('mouseup', handler);
-    return () => document.removeEventListener('mouseup', handler);
-  }, []);
-
-  const handleAnswerClick = useCallback((index: number) => {
+  const handleAnswerClick = (index: number) => {
     if (!isAnswered && !isPaused) {
+      setAnsweredQuestions(prev => [
+        ...prev.filter(q => q.questionIndex !== currentQuestionIndex),
+        {
+          questionIndex: currentQuestionIndex,
+          isCorrect: index === currentQuestion.correctAnswer
+        }
+      ]);
       onAnswerClick(index);
     }
-  }, [isAnswered, isPaused, onAnswerClick]);
+  };
 
-  const handleQuizComplete = useCallback(() => {
+  const handleQuestionClick = (index: number) => {
+    if (index > currentQuestionIndex) {
+      onNavigate('next');
+    } else if (index < currentQuestionIndex) {
+      onNavigate('prev');
+    }
+  };
+
+  const handleQuizComplete = () => {
     setShowQuitDialog(false);
     onQuit();
-  }, [onQuit]);
-
-  const toggleSidebar = useCallback(() => {
-    setSidebarCollapsed(prev => !prev);
-  }, []);
-
-  const handleThemeToggle = useCallback(() => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  }, [theme, setTheme]);
+  };
 
   return (
     <div className="fixed inset-0 bg-background dark:bg-background">
@@ -196,11 +176,15 @@ const QuizContent = ({
             <Button
               variant="ghost"
               size="icon"
-              onClick={handleThemeToggle}
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="bg-background border"
               aria-label="Toggle theme"
             >
-              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {theme === 'dark' ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
             </Button>
             <Button
               variant="ghost"
@@ -209,7 +193,11 @@ const QuizContent = ({
               className="bg-background border"
               aria-label="Toggle fullscreen"
             >
-              {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+              {isFullscreen ? (
+                <Minimize className="h-4 w-4" />
+              ) : (
+                <Maximize className="h-4 w-4" />
+              )}
             </Button>
           </div>
 
@@ -263,13 +251,7 @@ const QuizContent = ({
           totalQuestions={totalQuestions}
           currentQuestionIndex={currentQuestionIndex}
           answeredQuestions={answeredQuestions}
-          onQuestionClick={(index) => {
-            if (index > currentQuestionIndex) {
-              onNavigate('next');
-            } else if (index < currentQuestionIndex) {
-              onNavigate('prev');
-            }
-          }}
+          onQuestionClick={handleQuestionClick}
         />
       </div>
 
@@ -280,10 +262,14 @@ const QuizContent = ({
           "fixed top-4 transition-all duration-300 bg-background border",
           sidebarCollapsed ? "left-4" : "left-[150px]"
         )}
-        onClick={toggleSidebar}
+        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         aria-label="Toggle sidebar"
       >
-        {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        {sidebarCollapsed ? (
+          <ChevronRight className="h-4 w-4" />
+        ) : (
+          <ChevronLeft className="h-4 w-4" />
+        )}
       </Button>
 
       <AlertDialog open={showQuitDialog} onOpenChange={setShowQuitDialog}>
@@ -306,4 +292,4 @@ const QuizContent = ({
   );
 };
 
-export default React.memo(QuizContent);
+export default QuizContent;
