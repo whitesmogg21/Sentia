@@ -8,7 +8,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TagPerformanceChart } from "@/components/TagPerformanceChart";
 import { Progress } from "@/components/ui/progress";
-import { CircularProgress } from "@/components/CircularProgress";
+import CircularProgress from "@/components/CircularProgress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface DraggableWidgetProps {
