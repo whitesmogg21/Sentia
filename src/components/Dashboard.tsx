@@ -83,10 +83,8 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     const totalQuestions = qbanks.reduce((acc, qbank) => 
       acc + qbank.questions.length, 0);
 
-    const unusedCount = totalQuestions - seenQuestionIds.size;
-
     return {
-      unused: unusedCount,
+      unused: totalQuestions - seenQuestionIds.size,
       used: seenQuestionIds.size,
       correct: correctQuestionIds.size,
       incorrect: incorrectQuestionIds.size,
@@ -97,14 +95,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 
   const overallAccuracy = useMemo(() => {
     return calculateOverallAccuracy();
-  }, [calculateOverallAccuracy, quizHistory]);
-
-  const chartData = useMemo(() => 
-    quizHistory.map((quiz, index) => ({
-      attemptNumber: index + 1,
-      score: (quiz.score / quiz.totalQuestions) * 100,
-      date: quiz.date,
-    })), [quizHistory]);
+  }, [calculateOverallAccuracy]);
 
   const filteredQuestions = useMemo(() => {
     if (!selectedQBank) return [];
@@ -140,13 +131,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     }
   };
 
-  const toggleFilter = (key: keyof QuestionFilter) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-
   const handleQBankSelection = () => {
     navigate('/select-qbank');
   };
@@ -156,76 +140,25 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     localStorage.removeItem('selectedQBank');
   };
 
-  const totalAttempts = useMemo(() => quizHistory.reduce((acc, quiz) => acc + quiz.questionAttempts.length, 0), [quizHistory]);
-  const correctAttempts = useMemo(() => quizHistory.reduce((acc, quiz) => 
-    acc + quiz.questionAttempts.filter(a => a.isCorrect).length, 0), [quizHistory]);
+  const totalAttempts = useMemo(() => 
+    quizHistory.reduce((acc, quiz) => acc + quiz.questionAttempts.length, 0), 
+    [quizHistory]
+  );
   
-  const totalQuestions = useMemo(() => qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0), [qbanks]);
-  const questionsAttempted = useMemo(() => new Set(quizHistory.flatMap(quiz => 
-    quiz.questionAttempts.map(a => a.questionId)
-  )).size, [quizHistory]);
-
-  const tagStats = useMemo(() => {
-    const stats: { [key: string]: { correct: number; total: number } } = {};
-    quizHistory.forEach(quiz => {
-      quiz.questionAttempts.forEach(attempt => {
-        const question = qbanks.find(qbank => qbank.questions.find(q => q.id === attempt.questionId))
-          ?.questions.find(q => q.id === attempt.questionId);
-        const tags = question?.tags || [];
-
-        tags.forEach(tag => {
-          if (!stats[tag]) stats[tag] = { correct: 0, total: 0 };
-          stats[tag].total += 1;
-          if (attempt.isCorrect) stats[tag].correct += 1;
-        });
-      });
-    });
-    return stats;
-  }, [qbanks, quizHistory]);
-
-  const tagPerformance = useMemo(() => {
-    const tagStats: { [key: string]: { correct: number; total: number } } = {};
-    
-    const uniqueTags = new Set<string>();
-    qbanks.forEach(qbank => {
-      qbank.questions.forEach(question => {
-        question.tags.forEach(tag => uniqueTags.add(tag));
-      });
-    });
-
-    uniqueTags.forEach(tag => {
-      tagStats[tag] = { correct: 0, total: 0 };
-    });
-
-    quizHistory.forEach(quiz => {
-      quiz.questionAttempts.forEach(attempt => {
-        const question = qbanks
-          .flatMap(qbank => qbank.questions)
-          .find(q => q.id === attempt.questionId);
-          
-        if (question) {
-          question.tags.forEach(tag => {
-            tagStats[tag].total += 1;
-            if (attempt.isCorrect) {
-              tagStats[tag].correct += 1;
-            }
-          });
-        }
-      });
-    });
-
-    return Object.entries(tagStats)
-      .filter(([_, stats]) => stats.total > 0)
-      .map(([tag, stats]) => ({
-        tag,
-        score: stats.total > 0 ? (stats.correct / stats.total) * 100 : 0,
-        correct: stats.correct,
-        total: stats.total,
-      }));
-  }, [qbanks, quizHistory]);
-
-  const overallAccuracyCalc = useMemo(() => totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0, [correctAttempts, totalAttempts]);
-  const completionRate = useMemo(() => totalQuestions > 0 ? (questionsAttempted / totalQuestions) * 100 : 0, [questionsAttempted, totalQuestions]);
+  const correctAttempts = useMemo(() => 
+    quizHistory.reduce((acc, quiz) => acc + quiz.questionAttempts.filter(a => a.isCorrect).length, 0), 
+    [quizHistory]
+  );
+  
+  const totalQuestions = useMemo(() => 
+    qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0), 
+    [qbanks]
+  );
+  
+  const questionsAttempted = useMemo(() => 
+    new Set(quizHistory.flatMap(quiz => quiz.questionAttempts.map(a => a.questionId))).size, 
+    [quizHistory]
+  );
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -237,11 +170,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           onClick={() => setTheme(theme === "light" ? "dark" : "light")}
           className="rounded-full"
         >
-          {theme === "light" ? (
-            <Moon className="h-5 w-5" />
-          ) : (
-            <Sun className="h-5 w-5" />
-          )}
+          {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
         </Button>
       </div>
       
@@ -258,7 +187,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
                 selectedQBank ? "border-primary border-2" : "hover:border-primary/50"
               }`}
               onClick={selectedQBank ? handleUnlockQBank : handleQBankSelection}
-              onDoubleClick={selectedQBank ? handleUnlockQBank : undefined}
             >
               <div className="flex justify-between items-center">
                 <div>
@@ -296,6 +224,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
                 className="w-48"
               />
             </div>
+            
             <div className="flex items-center space-x-2">
               <Switch
                 id="tutor-mode"
@@ -304,6 +233,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
               />
               <Label htmlFor="tutor-mode">Enable Tutor Mode</Label>
             </div>
+            
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <Switch
@@ -313,6 +243,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
                 />
                 <Label htmlFor="timer-mode">Enable Timer</Label>
               </div>
+              
               {timerEnabled && (
                 <div className="space-y-2">
                   <Label>Time per Question (seconds): {timeLimit}</Label>
@@ -327,6 +258,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
                 </div>
               )}
             </div>
+            
             <Button
               onClick={handleStartQuiz}
               disabled={!selectedQBank || questionCount <= 0}

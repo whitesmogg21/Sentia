@@ -22,7 +22,6 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     initialTimeLimit: 60,
   });
 
-  // Calculate overall accuracy from all attempts in qbanks
   const calculateOverallAccuracy = () => {
     let totalCorrect = 0;
     let totalAttempts = 0;
@@ -30,9 +29,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     qbanks.forEach(qbank => {
       qbank.questions.forEach(question => {
         if (question.attempts && question.attempts.length > 0) {
-          // Count all attempts, including repeats
           totalAttempts += question.attempts.length;
-          // Count correct attempts
           question.attempts.forEach(attempt => {
             if (attempt.isCorrect) {
               totalCorrect++;
@@ -42,7 +39,6 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
       });
     });
 
-    // Return 0 if no attempts, otherwise calculate percentage
     return totalAttempts === 0 ? 0 : (totalCorrect / totalAttempts) * 100;
   };
 
@@ -116,11 +112,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   const handleQuit = () => {
     const quizHistory = createQuizHistory(state, state.selectedAnswer);
     onQuizComplete?.(quizHistory);
-    setState(prev => ({ 
-      ...prev, 
-      showScore: true,
-      inQuiz: true  // Add this line to ensure we stay in quiz mode
-    }));
+    setState(prev => ({ ...prev, showScore: true, inQuiz: true }));
   };
 
   const handlePause = () => {
@@ -196,7 +188,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     timerEnabled: state.timerEnabled,
     timePerQuestion: state.timePerQuestion,
     isFlagged: getCurrentQuestion()?.isFlagged || false,
-    calculateOverallAccuracy, // Export the accuracy calculation function
+    calculateOverallAccuracy,
     handleStartQuiz,
     handleAnswerTimeout,
     handleAnswerClick,

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Question } from "@/types/quiz";
 import QuestionView from "./QuestionView";
@@ -71,9 +72,9 @@ const QuizContent = ({
   onTimeUp,
   onToggleFlag
 }: QuizContentProps) => {
-  const [showQuitDialog, setShowQuitDialog] = React.useState(false);
-  const [answeredQuestions, setAnsweredQuestions] = React.useState<Array<{ questionIndex: number; isCorrect: boolean }>>([]);
-  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  const [showQuitDialog, setShowQuitDialog] = useState(false);
+  const [answeredQuestions, setAnsweredQuestions] = useState<Array<{ questionIndex: number; isCorrect: boolean }>>([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const { theme, setTheme } = useTheme();
   const [selectedColor, setSelectedColor] = useState(highlightColors[0]);
@@ -117,14 +118,6 @@ const QuizContent = ({
         }
       ]);
       onAnswerClick(index);
-    }
-  };
-
-  const handleQuestionClick = (index: number) => {
-    if (index > currentQuestionIndex) {
-      onNavigate('next');
-    } else if (index < currentQuestionIndex) {
-      onNavigate('prev');
     }
   };
 
@@ -180,11 +173,7 @@ const QuizContent = ({
               className="bg-background border"
               aria-label="Toggle theme"
             >
-              {theme === 'dark' ? (
-                <Sun className="h-4 w-4" />
-              ) : (
-                <Moon className="h-4 w-4" />
-              )}
+              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
             <Button
               variant="ghost"
@@ -193,11 +182,7 @@ const QuizContent = ({
               className="bg-background border"
               aria-label="Toggle fullscreen"
             >
-              {isFullscreen ? (
-                <Minimize className="h-4 w-4" />
-              ) : (
-                <Maximize className="h-4 w-4" />
-              )}
+              {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
             </Button>
           </div>
 
@@ -251,7 +236,13 @@ const QuizContent = ({
           totalQuestions={totalQuestions}
           currentQuestionIndex={currentQuestionIndex}
           answeredQuestions={answeredQuestions}
-          onQuestionClick={handleQuestionClick}
+          onQuestionClick={(index) => {
+            if (index > currentQuestionIndex) {
+              onNavigate('next');
+            } else if (index < currentQuestionIndex) {
+              onNavigate('prev');
+            }
+          }}
         />
       </div>
 
@@ -265,11 +256,7 @@ const QuizContent = ({
         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
         aria-label="Toggle sidebar"
       >
-        {sidebarCollapsed ? (
-          <ChevronRight className="h-4 w-4" />
-        ) : (
-          <ChevronLeft className="h-4 w-4" />
-        )}
+        {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
       </Button>
 
       <AlertDialog open={showQuitDialog} onOpenChange={setShowQuitDialog}>
