@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Question } from "@/types/quiz";
 import QuestionView from "./QuestionView";
@@ -149,10 +148,11 @@ const QuizContent = ({
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "bg-background border relative p-0 overflow-hidden cursor-pointer",
+                    "bg-background border relative p-0 overflow-hidden cursor-default select-none",
                     selectedColor.class
                   )}
                   aria-label="Select highlight color"
+                  style={{ pointerEvents: 'auto' }}
                 >
                   <div className="w-4 h-4 rounded-full pointer-events-none" />
                 </Button>

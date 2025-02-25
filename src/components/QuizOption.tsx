@@ -3,11 +3,6 @@ import React from 'react';
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Check, Strikethrough } from "lucide-react";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
 
 interface QuizOptionProps {
   option: React.ReactNode;
@@ -61,16 +56,7 @@ const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOption
           isStrikedOut && "line-through text-gray-500 dark:text-gray-400"
         )}
       >
-        {typeof option === 'string' ? (
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-          >
-            {option}
-          </ReactMarkdown>
-        ) : (
-          option
-        )}
+        {option}
       </span>
     </div>
   );
