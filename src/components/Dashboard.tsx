@@ -14,6 +14,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { QuestionFilter } from "@/types/quiz";
 import { useQuiz } from "@/hooks/quiz";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -97,6 +98,34 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     return calculateOverallAccuracy();
   }, [calculateOverallAccuracy]);
 
+  const qbankScoreData = useMemo(() => {
+    // Create a map to store cumulative scores and question counts per QBank
+    const qbankResults = new Map<string, { score: number; total: number; name: string }>();
+
+    // First initialize all qbanks with zero values
+    qbanks.forEach(qbank => {
+      qbankResults.set(qbank.id, { score: 0, total: 0, name: qbank.name });
+    });
+
+    // Sum up scores and question counts from quiz history
+    quizHistory.forEach(quiz => {
+      const qbankData = qbankResults.get(quiz.qbankId);
+      if (qbankData) {
+        qbankData.score += quiz.score;
+        qbankData.total += quiz.totalQuestions;
+        qbankResults.set(quiz.qbankId, qbankData);
+      }
+    });
+
+    // Convert to array format with percentage calculation for chart
+    return Array.from(qbankResults.values())
+      .filter(result => result.total > 0) // Only include QBanks with attempts
+      .map(result => ({
+        name: result.name,
+        percentage: ((result.score / result.total) * 100).toFixed(1)
+      }));
+  }, [qbanks, quizHistory]);
+
   const filteredQuestions = useMemo(() => {
     if (!selectedQBank) return [];
       
@@ -172,6 +201,55 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         >
           {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
         </Button>
+      </div>
+
+      {/* Performance Summary Section - Now Above QBank Selection */}
+      <div className="mt-6 p-4 bg-card border rounded-lg shadow-sm">
+        <h2 className="text-xl font-bold mb-4">Your Performance Summary</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card className="p-4">
+            <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
+            <p className="text-2xl font-bold">{overallAccuracy.toFixed(1)}%</p>
+          </Card>
+          <Card className="p-4">
+            <h3 className="text-sm font-medium mb-2">Questions Attempted</h3>
+            <p className="text-2xl font-bold">{questionsAttempted} / {totalQuestions}</p>
+          </Card>
+          <Card className="p-4">
+            <h3 className="text-sm font-medium mb-2">Total Quizzes Taken</h3>
+            <p className="text-2xl font-bold">{quizHistory.length}</p>
+          </Card>
+        </div>
+
+        {/* QBank Performance Chart */}
+        {qbankScoreData.length > 0 && (
+          <div className="mt-4">
+            <h3 className="text-lg font-bold mb-2">Performance by Question Bank</h3>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={qbankScoreData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 70 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={80}
+                    interval={0}
+                  />
+                  <YAxis 
+                    label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }}
+                    domain={[0, 100]}
+                  />
+                  <Tooltip formatter={(value) => [`${value}%`, 'Score']} />
+                  <Bar dataKey="percentage" fill="#9b87f5" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="grid md:grid-cols-2 gap-6 mt-8">
@@ -268,24 +346,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             </Button>
           </div>
         </motion.div>
-      </div>
-      
-      <div className="mt-6 p-4 bg-card border rounded-lg shadow-sm">
-        <h2 className="text-xl font-bold mb-4">Your Performance Summary</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="p-4">
-            <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
-            <p className="text-2xl font-bold">{overallAccuracy.toFixed(1)}%</p>
-          </Card>
-          <Card className="p-4">
-            <h3 className="text-sm font-medium mb-2">Questions Attempted</h3>
-            <p className="text-2xl font-bold">{questionsAttempted} / {totalQuestions}</p>
-          </Card>
-          <Card className="p-4">
-            <h3 className="text-sm font-medium mb-2">Total Quizzes Taken</h3>
-            <p className="text-2xl font-bold">{quizHistory.length}</p>
-          </Card>
-        </div>
       </div>
     </div>
   );
