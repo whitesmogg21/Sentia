@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Check, Strikethrough } from "lucide-react";
@@ -13,14 +13,14 @@ interface QuizOptionProps {
 }
 
 const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOptionProps) => {
-  const [isStrikedOut, setIsStrikedOut] = React.useState(false);
+  const [isStrikedOut, setIsStrikedOut] = useState(false);
 
-  const handleStrikethrough = (e: React.MouseEvent) => {
+  const handleStrikethrough = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the parent onClick
     if (!disabled) {
-      setIsStrikedOut(!isStrikedOut);
+      setIsStrikedOut(prev => !prev);
     }
-  };
+  }, [disabled]);
 
   return (
     <div className="flex items-center gap-3 my-2">
@@ -52,7 +52,7 @@ const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOption
       <span 
         className={cn(
           "flex-1",
-          "text-card-foreground dark:text-card-foreground", // Using card-foreground to match question color
+          "text-card-foreground dark:text-card-foreground", 
           isStrikedOut && "line-through text-gray-500 dark:text-gray-400"
         )}
       >
@@ -62,4 +62,5 @@ const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOption
   );
 };
 
-export default QuizOption;
+// Use React.memo to prevent unnecessary re-renders
+export default React.memo(QuizOption);
