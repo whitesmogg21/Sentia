@@ -162,4 +162,33 @@ const QuestionView = ({
   }, [mediaLibrary, handleImageClick]);
 
   return (
-    <div className="
+    <div className="flex flex-col gap-4 bg-card p-6 rounded-lg shadow max-w-4xl mx-auto">
+      <div className="prose dark:prose-invert max-w-none">
+        {renderContent(question.question)}
+      </div>
+      <div className="space-y-2">
+        {question.options.map((option, index) => (
+          <QuizOption
+            key={index}
+            option={renderOptionContent(option)}
+            selected={selectedAnswer === index}
+            correct={isAnswered ? index === question.correctAnswer : undefined}
+            onClick={() => onAnswerClick(index)}
+            disabled={isAnswered || isPaused}
+          />
+        ))}
+      </div>
+      {selectedImage && (
+        <ImageModal
+          isOpen={!!selectedImage}
+          onClose={handleCloseImage}
+          imageUrl={selectedImage.url}
+          altText={selectedImage.name}
+        />
+      )}
+    </div>
+  );
+};
+
+export default QuestionView;
+
