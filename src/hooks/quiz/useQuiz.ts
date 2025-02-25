@@ -23,23 +23,23 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   });
 
   const calculateOverallAccuracy = () => {
-    let totalCorrect = 0;
-    let totalAttempts = 0;
+    // Get quiz history from localStorage or create an empty array if it doesn't exist
+    const storedQuizHistory = localStorage.getItem('quizHistory');
+    const quizHistory = storedQuizHistory ? JSON.parse(storedQuizHistory) : [];
+    
+    // If no quizzes have been taken, return 0
+    if (quizHistory.length === 0) {
+      return 0;
+    }
 
-    qbanks.forEach(qbank => {
-      qbank.questions.forEach(question => {
-        if (question.attempts && question.attempts.length > 0) {
-          totalAttempts += question.attempts.length;
-          question.attempts.forEach(attempt => {
-            if (attempt.isCorrect) {
-              totalCorrect++;
-            }
-          });
-        }
-      });
-    });
+    // Calculate the sum of all quiz accuracies
+    const totalAccuracy = quizHistory.reduce((sum, quiz) => {
+      const quizAccuracy = (quiz.score / quiz.totalQuestions) * 100;
+      return sum + quizAccuracy;
+    }, 0);
 
-    return totalAttempts === 0 ? 0 : (totalCorrect / totalAttempts) * 100;
+    // Return the average accuracy across all quizzes
+    return totalAccuracy / quizHistory.length;
   };
 
   const getCurrentQuestion = () => state.currentQuestions[state.currentQuestionIndex];
