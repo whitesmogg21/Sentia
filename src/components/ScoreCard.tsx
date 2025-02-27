@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { Question, QuizHistory } from "@/types/quiz";
 import QuizResultsTable from "./QuizResultsTable";
@@ -16,7 +17,7 @@ interface ScoreCardProps {
 }
 
 const ScoreCard = ({ score, total, questions, attempts, onEnd }: ScoreCardProps) => {
-  const percentage = Math.round((score / total) * 100);
+  const percentage = Number(((score / total) * 100).toFixed(2));
   const attempted = attempts.filter(a => a.selectedAnswer !== null).length;
   const correct = attempts.filter(a => a.isCorrect).length;
   const flagged = attempts.filter(a => a.isFlagged).length;
