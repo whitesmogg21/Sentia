@@ -100,10 +100,11 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     return calculateOverallAccuracy();
   }, [calculateOverallAccuracy, quizHistory]);
 
+  // Fixed chart data calculation to use the actual quiz scores
   const chartData = useMemo(() => 
     quizHistory.map((quiz, index) => ({
       attemptNumber: index + 1,
-      score: (quiz.score / quiz.totalQuestions) * 100,
+      score: Math.round((quiz.score / quiz.totalQuestions) * 100),
       date: quiz.date,
     })), [quizHistory]);
 
