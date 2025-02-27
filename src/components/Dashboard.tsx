@@ -14,6 +14,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { QuestionFilter } from "@/types/quiz";
 import { useQuiz } from "@/hooks/quiz";
+import PerformanceLineChart from "./charts/PerformanceLineChart";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -167,7 +168,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 
   const tagStats = useMemo(() => {
     const stats: { [key: string]: { correct: number; total: number } } = {};
-    quizHistory.forEach(quiz => {
+    quizHistory.forEach(quiz => {a
       quiz.questionAttempts.forEach(attempt => {
         const question = qbanks.find(qbank => qbank.questions.find(q => q.id === attempt.questionId))
           ?.questions.find(q => q.id === attempt.questionId);
@@ -354,6 +355,12 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             <p className="text-2xl font-bold">{quizHistory.length}</p>
           </Card>
         </div>
+        
+        {quizHistory.length > 0 && (
+          <div className="mt-6">
+            <PerformanceLineChart quizHistory={quizHistory} />
+          </div>
+        )}
       </div>
     </div>
   );
