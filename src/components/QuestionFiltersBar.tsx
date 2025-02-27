@@ -1,5 +1,3 @@
-
-import { useEffect } from "react";
 import { QuestionFilter } from "@/types/quiz";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -66,76 +64,36 @@ const FilterButton = ({
   count: number; 
   isActive: boolean; 
   onClick: () => void; 
-}) => {
-  useEffect(() => {
-    const savedFilters = localStorage.getItem('questionFilters');
-    if (savedFilters) {
-      const filters = JSON.parse(savedFilters);
-      if (filters[category.key] !== undefined) {
-        if (filters[category.key] !== isActive) {
-          onClick();
-        }
-      }
-    }
-  }, []);
+}) => (
+  <button
+    onClick={onClick}
+    className={cn(
+      "flex items-center gap-2 px-3 py-2 rounded-full transition-all",
+      category.bgColor,
+      category.color,
+      isActive && "ring-2 ring-offset-2",
+      "hover:opacity-90"
+    )}
+  >
+    <Check className={cn("w-4 h-4", isActive ? "opacity-100" : "opacity-0")} />
+    <span className="font-medium">{category.label}</span>
+    <span className="px-2 py-0.5 bg-white rounded-full text-sm">
+      {count}
+    </span>
+  </button>
+);
 
-  useEffect(() => {
-    const savedFilters = localStorage.getItem('questionFilters');
-    const filters = savedFilters ? JSON.parse(savedFilters) : {};
-    filters[category.key] = isActive;
-    localStorage.setItem('questionFilters', JSON.stringify(filters));
-  }, [isActive, category.key]);
+const QuestionFiltersBar = ({ metrics, filters, onToggleFilter }: QuestionFiltersBarProps) => (
+  <div className="flex flex-wrap gap-2">
+    {FILTER_CATEGORIES.map((category) => (
+      <FilterButton
+        key={category.key}
+        category={category}
+        count={metrics[category.key]}
+        isActive={filters[category.key]}
+        onClick={() => onToggleFilter(category.key)}
+      />
+    ))}
+  </div>
+);
 
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-2 px-3 py-2 rounded-full transition-all",
-        category.bgColor,
-        category.color,
-        isActive && "ring-2 ring-offset-2",
-        "hover:opacity-90"
-      )}
-    >
-      <Check className={cn("w-4 h-4", isActive ? "opacity-100" : "opacity-0")} />
-      <span className="font-medium">{category.label}</span>
-      <span className="px-2 py-0.5 bg-white rounded-full text-sm">
-        {count}
-      </span>
-    </button>
-  );
-};
-
-const QuestionFiltersBar = ({ metrics, filters, onToggleFilter }: QuestionFiltersBarProps) => {
-  useEffect(() => {
-    const savedMetrics = localStorage.getItem('questionMetrics');
-    if (savedMetrics) {
-      const parsedMetrics = JSON.parse(savedMetrics);
-      Object.keys(parsedMetrics).forEach((key) => {
-        if (metrics[key as keyof QuestionFilter] !== parsedMetrics[key]) {
-          metrics[key as keyof QuestionFilter] = parsedMetrics[key];
-        }
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('questionMetrics', JSON.stringify(metrics));
-  }, [metrics]);
-
-  return (
-    <div className="flex flex-wrap gap-2">
-      {FILTER_CATEGORIES.map((category) => (
-        <FilterButton
-          key={category.key}
-          category={category}
-          count={metrics[category.key]}
-          isActive={filters[category.key]}
-          onClick={() => onToggleFilter(category.key)}
-        />
-      ))}
-    </div>
-  );
-};
-
-export default QuestionFiltersBar;
