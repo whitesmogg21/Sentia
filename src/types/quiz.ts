@@ -1,3 +1,4 @@
+
 export interface Question {
   id: number;
   question: string;
@@ -12,12 +13,16 @@ export interface Question {
     showWith: 'question' | 'answer';
   };
   explanation?: string;
+  tags: string[];
 }
 
 export interface QuestionAttempt {
-  date: string;
+  questionId: number;
   selectedAnswer: number | null;
   isCorrect: boolean;
+  isFlagged: boolean;
+  date: string;
+  tags: string[];
 }
 
 export interface QuizState {
@@ -38,7 +43,14 @@ export interface QuizHistory {
     questionId: number;
     selectedAnswer: number | null;
     isCorrect: boolean;
+    isFlagged: boolean;
+    tags: string[];
   }[];
+}
+
+export interface MediaItem {
+  type: 'image' | 'audio' | 'video';
+  url: string;
 }
 
 export interface QBank {
@@ -46,15 +58,16 @@ export interface QBank {
   name: string;
   description: string;
   questions: Question[];
+  media?: MediaItem[];
 }
 
 export interface QuestionFilter {
   unused: boolean;
   used: boolean;
-  incorrect: boolean;
   correct: boolean;
-  flagged: boolean;
+  incorrect: boolean;
   omitted: boolean;
+  flagged: boolean;
 }
 
 export type QuestionCategory = 'unused' | 'correct' | 'incorrect' | 'omitted';
@@ -66,3 +79,4 @@ export interface QuestionMetrics {
   omitted: number;
   marked: number;
 }
+

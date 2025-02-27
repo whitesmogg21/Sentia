@@ -1,3 +1,4 @@
+
 import { Question, QuizHistory } from "@/types/quiz";
 import { QuizState } from "./types";
 import { qbanks } from "@/data/questions";
@@ -34,7 +35,7 @@ export const initializeQuiz = (
     .slice(0, questionCount)
     .map(q => ({
       ...q,
-      attempts: q.attempts || []
+      attempts: []
     }));
 
   return {
@@ -59,7 +60,7 @@ export const createQuizHistory = (
 ): QuizHistory => {
   return {
     id: Date.now().toString(),
-    date: new Date().toLocaleDateString(),
+    date: new Date().toISOString(),
     score: state.score,
     totalQuestions: state.currentQuestions.length,
     qbankId: state.currentQuestions[0].qbankId,
@@ -67,6 +68,8 @@ export const createQuizHistory = (
       questionId: q.id,
       selectedAnswer: index === state.currentQuestionIndex ? optionIndex : q.attempts?.[0]?.selectedAnswer ?? null,
       isCorrect: index === state.currentQuestionIndex ? optionIndex === q.correctAnswer : q.attempts?.[0]?.isCorrect ?? false,
+      isFlagged: Boolean(q.isFlagged),
+      tags: q.tags
     }))
   };
 };
@@ -81,13 +84,18 @@ export const handleQuestionAttempt = (
   const question = newQuestions[currentIndex];
   const isCorrect = !isTimeout && optionIndex === question.correctAnswer;
 
+  const attempt = {
+    questionId: question.id,
+    selectedAnswer: optionIndex,
+    isCorrect,
+    date: new Date().toISOString(),
+    isFlagged: Boolean(question.isFlagged),
+    tags: question.tags
+  };
+
   question.attempts = [
     ...(question.attempts || []),
-    {
-      date: new Date().toISOString(),
-      selectedAnswer: optionIndex,
-      isCorrect
-    }
+    attempt
   ];
 
   return newQuestions;
