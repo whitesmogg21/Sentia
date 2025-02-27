@@ -14,7 +14,6 @@ import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { QuestionFilter } from "@/types/quiz";
 import { useQuiz } from "@/hooks/quiz";
-import QuizScoreLineChart from "./charts/QuizScoreLineChart";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -100,11 +99,10 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     return calculateOverallAccuracy();
   }, [calculateOverallAccuracy, quizHistory]);
 
-  // Update chart data calculation to use 2 significant figures for score
   const chartData = useMemo(() => 
     quizHistory.map((quiz, index) => ({
       attemptNumber: index + 1,
-      score: Number(((quiz.score / quiz.totalQuestions) * 100).toFixed(2)),
+      score: (quiz.score / quiz.totalQuestions) * 100,
       date: quiz.date,
     })), [quizHistory]);
 
@@ -160,11 +158,11 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 
   const totalAttempts = useMemo(() => quizHistory.reduce((acc, quiz) => acc + quiz.questionAttempts.length, 0), [quizHistory]);
   const correctAttempts = useMemo(() => quizHistory.reduce((acc, quiz) => 
-    acc + quiz.questionAttempts.filter(attempt => attempt.isCorrect).length, 0), [quizHistory]);
+    acc + quiz.questionAttempts.filter(a => a.isCorrect).length, 0), [quizHistory]);
   
   const totalQuestions = useMemo(() => qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0), [qbanks]);
   const questionsAttempted = useMemo(() => new Set(quizHistory.flatMap(quiz => 
-    quiz.questionAttempts.map(attempt => attempt.questionId)
+    quiz.questionAttempts.map(a => a.questionId)
   )).size, [quizHistory]);
 
   const tagStats = useMemo(() => {
@@ -342,10 +340,10 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       
       <div className="mt-6 p-4 bg-card border rounded-lg shadow-sm">
         <h2 className="text-xl font-bold mb-4">Your Performance Summary</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
-            <p className="text-2xl font-bold">{overallAccuracyCalc.toFixed(1)}%</p>
+            <p className="text-2xl font-bold">{overallAccuracy.toFixed(1)}%</p>
           </Card>
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Questions Attempted</h3>
@@ -356,13 +354,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             <p className="text-2xl font-bold">{quizHistory.length}</p>
           </Card>
         </div>
-        
-        {/* Quiz Score Line Chart */}
-        {quizHistory.length > 0 && (
-          <div className="mt-6">
-            <QuizScoreLineChart data={chartData} />
-          </div>
-        )}
       </div>
     </div>
   );
