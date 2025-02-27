@@ -1,3 +1,4 @@
+
 import { QuestionFilter } from "@/types/quiz";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -97,3 +98,4 @@ const QuestionFiltersBar = ({ metrics, filters, onToggleFilter }: QuestionFilter
   </div>
 );
 
+export default QuestionFiltersBar;
