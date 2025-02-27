@@ -3,59 +3,74 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash, Upload, Tag, Edit, Check, X } from "lucide-react";
+import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit, Trash2, Filter, Sun, Moon, Download, Bold, Italic, List, ListOrdered, Link, Quote, Code } from "lucide-react";
 import { Question, QBank } from "@/types/quiz";
 import { toast } from "@/components/ui/use-toast";
+import { useTheme } from "@/components/ThemeProvider";
+import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import MediaSelector from "./MediaSelector";
 
 interface QuestionLibraryProps {
   qbanks: QBank[];
 }
 
-interface QuestionWithTags extends Question {
-  tags: string[];
-}
+type SortConfig = {
+  key: 'question' | 'correctAnswerText' | 'tags' | null;
+  direction: 'asc' | 'desc';
+};
 
 const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
-  const [selectedQBank, setSelectedQBank] = useState<QBank | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const { theme, setTheme } = useTheme();
   const [newQuestion, setNewQuestion] = useState<Partial<Question>>({
     question: "",
     options: ["", "", "", ""],
     correctAnswer: 0,
     explanation: "",
-    tags: ['default', 'practice'],
+    tags: [],
     media: {
       type: "image",
       url: "",
       showWith: "question"
     }
   });
-  const [questions, setQuestions] = useState<QuestionWithTags[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [editingQuestion, setEditingQuestion] = useState<QuestionWithTags | null>(null);
-  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [newTags, setNewTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [showTagFilterModal, setShowTagFilterModal] = useState(false);
+  const [tagSearchQuery, setTagSearchQuery] = useState("");
+  const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
+  const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
+  const [formatSelection, setFormatSelection] = useState({ start: 0, end: 0 });
 
-  const handleOptionChange = (index: number, value: string) => {
-    setNewQuestion(prev => ({
-      ...prev,
-      options: prev.options?.map((opt, i) => i === index ? value : opt)
-    }));
+  const existingTags = Array.from(new Set(
+    qbanks.flatMap(qbank => qbank.questions.flatMap(q => q.tags || []))
+  ));
+
+  const handleAddTag = (tag: string) => {
+    const normalizedTag = tag.toLowerCase().trim();
+    if (normalizedTag && !selectedTags.includes(normalizedTag)) {
+      setSelectedTags([...selectedTags, normalizedTag]);
+      setTagInput("");
+    }
   };
 
-  const handleMediaChange = (field: 'type' | 'showWith' | 'url', value: string) => {
-    setNewQuestion(prev => ({
-      ...prev,
-      media: {
-        ...prev.media!,
-        [field]: value
-      }
-    }));
+  const handleRemoveTag = (tagToRemove: string) => {
+    setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
   };
 
   const handleSubmit = () => {
@@ -67,14 +82,23 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       });
       return;
     }
-    
-    const question: QuestionWithTags = {
+
+    if (selectedTags.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please add at least one tag",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const question: Question = {
       id: Date.now(),
-      question: newQuestion.question,
+      question: newQuestion.question!,
       options: newQuestion.options!,
       correctAnswer: newQuestion.correctAnswer!,
-      qbankId: 'library',
-      tags: newQuestion.tags || ['default', 'practice'],
+      qbankId: selectedTags[0],
+      tags: selectedTags,
       attempts: []
     };
 
@@ -90,94 +114,347 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       };
     }
 
-    setQuestions(prev => [...prev, question]);
+    selectedTags.forEach(tag => {
+      let qbank = qbanks.find(qb => qb.id === tag);
+      
+      if (!qbank) {
+        qbank = {
+          id: tag,
+          name: tag.charAt(0).toUpperCase() + tag.slice(1),
+          description: `Questions tagged with ${tag}`,
+          questions: []
+        };
+        qbanks.push(qbank);
+      }
+      
+      qbank.questions.push({ ...question });
+    });
+
     setIsOpen(false);
     setNewQuestion({
       question: "",
       options: ["", "", "", ""],
       correctAnswer: 0,
       explanation: "",
-      tags: ['default', 'practice'],
+      tags: [],
       media: {
         type: "image",
         url: "",
         showWith: "question"
       }
     });
+    setSelectedTags([]);
 
     toast({
       title: "Success",
-      description: "Question created successfully"
+      description: `Question added to ${selectedTags.length} question bank(s)`,
     });
   };
 
-  const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleOptionChange = (index: number, value: string) => {
+    setNewQuestion(prev => ({
+      ...prev,
+      options: prev.options?.map((opt, i) => i === index ? value : opt)
+    }));
+  };
+
+  const handleSort = (key: SortConfig['key']) => {
+    setSortConfig(current => ({
+      key,
+      direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  const handleEdit = (question: Question) => {
+    setEditingQuestion(question);
+    setNewQuestion(question);
+    setSelectedTags(question.tags);
+    setIsEditMode(true);
+    setIsOpen(true);
+  };
+
+  const handleUpdate = () => {
+    if (!editingQuestion) return;
+
+    qbanks.forEach(qbank => {
+      const questionIndex = qbank.questions.findIndex(q => q.id === editingQuestion.id);
+      if (questionIndex !== -1) {
+        qbank.questions[questionIndex] = {
+          ...editingQuestion,
+          ...newQuestion,
+          tags: selectedTags,
+          qbankId: selectedTags[0]
+        } as Question;
+      }
+    });
+
+    setIsOpen(false);
+    setIsEditMode(false);
+    setEditingQuestion(null);
+    setNewQuestion({
+      question: "",
+      options: ["", "", "", ""],
+      correctAnswer: 0,
+      explanation: "",
+      tags: [],
+      media: { type: "image", url: "", showWith: "question" }
+    });
+    setSelectedTags([]);
+
+    toast({
+      title: "Success",
+      description: "Question updated successfully",
+    });
+  };
+
+  const applyFormat = (format: string) => {
+    let prefix = '';
+    let suffix = '';
+    
+    switch (format) {
+      case 'bold':
+        prefix = '**';
+        suffix = '**';
+        break;
+      case 'italic':
+        prefix = '_';
+        suffix = '_';
+        break;
+      case 'list':
+        prefix = '- ';
+        break;
+      case 'orderedList':
+        prefix = '1. ';
+        break;
+      case 'link':
+        prefix = '[';
+        suffix = '](url)';
+        break;
+      case 'code':
+        prefix = '`';
+        suffix = '`';
+        break;
+      case 'quote':
+        prefix = '> ';
+        break;
+    }
+
+    const text = newQuestion.question;
+    const newText = text.substring(0, formatSelection.start) +
+                   prefix +
+                   text.substring(formatSelection.start, formatSelection.end) +
+                   suffix +
+                   text.substring(formatSelection.end);
+
+    setNewQuestion(prev => ({
+      ...prev,
+      question: newText
+    }));
+  };
+
+  const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
     const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const rows = text.split('\n').map(row => 
-        row.split(',').map(cell => cell.replace(/^"|"$/g, '').replace(/""/g, '"'))
-      );
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rows = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1 });
 
-      // Skip header row
-      const newQuestions: QuestionWithTags[] = rows.slice(1).map((row, index) => {
-        const options = row.slice(3, 10).filter(opt => opt.trim() !== '');
-        const tags = row[11]?.split(';').filter(tag => tag.trim()) || [];
-        
-        return {
-          id: Date.now() + index,
-          question: row[1],
-          options,
-          correctAnswer: parseInt(row[2]) - 1,
-          qbankId: 'library',
-          tags,
-          explanation: row[12] || undefined,
-        };
-      });
+        const questions = rows.slice(1)
+          .filter(row => row && row.length >= 2)
+          .map((row: any) => {
+            const [question, correctAnswer, otherChoices, category, explanation] = row;
+            const tags = category?.toString().trim() 
+              ? [category.toString().toLowerCase().trim()] 
+              : ['general'];
 
-      setQuestions(prev => [...prev, ...newQuestions]);
+            const questionText = question.toString().trim();
+            const explanationText = explanation?.toString().trim() || undefined;
+
+            const options = [
+              correctAnswer.toString().trim(),
+              ...(otherChoices?.toString().split(/[;,]/).map(s => s.trim()) || [])
+            ].filter(Boolean);
+
+            const mediaMatch = questionText.match(/\/([^\/\s]+\.(png|jpg|jpeg|gif))/i);
+            const media = mediaMatch ? {
+              type: "image" as const,
+              url: mediaMatch[1],
+              showWith: "question" as const
+            } : undefined;
+
+            const newQuestion: Question = {
+              id: Date.now() + Math.random(),
+              question: questionText,
+              options,
+              correctAnswer: 0,
+              qbankId: tags[0],
+              tags,
+              explanation: explanationText,
+              media,
+              attempts: []
+            };
+
+            tags.forEach(tag => {
+              let qbank = qbanks.find(qb => qb.id === tag);
+              if (!qbank) {
+                qbank = {
+                  id: tag,
+                  name: tag.charAt(0).toUpperCase() + tag.slice(1),
+                  description: `Questions tagged with ${tag}`,
+                  questions: []
+                };
+                qbanks.push(qbank);
+              }
+              qbank.questions.push({ ...newQuestion });
+            });
+
+            return newQuestion;
+          });
+
+        toast({
+          title: "Success",
+          description: `${questions.length} questions imported successfully`,
+        });
+      } catch (error) {
+        console.error('Excel import error:', error);
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "Failed to import questions",
+          variant: "destructive"
+        });
+      }
+    };
+
+    reader.onerror = () => {
       toast({
-        title: "Success",
-        description: "Questions imported successfully",
+        title: "Error",
+        description: "Failed to read Excel file",
+        variant: "destructive"
       });
     };
-    reader.readAsText(file);
+
+    reader.readAsArrayBuffer(file);
+    event.target.value = '';
   };
 
-  const handleEditQuestion = (question: QuestionWithTags) => {
-    setEditingQuestion(question);
-    setIsOpen(true);
+  const handleSelectAllVisible = () => {
+    if (selectedQuestions.length === sortedQuestions.length) {
+      setSelectedQuestions([]);
+    } else {
+      setSelectedQuestions(sortedQuestions);
+    }
   };
 
-  const filteredQuestions = questions.filter(q => {
-    const matchesSearch = q.question.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTags = selectedTags.length === 0 || 
-      selectedTags.every(tag => q.tags.includes(tag));
-    return matchesSearch && matchesTags;
+  const filteredQuestions = qbanks.flatMap(qbank => 
+    qbank.questions.filter(q => {
+      if (selectedFilterTags.length > 0 && !q.tags.some(tag => selectedFilterTags.includes(tag))) {
+        return false;
+      }
+  
+      if (searchQuery) {
+        const searchTerm = searchQuery.toLowerCase();
+        return (
+          q.question.toLowerCase().includes(searchTerm) ||
+          q.options.some(option => option.toLowerCase().includes(searchTerm)) ||
+          (q.explanation && q.explanation.toLowerCase().includes(searchTerm)) ||
+          q.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+        );
+      }
+  
+      return true;
+    })
+  );
+
+  const sortedQuestions = [...filteredQuestions].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    
+    if (sortConfig.key === 'tags') {
+      const aTags = a.tags.join(', ');
+      const bTags = b.tags.join(', ');
+      return sortConfig.direction === 'asc'
+        ? aTags.localeCompare(bTags)
+        : bTags.localeCompare(aTags);
+    }
+
+    let aValue = sortConfig.key === 'correctAnswerText' 
+      ? a.options[a.correctAnswer]
+      : a[sortConfig.key];
+    let bValue = sortConfig.key === 'correctAnswerText'
+      ? b.options[b.correctAnswer]
+      : b[sortConfig.key];
+
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      return sortConfig.direction === 'asc'
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue);
+    }
+    return 0;
   });
 
-  const allTags = Array.from(new Set(
-    questions.flatMap(q => q.tags)
-  ));
+  const handleExport = async () => {
+    if (selectedQuestions.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select questions to export",
+        variant: "destructive"
+      });
+      return;
+    }
 
-  const handleTagInput = (input: string) => {
-    setTagInput(input);
-    if (input.endsWith(';')) {
-      const newTag = input.slice(0, -1).trim();
-      if (newTag) {
-        if (editingQuestion) {
-          setEditingQuestion(prev => prev ? {
-            ...prev,
-            tags: [...prev.tags, newTag]
-          } : null);
-        } else {
-          setNewTags(prev => [...prev, newTag]);
-        }
-      }
-      setTagInput("");
+    try {
+      const wb = XLSX.utils.book_new();
+      
+      const exportData = selectedQuestions.map(q => [
+        q.question,
+        q.options[q.correctAnswer],
+        q.options.filter((_, i) => i !== q.correctAnswer).join(';'),
+        q.tags.join(';'),
+        q.explanation || '',
+        q.media?.url ? `/${q.media.url}` : ''
+      ]);
+
+      const ws = XLSX.utils.aoa_to_sheet([
+        ['Question', 'Correct Answer', 'Other Options', 'Tags', 'Explanation', 'Media'],
+        ...exportData
+      ]);
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Questions');
+
+      const zip = new JSZip();
+      const excelBuffer = XLSX.write(wb, { type: 'array' });
+      zip.file('questions.xlsx', excelBuffer);
+      
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = window.URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'questions_export.zip';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Success",
+        description: `Exported ${selectedQuestions.length} questions successfully`,
+      });
+
+      setSelectedQuestions([]);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export questions",
+        variant: "destructive"
+      });
     }
   };
 
@@ -185,18 +462,44 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Question Library</h1>
-        <div className="flex gap-4">
-          <Button variant="outline" onClick={() => document.getElementById('csvInput')?.click()}>
-            <Upload className="w-4 h-4 mr-2" />
-            Import CSV
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowTagFilterModal(true)}
+            className="flex items-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            Filter by Tags
+            {selectedFilterTags.length > 0 && (
+              <span className="ml-2 bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
+                {selectedFilterTags.length}
+              </span>
+            )}
           </Button>
-          <input
-            id="csvInput"
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={handleCSVUpload}
-          />
+          
+          <label className="flex items-center gap-2">
+            <Input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleExcelUpload}
+              className="hidden"
+              id="excel-upload"
+            />
+            <Button variant="outline" asChild>
+              <label htmlFor="excel-upload" className="cursor-pointer flex items-center gap-2">
+                <Upload className="w-4 h-4" />
+                Import Excel
+              </label>
+            </Button>
+          </label>
+
+          {selectedQuestions.length > 0 && (
+            <Button onClick={handleExport} className="flex items-center gap-2">
+              <Download className="w-4 h-4" />
+              Export Selected ({selectedQuestions.length})
+            </Button>
+          )}
+
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -206,70 +509,100 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
             </DialogTrigger>
             <DialogContent className="max-w-xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>
-                  {editingQuestion ? 'Edit Question' : 'Create New Question'}
-                </DialogTitle>
+                <DialogTitle>{isEditMode ? "Edit Question" : "Create New Question"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Question Text</Label>
-                  <Textarea
-                    placeholder="Enter question text"
-                    value={editingQuestion ? editingQuestion.question : newQuestion.question}
-                    onChange={(e) => {
-                      if (editingQuestion) {
-                        setEditingQuestion(prev => prev ? { ...prev, question: e.target.value } : null);
-                      } else {
-                        setNewQuestion(prev => ({ ...prev, question: e.target.value }));
-                      }
-                    }}
-                  />
+                  <div className="space-y-2">
+                    <div className="flex gap-2 mb-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => applyFormat('bold')}
+                        title="Bold"
+                      >
+                        <Bold className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => applyFormat('italic')}
+                        title="Italic"
+                      >
+                        <Italic className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => applyFormat('list')}
+                        title="Bullet List"
+                      >
+                        <List className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => applyFormat('orderedList')}
+                        title="Numbered List"
+                      >
+                        <ListOrdered className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => applyFormat('link')}
+                        title="Link"
+                      >
+                        <Link className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => applyFormat('quote')}
+                        title="Quote"
+                      >
+                        <Quote className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => applyFormat('code')}
+                        title="Code"
+                      >
+                        <Code className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Textarea
+                      placeholder="Enter question text (supports markdown)"
+                      value={newQuestion.question}
+                      onChange={(e) => setNewQuestion(prev => ({ ...prev, question: e.target.value }))}
+                      onSelect={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        setFormatSelection({
+                          start: target.selectionStart,
+                          end: target.selectionEnd
+                        });
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label>Options</Label>
-                  {(editingQuestion ? editingQuestion.options : newQuestion.options).map((option, index) => (
+                  {newQuestion.options?.map((option, index) => (
                     <div key={index} className="flex gap-2">
                       <Input
                         placeholder={`Option ${index + 1}`}
                         value={option}
-                        onChange={(e) => {
-                          if (editingQuestion) {
-                            const newOptions = [...editingQuestion.options];
-                            newOptions[index] = e.target.value;
-                            setEditingQuestion({ ...editingQuestion, options: newOptions });
-                          } else {
-                            handleOptionChange(index, e.target.value);
-                          }
-                        }}
+                        onChange={(e) => handleOptionChange(index, e.target.value)}
                       />
                       <Button
-                        variant={index === (editingQuestion?.correctAnswer || newQuestion.correctAnswer) ? "default" : "outline"}
+                        variant={index === newQuestion.correctAnswer ? "default" : "outline"}
                         size="icon"
-                        onClick={() => {
-                          if (editingQuestion) {
-                            setEditingQuestion({ ...editingQuestion, correctAnswer: index });
-                          } else {
-                            setNewQuestion(prev => ({ ...prev, correctAnswer: index }));
-                          }
-                        }}
+                        onClick={() => setNewQuestion(prev => ({ ...prev, correctAnswer: index }))}
                       >
                         <Check className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          if (editingQuestion) {
-                            const newOptions = [...editingQuestion.options];
-                            newOptions[index] = "";
-                            setEditingQuestion({ ...editingQuestion, options: newOptions });
-                          } else {
-                            handleOptionChange(index, "");
-                          }
-                        }}
-                      >
-                        <Trash className="w-4 h-4" />
                       </Button>
                     </div>
                   ))}
@@ -277,171 +610,240 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 
                 <div className="space-y-2">
                   <Label>Tags</Label>
-                  <div className="space-y-2">
-                    <Input
-                      placeholder="Type tag and press semicolon to add"
-                      value={tagInput}
-                      onChange={(e) => handleTagInput(e.target.value)}
-                    />
-                    <div className="flex flex-wrap gap-2">
-                      {(editingQuestion ? editingQuestion.tags : newTags).map((tag, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-gray-100 rounded-full text-sm flex items-center gap-1"
-                        >
-                          {tag}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-4 w-4 p-0"
-                            onClick={() => {
-                              if (editingQuestion) {
-                                setEditingQuestion(prev => prev ? {
-                                  ...prev,
-                                  tags: prev.tags.filter((_, i) => i !== index)
-                                } : null);
-                              } else {
-                                setNewTags(prev => prev.filter((_, i) => i !== index));
-                              }
-                            }}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Media</Label>
-                  <div className="flex gap-4 items-center">
-                    <MediaSelector
-                      onSelect={(media) => {
-                        setEditingQuestion(prev => prev ? {
-                          ...prev,
-                          media: {
-                            ...media,
-                            showWith: prev.media?.showWith || 'question'
-                          }
-                        } : null);
-                      }}
-                    />
-                    {editingQuestion?.media?.url && (
-                      <div className="flex-1">
-                        {editingQuestion.media.type === 'image' ? (
-                          <img
-                            src={editingQuestion.media.url}
-                            alt=""
-                            className="max-h-32 object-contain"
-                          />
-                        ) : (
-                          <div className="p-2 bg-gray-100 rounded">
-                            {editingQuestion.media.type} media selected
-                          </div>
-                        )}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {selectedTags.map(tag => (
+                      <span
+                        key={tag}
+                        className="px-2 py-1 bg-gray-100 rounded-full text-sm flex items-center gap-1"
+                      >
+                        {tag}
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setEditingQuestion(prev => prev ? {
-                            ...prev,
-                            media: undefined
-                          } : null)}
+                          className="h-4 w-4 p-0"
+                          onClick={() => handleRemoveTag(tag)}
                         >
-                          <Trash className="w-4 h-4 mr-2" />
-                          Remove
+                          <X className="h-3 w-3" />
                         </Button>
-                      </div>
-                    )}
+                      </span>
+                    ))}
                   </div>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Add tag and press Enter"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddTag(tagInput);
+                        }
+                      }}
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => handleAddTag(tagInput)}
+                    >
+                      <Tag className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {existingTags.length > 0 && (
+                    <div className="mt-2">
+                      <Label className="text-sm text-gray-500">Existing tags:</Label>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {existingTags.map(tag => (
+                          <Button
+                            key={tag}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddTag(tag)}
+                            className="text-xs"
+                          >
+                            {tag}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <Label>Explanation (Optional)</Label>
                   <Textarea
                     placeholder="Enter explanation"
-                    value={editingQuestion ? editingQuestion.explanation || "" : newQuestion.explanation}
-                    onChange={(e) => {
-                      if (editingQuestion) {
-                        setEditingQuestion(prev => prev ? {
-                          ...prev,
-                          explanation: e.target.value
-                        } : null);
-                      } else {
-                        setNewQuestion(prev => ({
-                          ...prev,
-                          explanation: e.target.value
-                        }));
-                      }
-                    }}
+                    value={newQuestion.explanation}
+                    onChange={(e) => setNewQuestion(prev => ({
+                      ...prev,
+                      explanation: e.target.value
+                    }))}
                   />
                 </div>
 
-                <Button onClick={handleSubmit}>
-                  {editingQuestion ? 'Update Question' : 'Create Question'}
+                <Button onClick={isEditMode ? handleUpdate : handleSubmit}>
+                  {isEditMode ? "Update Question" : "Create Question"}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            className="rounded-full"
+          >
+            {theme === "light" ? (
+              <Moon className="h-4 w-4" />
+            ) : (
+              <Sun className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </div>
 
-      <div className="mb-6 space-y-4">
+      <Dialog open={showTagFilterModal} onOpenChange={setShowTagFilterModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Filter by Tags</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Input
+              placeholder="Search tags..."
+              value={tagSearchQuery}
+              onChange={(e) => setTagSearchQuery(e.target.value)}
+            />
+            <div className="max-h-[60vh] overflow-y-auto space-y-2">
+              {existingTags
+                .filter(tag => tag.toLowerCase().includes(tagSearchQuery.toLowerCase()))
+                .map(tag => (
+                  <Button
+                    key={tag}
+                    variant={selectedFilterTags.includes(tag) ? "default" : "outline"}
+                    className="mr-2 mb-2"
+                    onClick={() => {
+                      setSelectedFilterTags(prev =>
+                        prev.includes(tag)
+                          ? prev.filter(t => t !== tag)
+                          : [...prev, tag]
+                      );
+                    }}
+                  >
+                    {tag}
+                    {selectedFilterTags.includes(tag) && (
+                      <Check className="ml-2 h-4 w-4" />
+                    )}
+                  </Button>
+                ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <div className="mb-6">
         <Input
-          placeholder="Search questions..."
+          placeholder="Search questions, answers, tags or explanations..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <div className="flex flex-wrap gap-2">
-          {allTags.map(tag => (
-            <Button
-              key={tag}
-              variant={selectedTags.includes(tag) ? "default" : "outline"}
-              onClick={() => {
-                setSelectedTags(prev =>
-                  prev.includes(tag)
-                    ? prev.filter(t => t !== tag)
-                    : [...prev, tag]
-                );
-              }}
-              size="sm"
-            >
-              <Tag className="w-4 h-4 mr-2" />
-              {tag}
-            </Button>
-          ))}
-        </div>
       </div>
 
-      <div className="space-y-4">
-        {filteredQuestions.map((question, index) => (
-          <div key={question.id} className="p-4 border rounded-lg">
-            <div className="flex justify-between items-start">
-              <h3 className="font-bold">Question {index + 1}</h3>
-              <Button variant="ghost" size="icon" onClick={() => handleEditQuestion(question)}>
-                <Edit className="w-4 h-4" />
-              </Button>
-            </div>
-            <p className="mt-2">{question.question}</p>
-            <div className="mt-2">
-              {question.options.map((option, optIndex) => (
-                <div key={optIndex} className={`p-2 ${optIndex === question.correctAnswer ? 'text-green-600' : ''}`}>
-                  {option}
-                </div>
-              ))}
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {question.tags.map(tag => (
-                <span key={tag} className="px-2 py-1 bg-gray-100 rounded-full text-sm">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        ))}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSelectAllVisible}
+                  className="h-8 w-8"
+                >
+                  {selectedQuestions.length === sortedQuestions.length ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <div className="h-4 w-4 rounded border border-gray-400" />
+                  )}
+                </Button>
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('question')}>
+                Question
+                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('correctAnswerText')}>
+                Correct Answer
+                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead>Other Choices</TableHead>
+              <TableHead className="cursor-pointer" onClick={() => handleSort('tags')}>
+                Tags
+                <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+              </TableHead>
+              <TableHead>Explanation</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedQuestions.map((question) => (
+              <TableRow key={question.id}>
+                <TableCell>
+                  <input
+                    type="checkbox"
+                    checked={selectedQuestions.some(q => q.id === question.id)}
+                    onChange={() => {
+                      setSelectedQuestions(prev =>
+                        prev.some(q => q.id === question.id)
+                          ? prev.filter(q => q.id !== question.id)
+                          : [...prev, question]
+                      );
+                    }}
+                    className="w-4 h-4"
+                  />
+                </TableCell>
+                <TableCell className="font-medium">{question.question}</TableCell>
+                <TableCell>{question.options[question.correctAnswer]}</TableCell>
+                <TableCell>
+                  {question.options
+                    .filter((_, index) => index !== question.correctAnswer)
+                    .join('; ')}
+                </TableCell>
+                <TableCell>{question.tags.join('; ')}</TableCell>
+                <TableCell>{question.explanation || '-'}</TableCell>
+                <TableCell>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(question)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        qbanks.forEach(qbank => {
+                          const index = qbank.questions.findIndex(q => q.id === question.id);
+                          if (index !== -1) {
+                            qbank.questions.splice(index, 1);
+                          }
+                        });
+                        toast({
+                          title: "Success",
+                          description: "Question deleted successfully",
+                        });
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
 };
 
-export default QuestionLibrary; 
+export default QuestionLibrary;
