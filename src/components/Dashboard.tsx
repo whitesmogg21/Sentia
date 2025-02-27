@@ -268,7 +268,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
                 max={20}
                 value={questionCount}
                 onChange={(e) => setQuestionCount(Number(e.target.value))}
-                className="w-48"
+                className="w-full"
               />
             </div>
             <div className="flex items-center space-x-2">

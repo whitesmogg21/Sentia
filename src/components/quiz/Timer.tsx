@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from 'react';
 
 interface TimerProps {
@@ -40,7 +39,7 @@ const Timer = ({ timeLimit, isPaused, onTimeUp }: TimerProps) => {
   }, [isPaused, timeLeft, onTimeUp]);
 
   return (
-    <div className="flex items-center gap-2 text-lg font-medium">
+    <div className="flex items-center gap-2 text-lg font-medium text-foreground dark:text-gray-200">
       <span className={timeLeft <= 10 ? "text-red-500" : ""}>
         {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}
       </span>

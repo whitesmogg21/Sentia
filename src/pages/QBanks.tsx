@@ -90,6 +90,8 @@ const QBanks = ({ qbanks }: QBanksProps) => {
           correctAnswer: parseInt(row[2]) - 1,
           qbankId: `imported-${Date.now()}`,
           explanation: row[12] || undefined,
+          attempts: [],
+          tags: ['imported', 'qbank'],
           media: imageFilename && mediaUrl ? {
             type: 'image',
             url: mediaUrl,
@@ -198,6 +200,8 @@ const QBanks = ({ qbanks }: QBanksProps) => {
         options: newQuestion.options,
         correctAnswer: newQuestion.correctAnswer,
         qbankId: selectedQBank.id,
+        attempts: [],
+        tags: ['qbank']
       };
 
       if (newQuestion.explanation.trim()) {
