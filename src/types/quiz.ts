@@ -1,4 +1,3 @@
-
 export interface Question {
   id: number;
   question: string;
@@ -17,12 +16,9 @@ export interface Question {
 }
 
 export interface QuestionAttempt {
-  questionId: number;
   selectedAnswer: number | null;
   isCorrect: boolean;
-  isFlagged: boolean;
   date: string;
-  tags: string[];
 }
 
 export interface QuizState {
@@ -44,7 +40,6 @@ export interface QuizHistory {
     selectedAnswer: number | null;
     isCorrect: boolean;
     isFlagged: boolean;
-    tags: string[];
   }[];
 }
 
@@ -79,4 +74,3 @@ export interface QuestionMetrics {
   omitted: number;
   marked: number;
 }
-

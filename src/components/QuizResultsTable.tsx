@@ -1,7 +1,5 @@
-
 import { Question } from "@/types/quiz";
 import { cn } from "@/lib/utils";
-
 interface QuizResultsTableProps {
   questions: Question[];
   attempts: {
@@ -34,11 +32,6 @@ const QuizResultsTable = ({ questions, attempts }: QuizResultsTableProps) => {
       : 'bg-red-50 dark:bg-red-900/20';
   };
 
-  const cleanQuestionText = (text: string) => {
-    // Remove image references from the question text
-    return text.split('/').filter(part => !part.match(/\.(png|jpg|jpeg|gif)$/i)).join(' ').trim();
-  };
-
   return (
     <div className="mt-8 p-4 bg-white dark:bg-gray-800 rounded-lg shadow dark:text-gray-100">
       <table className="w-full">
@@ -63,7 +56,7 @@ const QuizResultsTable = ({ questions, attempts }: QuizResultsTableProps) => {
                 )}
               >
                 <td className="p-2 dark:text-gray-200">{index + 1}</td>
-                <td className="p-2 dark:text-gray-200">{cleanQuestionText(question.question)}</td>
+                <td className="p-2 dark:text-gray-200">{question.question}</td>
                 <td className={cn("p-2", status.color)}>
                   {status.status}
                 </td>
