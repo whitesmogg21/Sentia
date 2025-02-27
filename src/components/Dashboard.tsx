@@ -1,6 +1,6 @@
 
 import { useState, useMemo, useEffect } from "react";
-import { QBank, QuizHistory } from "../types/quiz";
+import { QBank, QuizHistory, QuestionFilter } from "../types/quiz";
 import { Moon, Sun } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
@@ -12,8 +12,9 @@ import { Switch } from "./ui/switch";
 import { Slider } from "./ui/slider";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
-import { QuestionFilter } from "@/types/quiz";
 import { useQuiz } from "@/hooks/quiz";
+import QuestionFiltersBar from "./QuestionFiltersBar";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -102,7 +103,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   const chartData = useMemo(() => 
     quizHistory.map((quiz, index) => ({
       attemptNumber: index + 1,
-      score: (quiz.score / quiz.totalQuestions) * 100,
+      score: parseFloat(((quiz.score / quiz.totalQuestions) * 100).toFixed(2)),
       date: quiz.date,
     })), [quizHistory]);
 
@@ -338,6 +339,16 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         </motion.div>
       </div>
       
+      {selectedQBank && (
+        <div className="mt-4">
+          <QuestionFiltersBar 
+            metrics={metrics}
+            filters={filters}
+            onToggleFilter={toggleFilter}
+          />
+        </div>
+      )}
+      
       <div className="mt-6 p-4 bg-card border rounded-lg shadow-sm">
         <h2 className="text-xl font-bold mb-4">Your Performance Summary</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -354,6 +365,38 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             <p className="text-2xl font-bold">{quizHistory.length}</p>
           </Card>
         </div>
+        
+        {quizHistory.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-3">Quiz Score History</h3>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="attemptNumber" 
+                    label={{ value: 'Quiz Attempt', position: 'insideBottom', offset: -5 }} 
+                  />
+                  <YAxis 
+                    label={{ value: 'Score (%)', angle: -90, position: 'insideLeft' }}
+                    domain={[0, 100]}
+                  />
+                  <Tooltip 
+                    formatter={(value: number) => [`${value.toFixed(2)}%`, 'Score']}
+                    labelFormatter={(value) => `Quiz ${value}`}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="score" 
+                    stroke="#8884d8" 
+                    strokeWidth={2}
+                    activeDot={{ r: 8 }} 
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
