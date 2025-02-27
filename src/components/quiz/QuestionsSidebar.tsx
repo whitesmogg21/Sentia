@@ -19,7 +19,7 @@ const QuestionsSidebar = ({
   onQuestionClick,
 }: QuestionsSidebarProps) => {
   return (
-    <div className="fixed left-0 top-0 h-full w-[160px] bg-white border-r border-gray-200 shadow-lg">
+    <div className="fixed left-0 top-0 h-full w-[160px] bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg">
       <div className="p-3 border-b border-gray-200">
         <h3 className="font-semibold text-lg">Questions</h3>
         <p className="text-sm text-gray-500">Total: {totalQuestions}</p>
@@ -30,6 +30,8 @@ const QuestionsSidebar = ({
             const answered = answeredQuestions.find(
               (q) => q.questionIndex === index
             );
+            const isFlagged = window.localStorage.getItem(`question-${index}-flagged`) === 'true';
+            const isUnanswered = !answered;
             
             return (
               <button
@@ -40,7 +42,8 @@ const QuestionsSidebar = ({
                   currentQuestionIndex === index && "ring-2 ring-primary",
                   answered?.isCorrect && "bg-green-100 text-green-700",
                   answered?.isCorrect === false && "bg-red-100 text-red-700",
-                  !answered && "bg-gray-100 text-gray-700"
+                  !answered && !isFlagged && "bg-gray-100 text-gray-700",
+                  !answered && isFlagged && "bg-yellow-100 text-yellow-700"
                 )}
               >
                 <div className="flex flex-col items-center gap-0.5">
