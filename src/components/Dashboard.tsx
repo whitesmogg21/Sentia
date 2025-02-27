@@ -14,6 +14,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { QuestionFilter } from "@/types/quiz";
 import { useQuiz } from "@/hooks/quiz";
+import QuizScoreLineChart from "./charts/QuizScoreLineChart";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -340,7 +341,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       
       <div className="mt-6 p-4 bg-card border rounded-lg shadow-sm">
         <h2 className="text-xl font-bold mb-4">Your Performance Summary</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
             <p className="text-2xl font-bold">{overallAccuracyCalc.toFixed(1)}%</p>
@@ -354,6 +355,13 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             <p className="text-2xl font-bold">{quizHistory.length}</p>
           </Card>
         </div>
+        
+        {/* Quiz Score Line Chart */}
+        {quizHistory.length > 0 && (
+          <div className="mt-6">
+            <QuizScoreLineChart data={chartData} />
+          </div>
+        )}
       </div>
     </div>
   );
