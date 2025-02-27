@@ -1,3 +1,4 @@
+
 import { cn } from "@/lib/utils";
 import { Check, X } from "lucide-react";
 
@@ -18,7 +19,7 @@ const QuestionsSidebar = ({
   onQuestionClick,
 }: QuestionsSidebarProps) => {
   return (
-    <div className="fixed left-0 top-0 h-full w-[160px] bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg">
+    <div className="fixed left-0 top-0 h-full w-[160px] bg-white border-r border-gray-200 shadow-lg">
       <div className="p-3 border-b border-gray-200">
         <h3 className="font-semibold text-lg">Questions</h3>
         <p className="text-sm text-gray-500">Total: {totalQuestions}</p>

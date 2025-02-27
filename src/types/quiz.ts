@@ -12,13 +12,12 @@ export interface Question {
     showWith: 'question' | 'answer';
   };
   explanation?: string;
-  tags: string[];
 }
 
 export interface QuestionAttempt {
+  date: string;
   selectedAnswer: number | null;
   isCorrect: boolean;
-  date: string;
 }
 
 export interface QuizState {
@@ -39,13 +38,7 @@ export interface QuizHistory {
     questionId: number;
     selectedAnswer: number | null;
     isCorrect: boolean;
-    isFlagged: boolean;
   }[];
-}
-
-export interface MediaItem {
-  type: 'image' | 'audio' | 'video';
-  url: string;
 }
 
 export interface QBank {
@@ -53,16 +46,15 @@ export interface QBank {
   name: string;
   description: string;
   questions: Question[];
-  media?: MediaItem[];
 }
 
 export interface QuestionFilter {
   unused: boolean;
   used: boolean;
-  correct: boolean;
   incorrect: boolean;
-  omitted: boolean;
+  correct: boolean;
   flagged: boolean;
+  omitted: boolean;
 }
 
 export type QuestionCategory = 'unused' | 'correct' | 'incorrect' | 'omitted';

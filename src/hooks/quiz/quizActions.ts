@@ -30,12 +30,12 @@ export const initializeQuiz = (
   }
 
   const shuffledQuestions = [...selectedQBank.questions]
-  .sort(() => Math.random() - 0.5)
-  .slice(0, questionCount)
-  .map(q => ({
-    ...q,
-    attempts: []  // Reset attempts for new quiz
-  }));
+    .sort(() => Math.random() - 0.5)
+    .slice(0, questionCount)
+    .map(q => ({
+      ...q,
+      attempts: q.attempts || []
+    }));
 
   return {
     currentQuestions: shuffledQuestions,

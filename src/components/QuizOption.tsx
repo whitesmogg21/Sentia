@@ -1,3 +1,4 @@
+
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -11,9 +12,9 @@ interface QuizOptionProps {
 
 const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOptionProps) => {
   const getBackgroundColor = () => {
-    if (!selected) return "bg-secondary dark:bg-gray-700 hover:bg-secondary/80 dark:hover:bg-gray-600";
-    if (correct === undefined) return "bg-primary dark:bg-primary/80 hover:bg-primary/90";
-    return correct ? "bg-success dark:bg-green-700" : "bg-error dark:bg-red-700";
+    if (!selected) return "bg-secondary hover:bg-secondary/80";
+    if (correct === undefined) return "bg-primary hover:bg-primary/90";
+    return correct ? "bg-success" : "bg-error";
   };
 
   return (

@@ -91,11 +91,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   const handleQuit = () => {
     const quizHistory = createQuizHistory(state, state.selectedAnswer);
     onQuizComplete?.(quizHistory);
-    setState(prev => ({ 
-      ...prev, 
-      showScore: true,
-      inQuiz: true  // Add this line to ensure we stay in quiz mode
-    }));
+    setState(prev => ({ ...prev, showScore: true }));
   };
 
   const handlePause = () => {
@@ -103,21 +99,17 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   };
 
   const handleRestart = () => {
-    setState({
+    setState(prev => ({
+      ...prev,
+      inQuiz: false,
       currentQuestionIndex: 0,
       score: 0,
       showScore: false,
       selectedAnswer: null,
       isAnswered: false,
-      inQuiz: false,
-      currentQuestions: [],
       tutorMode: false,
-      showExplanation: false,
-      isPaused: false,
-      timerEnabled: false,
-      timePerQuestion: 0,
-      initialTimeLimit: 0
-    });
+      isPaused: false
+    }));
     onQuizEnd?.();
   };
 

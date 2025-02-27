@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { Question } from "@/types/quiz";
 import QuizOption from "../QuizOption";
@@ -40,7 +41,7 @@ const QuestionView = ({
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg dark:text-gray-100"
+      className="bg-white p-8 rounded-2xl shadow-lg"
     >
       {question.media?.showWith === 'question' && renderMedia(question.media)}
       

@@ -1,3 +1,4 @@
+
 import { BarChart, Clock, Home, Library } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -10,7 +11,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import QBankDropdown from "@/components/sidebar/QBankDropdown";
 
 const items = [
   {
@@ -27,6 +27,11 @@ const items = [
     title: "Previous Quizzes",
     url: "/history",
     icon: Clock,
+  },
+  {
+    title: "Edit QBanks",
+    url: "/qbanks",
+    icon: Library,
   },
 ];
 
@@ -48,7 +53,6 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              <QBankDropdown />
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
