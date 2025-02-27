@@ -158,11 +158,11 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 
   const totalAttempts = useMemo(() => quizHistory.reduce((acc, quiz) => acc + quiz.questionAttempts.length, 0), [quizHistory]);
   const correctAttempts = useMemo(() => quizHistory.reduce((acc, quiz) => 
-    acc + quiz.questionAttempts.filter(a => a.isCorrect).length, 0), [quizHistory]);
+    acc + quiz.questionAttempts.filter(attempt => attempt.isCorrect).length, 0), [quizHistory]);
   
   const totalQuestions = useMemo(() => qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0), [qbanks]);
   const questionsAttempted = useMemo(() => new Set(quizHistory.flatMap(quiz => 
-    quiz.questionAttempts.map(a => a.questionId)
+    quiz.questionAttempts.map(attempt => attempt.questionId)
   )).size, [quizHistory]);
 
   const tagStats = useMemo(() => {
@@ -343,7 +343,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
-            <p className="text-2xl font-bold">{overallAccuracy.toFixed(1)}%</p>
+            <p className="text-2xl font-bold">{overallAccuracyCalc.toFixed(1)}%</p>
           </Card>
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Questions Attempted</h3>
