@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,12 +6,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./components/AppSidebar";
 import Index from "./pages/Index";
+import Performance from "./pages/Performance";
 import History from "./pages/History";
 import QBanks from "./pages/QBanks";
 import SelectQBank from "./pages/SelectQBank";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
-import { QuizHistory, QBank } from "./types/quiz";
+import { QuizHistory, QBank, Question } from "./types/quiz";
 import { qbanks } from "./data/questions";
 import { toast } from "@/components/ui/use-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -38,12 +38,9 @@ const App = () => {
           question.attempts = [
             ...(question.attempts || []),
             {
-              questionId: attempt.questionId,
               selectedAnswer: attempt.selectedAnswer,
               isCorrect: attempt.isCorrect,
-              date: new Date().toISOString(),
-              isFlagged: attempt.isFlagged,
-              tags: question.tags
+              date: new Date().toISOString()
             }
           ];
         }
@@ -97,9 +94,9 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <SidebarProvider>
-              <div className="min-h-screen flex w-full overflow-hidden">
+              <div className="min-h-screen flex w-full">
                 {!inQuiz && <AppSidebar />}
-                <main className="flex-1 overflow-y-auto">
+                <main className="flex-1">
                   <Routes>
                     <Route
                       path="/"
@@ -111,6 +108,10 @@ const App = () => {
                           onQuizEnd={handleQuizEnd}
                         />
                       }
+                    />
+                    <Route
+                      path="/performance"
+                      element={<Performance quizHistory={quizHistory} />}
                     />
                     <Route
                       path="/history"

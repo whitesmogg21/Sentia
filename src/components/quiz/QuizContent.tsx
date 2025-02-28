@@ -10,7 +10,6 @@ import { ChevronLeft, ChevronRight, Maximize, Minimize, Moon, Sun } from "lucide
 import { cn } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { useTheme } from "@/components/ThemeProvider";
-import FormulaTable from "./FormulaTable";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,18 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-const highlightColors = [
-  { name: 'yellow', class: 'bg-yellow-200 dark:bg-yellow-900/50' },
-  { name: 'green', class: 'bg-green-200 dark:bg-green-900/50' },
-  { name: 'blue', class: 'bg-blue-200 dark:bg-blue-900/50' },
-  { name: 'purple', class: 'bg-purple-200 dark:bg-purple-900/50' },
-];
+import { motion } from "framer-motion";
 
 interface QuizContentProps {
   currentQuestion: Question;
@@ -76,36 +64,7 @@ const QuizContent = ({
   const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const { theme, setTheme } = useTheme();
-  const [selectedColor, setSelectedColor] = useState(highlightColors[0]);
-
-  useEffect(() => {
-    const handleMouseUp = () => {
-      const selection = window.getSelection();
-      if (!selection || selection.toString().length === 0) return;
-      
-      try {
-        const range = selection.getRangeAt(0);
-        const span = document.createElement('span');
-        span.className = `${selectedColor.class} cursor-pointer`;
-        span.onclick = (e) => {
-          const target = e.target as HTMLSpanElement;
-          const parent = target.parentNode;
-          if (parent) {
-            parent.replaceChild(document.createTextNode(target.textContent || ''), target);
-          }
-          e.stopPropagation();
-        };
-        range.surroundContents(span);
-      } catch (e) {
-        console.error('Failed to highlight:', e);
-      } finally {
-        selection.removeAllRanges();
-      }
-    };
-
-    document.addEventListener('mouseup', handleMouseUp);
-    return () => document.removeEventListener('mouseup', handleMouseUp);
-  }, [selectedColor]);
+  const [timeRemaining, setTimeRemaining] = useState(60);
 
   const handleAnswerClick = (index: number) => {
     if (!isAnswered && !isPaused) {
@@ -133,6 +92,14 @@ const QuizContent = ({
     onQuit();
   };
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeRemaining(prev => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <div className="fixed inset-0 bg-background dark:bg-background">
       <div className={cn(
@@ -141,38 +108,6 @@ const QuizContent = ({
       )}>
         <div className="container mx-auto p-6 h-full flex flex-col">
           <div className="flex items-center justify-end gap-2 mb-4">
-            <FormulaTable />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "bg-background border relative p-0 overflow-hidden cursor-default select-none",
-                    selectedColor.class
-                  )}
-                  aria-label="Select highlight color"
-                  style={{ pointerEvents: 'auto' }}
-                >
-                  <div className="w-4 h-4 rounded-full pointer-events-none" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <div className="flex gap-2 p-2">
-                  {highlightColors.map((color) => (
-                    <button
-                      key={color.name}
-                      onClick={() => setSelectedColor(color)}
-                      className={cn(
-                        'w-6 h-6 rounded-full border border-gray-200 cursor-pointer select-none',
-                        color.class,
-                        selectedColor.name === color.name && 'ring-2 ring-primary'
-                      )}
-                    />
-                  ))}
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
             <Button
               variant="ghost"
               size="icon"
@@ -212,17 +147,25 @@ const QuizContent = ({
               </div>
             )}
             <div className="grid grid-cols-1 gap-6">
-              <QuestionView
-                question={currentQuestion}
-                selectedAnswer={selectedAnswer}
-                isAnswered={isAnswered}
-                isPaused={isPaused}
-                onAnswerClick={handleAnswerClick}
-              />
+              <motion.div
+                key={currentQuestion.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg"
+              >
+                <QuestionView
+                  question={currentQuestion}
+                  selectedAnswer={selectedAnswer}
+                  isAnswered={isAnswered}
+                  isPaused={isPaused}
+                  onAnswerClick={handleAnswerClick}
+                />
 
-              {isAnswered && showExplanation && (
-                <ExplanationView question={currentQuestion} />
-              )}
+                {isAnswered && showExplanation && (
+                  <ExplanationView question={currentQuestion} />
+                )}
+              </motion.div>
             </div>
           </div>
 
