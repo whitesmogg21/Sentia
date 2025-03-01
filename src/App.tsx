@@ -15,12 +15,14 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import QuestionLibrary from "@/components/qbanks/QuestionLibrary";
 import MediaLibrary from "@/components/qbanks/MediaLibrary";
 import { useQuizStore } from "@/store/quiz/quizStore";
+import { useQBankStore } from "@/store/qbank/qbankStore";
 import { useEffect } from "react";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const { inQuiz, showScore, addQuizHistory } = useQuizStore();
+  const { qbanks } = useQBankStore();
   
   // Initialize app state from localStorage if available
   useEffect(() => {
@@ -53,8 +55,8 @@ const App = () => {
                     <Route path="/" element={<Index />} />
                     <Route path="/history" element={<History />} />
                     <Route path="/qbanks" element={<QBanks />} />
-                    <Route path="/qbanks/questions" element={<QuestionLibrary qbanks={[]} />} />
-                    <Route path="/qbanks/media" element={<MediaLibrary qbanks={[]} />} />
+                    <Route path="/qbanks/questions" element={<QuestionLibrary qbanks={qbanks} />} />
+                    <Route path="/qbanks/media" element={<MediaLibrary qbanks={qbanks} />} />
                     <Route path="/select-qbank" element={<SelectQBank onSelect={() => {}} />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>

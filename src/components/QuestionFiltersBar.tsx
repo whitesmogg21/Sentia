@@ -12,9 +12,9 @@ type FilterCategory = {
 };
 
 interface QuestionFiltersBarProps {
-  metrics: Record<keyof QuestionFilter, number>;
   filters: QuestionFilter;
   onToggleFilter: (key: keyof QuestionFilter) => void;
+  metrics?: Record<keyof QuestionFilter, number>;
 }
 
 const FILTER_CATEGORIES: FilterCategory[] = [
@@ -58,12 +58,12 @@ const FILTER_CATEGORIES: FilterCategory[] = [
 
 const FilterButton = ({ 
   category, 
-  count, 
+  count = 0, 
   isActive, 
   onClick 
 }: { 
   category: FilterCategory; 
-  count: number; 
+  count?: number; 
   isActive: boolean; 
   onClick: () => void; 
 }) => {
@@ -106,22 +106,17 @@ const FilterButton = ({
   );
 };
 
-const QuestionFiltersBar = ({ metrics, filters, onToggleFilter }: QuestionFiltersBarProps) => {
-  useEffect(() => {
-    const savedMetrics = localStorage.getItem('questionMetrics');
-    if (savedMetrics) {
-      const parsedMetrics = JSON.parse(savedMetrics);
-      Object.keys(parsedMetrics).forEach((key) => {
-        if (metrics[key as keyof QuestionFilter] !== parsedMetrics[key]) {
-          metrics[key as keyof QuestionFilter] = parsedMetrics[key];
-        }
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('questionMetrics', JSON.stringify(metrics));
-  }, [metrics]);
+const QuestionFiltersBar = ({ metrics = {}, filters, onToggleFilter }: QuestionFiltersBarProps) => {
+  // Default metrics if not provided
+  const defaultMetrics: Record<keyof QuestionFilter, number> = {
+    unused: 0,
+    used: 0,
+    correct: 0,
+    incorrect: 0,
+    flagged: 0,
+    omitted: 0,
+    ...metrics
+  };
 
   return (
     <div className="flex flex-wrap gap-2">
@@ -129,7 +124,7 @@ const QuestionFiltersBar = ({ metrics, filters, onToggleFilter }: QuestionFilter
         <FilterButton
           key={category.key}
           category={category}
-          count={metrics[category.key]}
+          count={defaultMetrics[category.key]}
           isActive={filters[category.key]}
           onClick={() => onToggleFilter(category.key)}
         />

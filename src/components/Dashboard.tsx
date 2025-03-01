@@ -10,7 +10,7 @@ import { Label } from "./ui/label";
 import { Switch } from "./ui/switch";
 import { Slider } from "./ui/slider";
 import { useNavigate } from "react-router-dom";
-import { QuestionFiltersBar } from "@/components/QuestionFiltersBar";
+import QuestionFiltersBar from "@/components/QuestionFiltersBar";
 import { useQBankStore } from "@/store/qbank/qbankStore";
 import { useMetricsStore } from "@/store/metrics/metricsStore";
 import { useQuizConfig } from "@/hooks/useQuizConfig";
