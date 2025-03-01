@@ -343,7 +343,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
-            <p className="text-2xl font-bold">{overallAccuracy.toFixed(1)}%</p>
+            <p className="text-2xl font-bold">{overallAccuracyCalc.toFixed(1)}%</p>
           </Card>
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Questions Attempted</h3>
