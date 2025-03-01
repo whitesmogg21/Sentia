@@ -14,7 +14,7 @@ type FilterCategory = {
 interface QuestionFiltersBarProps {
   filters: QuestionFilter;
   onToggleFilter: (key: keyof QuestionFilter) => void;
-  metrics?: Record<keyof QuestionFilter, number>;
+  metrics?: Partial<Record<keyof QuestionFilter, number>>;
 }
 
 const FILTER_CATEGORIES: FilterCategory[] = [
@@ -107,7 +107,7 @@ const FilterButton = ({
 };
 
 const QuestionFiltersBar = ({ metrics = {}, filters, onToggleFilter }: QuestionFiltersBarProps) => {
-  // Default metrics if not provided
+  // Create default metrics with all required keys and a value of 0
   const defaultMetrics: Record<keyof QuestionFilter, number> = {
     unused: 0,
     used: 0,

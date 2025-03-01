@@ -54,7 +54,7 @@ const App = () => {
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/history" element={<History />} />
-                    <Route path="/qbanks" element={<QBanks />} />
+                    <Route path="/qbanks" element={<QBanks qbanks={qbanks} />} />
                     <Route path="/qbanks/questions" element={<QuestionLibrary qbanks={qbanks} />} />
                     <Route path="/qbanks/media" element={<MediaLibrary qbanks={qbanks} />} />
                     <Route path="/select-qbank" element={<SelectQBank onSelect={() => {}} />} />
