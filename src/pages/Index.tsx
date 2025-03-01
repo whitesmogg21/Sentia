@@ -1,19 +1,13 @@
-import { useState } from "react";
-import { QuizHistory } from "../types/quiz";
-import { qbanks } from "../data/questions";
+
+import { useEffect } from "react";
 import Dashboard from "../components/Dashboard";
 import ScoreCard from "../components/ScoreCard";
 import QuizContent from "@/components/quiz/QuizContent";
-import { useQuiz } from "@/hooks/quiz";
+import { useQuizStore } from "@/store/quiz/quizStore";
+import { useQBankStore } from "@/store/qbank/qbankStore";
+import { useMetricsStore } from "@/store/metrics/metricsStore";
 
-interface IndexProps {
-  quizHistory?: QuizHistory[];
-  onQuizComplete?: (history: QuizHistory) => void;
-  onQuizStart?: () => void;
-  onQuizEnd?: () => void;
-}
-
-const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: IndexProps) => {
+const Index = () => {
   const {
     currentQuestionIndex,
     score,
@@ -22,46 +16,49 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     isAnswered,
     inQuiz,
     currentQuestions,
+    tutorMode,
     showExplanation,
     isPaused,
     timerEnabled,
     timePerQuestion,
-    isFlagged,
-    handleStartQuiz,
+    history,
+    answerQuestion,
     handleAnswerTimeout,
-    handleAnswerClick,
-    handleQuit,
-    handlePause,
-    handleRestart,
-    handleQuizNavigation,
-    handleToggleFlag
-  } = useQuiz({ onQuizComplete, onQuizStart, onQuizEnd });
-
-  const [showQuitDialog, setShowQuitDialog] = useState(false);
-
-  const handleQuitClick = () => {
-    setShowQuitDialog(true);
-  };
-
-  const handleQuitConfirm = () => {
-    setShowQuitDialog(false);
-    handleQuit();
-  };
-
-  const handleQuitCancel = () => {
-    setShowQuitDialog(false);
-  };
-
+    navigateQuestion,
+    togglePause,
+    endQuiz,
+    resetQuiz,
+    toggleFlag
+  } = useQuizStore();
+  
+  const { updateQuestionAttempts } = useQBankStore();
+  const { calculateMetrics } = useMetricsStore();
+  
+  // Calculate metrics when component mounts and when quiz history changes
+  useEffect(() => {
+    calculateMetrics();
+  }, [calculateMetrics, history]);
+  
+  // Update the qbank with the quiz results when the quiz is completed
+  useEffect(() => {
+    if (showScore && currentQuestions.length > 0) {
+      const qbankId = currentQuestions[0].qbankId;
+      const attempts = currentQuestions.map((question) => ({
+        questionId: question.id,
+        selectedAnswer: question.attempts?.[question.attempts.length - 1]?.selectedAnswer ?? null,
+        isCorrect: question.attempts?.[question.attempts.length - 1]?.isCorrect ?? false,
+        isFlagged: Boolean(question.isFlagged),
+        tags: question.tags
+      }));
+      
+      updateQuestionAttempts(qbankId, attempts);
+    }
+  }, [showScore, currentQuestions, updateQuestionAttempts]);
+  
   if (!inQuiz) {
-    return (
-      <Dashboard
-        qbanks={qbanks}
-        quizHistory={quizHistory}
-        onStartQuiz={handleStartQuiz}
-      />
-    );
+    return <Dashboard />;
   }
-
+  
   if (showScore) {
     return (
       <ScoreCard 
@@ -71,17 +68,20 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
         attempts={currentQuestions.map((question) => ({
           questionId: question.id,
           selectedAnswer: question.attempts?.[question.attempts.length - 1]?.selectedAnswer ?? null,
-          isCorrect: question.attempts?.[question.attempts.length - 1]?.selectedAnswer === question.correctAnswer,
+          isCorrect: question.attempts?.[question.attempts.length - 1]?.isCorrect ?? false,
           isFlagged: Boolean(question.isFlagged)
         }))}
-        onEnd={handleRestart}
+        onEnd={resetQuiz}
       />
     );
   }
-
+  
+  const currentQuestion = currentQuestions[currentQuestionIndex];
+  const isFlagged = Boolean(currentQuestion?.isFlagged);
+  
   return (
     <QuizContent
-      currentQuestion={currentQuestions[currentQuestionIndex]}
+      currentQuestion={currentQuestion}
       currentQuestionIndex={currentQuestionIndex}
       totalQuestions={currentQuestions.length}
       selectedAnswer={selectedAnswer}
@@ -91,12 +91,12 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
       timerEnabled={timerEnabled}
       timePerQuestion={timePerQuestion}
       isFlagged={isFlagged}
-      onAnswerClick={handleAnswerClick}
-      onNavigate={handleQuizNavigation}
-      onPause={handlePause}
-      onQuit={handleQuit}
+      onAnswerClick={answerQuestion}
+      onNavigate={navigateQuestion}
+      onPause={togglePause}
+      onQuit={endQuiz}
       onTimeUp={handleAnswerTimeout}
-      onToggleFlag={handleToggleFlag}
+      onToggleFlag={toggleFlag}
     />
   );
 };
