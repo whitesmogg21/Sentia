@@ -94,7 +94,7 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
       flagged: flaggedQuestions.size,
       omitted: omittedQuestions.size,
     };
-  }, [qbanks, filters]);
+  }, [qbanks]);
 
   // Filter QBanks based on selected filter
   const filteredQBanks = useMemo(() => {
@@ -103,10 +103,10 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
     return qbanks.filter(qbank =>
       qbank.questions.some(question => {
         const lastAttempt = question.attempts?.[question.attempts.length - 1] || null;
-
+    
         return (
-          (filters.unused && !question.attempts) ||
-          (filters.used && question.attempts) ||
+          (filters.unused && (!question.attempts || question.attempts.length === 0)) ||
+          (filters.used && question.attempts && question.attempts.length > 0) ||
           (filters.correct && lastAttempt?.isCorrect) ||
           (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
           (filters.omitted && lastAttempt?.selectedAnswer === null) ||
@@ -118,6 +118,7 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
 
   const handleQBankClick = (qbank: QBank) => {
     setSelectedQBank(qbank);
+    updateFilters(qbank); 
   };
 
   const handleConfirmSelection = () => {
