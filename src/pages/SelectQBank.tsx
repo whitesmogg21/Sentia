@@ -1,127 +1,201 @@
-
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { QBank } from "@/types/quiz";
+import { useState, useMemo } from "react";
+import { QBank, QuestionFilter } from "@/types/quiz";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useQBankStore } from "@/store/qbank/qbankStore";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
+import QuestionFiltersBar from "@/components/QuestionFiltersBar";
+import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface SelectQBankProps {
-  onSelect?: (qbank: QBank) => void;
+  qbanks: QBank[];
+  onSelect: (qbank: QBank) => void;
 }
 
-const SelectQBank = ({ onSelect }: SelectQBankProps) => {
+const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
-  const { qbanks, selectQBank } = useQBankStore();
+  const [selectedQBank, setSelectedQBank] = useState<QBank | null>(null);
+  const [filters, setFilters] = useState<QuestionFilter>({
+    unused: false,
+    used: false,
+    incorrect: false,
+    correct: false,
+    flagged: false,
+    omitted: false,
+  });
 
-  const handleSelect = (qbank: QBank) => {
-    selectQBank(qbank);
-    if (onSelect) onSelect(qbank);
-    navigate('/');
+  // Function to update the filters based on the latest quiz results
+  const updateFiltersAfterQuiz = (quizResults: { questionId: number; selectedAnswer: number | null; isCorrect: boolean }[]) => {
+    setFilters(prevFilters => {
+      const updatedFilters = { ...prevFilters };
+
+      quizResults.forEach(({ questionId, selectedAnswer, isCorrect }) => {
+        updatedFilters.unused = false; // Mark all questions as used
+        updatedFilters.used = true;
+
+        if (selectedAnswer === null) {
+          updatedFilters.omitted = true; // Mark as omitted if skipped
+        } else {
+          updatedFilters.omitted = false;
+        }
+
+        if (isCorrect) {
+          updatedFilters.correct = true;
+          updatedFilters.incorrect = false; // Remove from incorrect if corrected
+        } else {
+          updatedFilters.correct = false;
+          updatedFilters.incorrect = true; // Mark as incorrect
+        }
+      });
+
+      return updatedFilters;
+    });
   };
 
-  const filteredQBanks = qbanks.filter(qbank => 
-    qbank.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    qbank.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    qbank.questions.some(q => q.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
-  );
+  // Calculate metrics for the filter bar
+  const metrics = useMemo(() => {
+    const seenQuestions = new Set<number>();
+    const correctQuestions = new Set<number>();
+    const incorrectQuestions = new Set<number>();
+    const omittedQuestions = new Set<number>();
+    const flaggedQuestions = new Set<number>();
 
-  const getQBankStats = (qbank: QBank) => {
-    const seenQuestions = qbank.questions.filter(q => q.attempts && q.attempts.length > 0).length;
-    const totalQuestions = qbank.questions.length;
-    const percentComplete = totalQuestions > 0 
-      ? Math.round((seenQuestions / totalQuestions) * 100) 
-      : 0;
+    qbanks.forEach(qbank => {
+      qbank.questions.forEach(question => {
+        const attempts = question.attempts || [];
+        const lastAttempt = attempts.length > 0 ? attempts[attempts.length - 1] : null;
+
+        if (attempts.length > 0) {
+          seenQuestions.add(question.id);
+
+          if (lastAttempt?.selectedAnswer === null) {
+            omittedQuestions.add(question.id);
+          } else if (lastAttempt.isCorrect) {
+            correctQuestions.add(question.id);
+            incorrectQuestions.delete(question.id); // ✅ Move out of Incorrect if later answered correctly
+          } else {
+            incorrectQuestions.add(question.id);
+          }
+        }
+
+        if (question.isFlagged) {
+          flaggedQuestions.add(question.id);
+        }
+      });
+    });
+
+    const totalQuestions = qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0);
+
+    return {
+      unused: totalQuestions - seenQuestions.size,
+      used: seenQuestions.size,
+      correct: correctQuestions.size,
+      incorrect: incorrectQuestions.size,
+      flagged: flaggedQuestions.size,
+      omitted: omittedQuestions.size,
+    };
+  }, [qbanks]);
+
+  // Filter QBanks based on selected filter
+  const filteredQBanks = useMemo(() => {
+    if (!Object.values(filters).some(v => v)) return qbanks; // Show all if no filter is active
+
+    return qbanks.filter(qbank =>
+      qbank.questions.some(question => {
+        const lastAttempt = question.attempts?.[question.attempts.length - 1] || null;
     
-    return { seenQuestions, totalQuestions, percentComplete };
+        return (
+          (filters.unused && (!question.attempts || question.attempts.length === 0)) ||
+          (filters.used && question.attempts && question.attempts.length > 0) ||
+          (filters.correct && lastAttempt?.isCorrect) ||
+          (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
+          (filters.omitted && lastAttempt?.selectedAnswer === null) ||
+          (filters.flagged && question.isFlagged)
+        );
+      })
+    );
+  }, [qbanks, filters]);
+
+  const handleQBankClick = (qbank: QBank) => {
+    setSelectedQBank(qbank);
+    updateFilters(qbank); 
+  };
+
+  const handleConfirmSelection = () => {
+    if (selectedQBank) {
+      onSelect(selectedQBank);
+      localStorage.setItem("selectedQBank", JSON.stringify(selectedQBank));
+      navigate("/");
+      
+      toast({
+        title: "QBank Selected",
+        description: `Selected ${selectedQBank.name} for quiz`,
+      });
+    }
+  };
+
+  // Update the filters based on actual question attempts
+  const updateFilters = (qbank: QBank) => {
+    const hasUsed = qbank.questions.some(q => q.attempts?.length > 0);
+    const hasUnused = qbank.questions.some(q => !q.attempts?.length);
+    const hasCorrect = qbank.questions.some(q => q.attempts?.[q.attempts.length - 1]?.isCorrect);
+    const hasIncorrect = qbank.questions.some(q => q.attempts?.[q.attempts.length - 1]?.isCorrect === false);
+    const hasOmitted = qbank.questions.some(q => q.attempts?.[q.attempts.length - 1]?.selectedAnswer === null);
+    const hasFlagged = qbank.questions.some(q => q.isFlagged);
+
+    setFilters({
+      used: hasUsed,
+      unused: hasUnused,
+      correct: hasCorrect,
+      incorrect: hasIncorrect,
+      omitted: hasOmitted,
+      flagged: hasFlagged
+    });
   };
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Select Question Bank</h1>
-      
-      <div className="mb-6">
-        <Input
-          placeholder="Search by name, description or tags..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="max-w-md"
-        />
+    <div className="container mx-auto p-6 space-y-6">
+      <h1 className="text-2xl font-bold">Select Question Bank</h1>
+      <QuestionFiltersBar
+        metrics={metrics}
+        filters={filters}
+        onToggleFilter={(key) =>
+          setFilters(prev => {
+            const newFilters = { ...prev, [key]: !prev[key] };
+            return Object.values(newFilters).some(v => v) 
+              ? newFilters 
+              : {
+                  unused: true,
+                  used: false,
+                  incorrect: false,
+                  correct: false,
+                  flagged: false,
+                  omitted: false,
+                };
+          })
+        }
+      />
+      <div className="grid gap-4">
+        {filteredQBanks.map(qbank => (
+          <Card
+            key={qbank.id}
+            className={cn(
+              "p-4 cursor-pointer transition-colors",
+              selectedQBank?.id === qbank.id && "border-primary border-2"
+            )}
+            onClick={() => handleQBankClick(qbank)}
+          >
+            <h3 className="font-bold">{qbank.name}</h3>
+            <p className="text-sm text-gray-600">{qbank.description}</p>
+            <p className="text-sm text-gray-600">Questions: {qbank.questions.length}</p>
+          </Card>
+        ))}
       </div>
-      
-      <Tabs defaultValue="grid" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="grid">Grid View</TabsTrigger>
-          <TabsTrigger value="list">List View</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="grid">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredQBanks.map(qbank => {
-              const stats = getQBankStats(qbank);
-              
-              return (
-                <motion.div 
-                  key={qbank.id}
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Card 
-                    className="p-6 cursor-pointer hover:border-primary dark:hover:border-primary h-full"
-                    onClick={() => handleSelect(qbank)}
-                  >
-                    <h2 className="text-xl font-bold mb-2">{qbank.name}</h2>
-                    <p className="text-gray-500 dark:text-gray-400 mb-4">{qbank.description}</p>
-                    
-                    <div className="flex justify-between mt-4">
-                      <div className="text-sm">
-                        {qbank.questions.length} questions
-                      </div>
-                      <div className="text-sm">
-                        {stats.percentComplete}% complete
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="list">
-          <div className="space-y-2">
-            {filteredQBanks.map(qbank => {
-              const stats = getQBankStats(qbank);
-              
-              return (
-                <Card 
-                  key={qbank.id}
-                  className="p-4 cursor-pointer hover:border-primary dark:hover:border-primary"
-                  onClick={() => handleSelect(qbank)}
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h2 className="font-bold">{qbank.name}</h2>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{qbank.description}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm">
-                        {stats.seenQuestions} / {stats.totalQuestions} questions
-                      </div>
-                      <div className="text-sm">
-                        {stats.percentComplete}% complete
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        </TabsContent>
-      </Tabs>
+      <div className="flex justify-end">
+        <Button onClick={handleConfirmSelection} disabled={!selectedQBank}>
+          Lock Selection
+        </Button>
+      </div>
     </div>
   );
 };

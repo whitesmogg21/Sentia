@@ -1,13 +1,19 @@
-
-import { useEffect } from "react";
+import { useState } from "react";
+import { QuizHistory } from "../types/quiz";
+import { qbanks } from "../data/questions";
 import Dashboard from "../components/Dashboard";
 import ScoreCard from "../components/ScoreCard";
 import QuizContent from "@/components/quiz/QuizContent";
-import { useQuizStore } from "@/store/quiz/quizStore";
-import { useQBankStore } from "@/store/qbank/qbankStore";
-import { useMetricsStore } from "@/store/metrics/metricsStore";
+import { useQuiz } from "@/hooks/quiz";
 
-const Index = () => {
+interface IndexProps {
+  quizHistory?: QuizHistory[];
+  onQuizComplete?: (history: QuizHistory) => void;
+  onQuizStart?: () => void;
+  onQuizEnd?: () => void;
+}
+
+const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: IndexProps) => {
   const {
     currentQuestionIndex,
     score,
@@ -16,49 +22,46 @@ const Index = () => {
     isAnswered,
     inQuiz,
     currentQuestions,
-    tutorMode,
     showExplanation,
     isPaused,
     timerEnabled,
     timePerQuestion,
-    history,
-    answerQuestion,
+    isFlagged,
+    handleStartQuiz,
     handleAnswerTimeout,
-    navigateQuestion,
-    togglePause,
-    endQuiz,
-    resetQuiz,
-    toggleFlag
-  } = useQuizStore();
-  
-  const { updateQuestionAttempts } = useQBankStore();
-  const { calculateMetrics } = useMetricsStore();
-  
-  // Calculate metrics when component mounts and when quiz history changes
-  useEffect(() => {
-    calculateMetrics();
-  }, [calculateMetrics, history]);
-  
-  // Update the qbank with the quiz results when the quiz is completed
-  useEffect(() => {
-    if (showScore && currentQuestions.length > 0) {
-      const qbankId = currentQuestions[0].qbankId;
-      const attempts = currentQuestions.map((question) => ({
-        questionId: question.id,
-        selectedAnswer: question.attempts?.[question.attempts.length - 1]?.selectedAnswer ?? null,
-        isCorrect: question.attempts?.[question.attempts.length - 1]?.isCorrect ?? false,
-        isFlagged: Boolean(question.isFlagged),
-        tags: question.tags
-      }));
-      
-      updateQuestionAttempts(qbankId, attempts);
-    }
-  }, [showScore, currentQuestions, updateQuestionAttempts]);
-  
+    handleAnswerClick,
+    handleQuit,
+    handlePause,
+    handleRestart,
+    handleQuizNavigation,
+    handleToggleFlag
+  } = useQuiz({ onQuizComplete, onQuizStart, onQuizEnd });
+
+  const [showQuitDialog, setShowQuitDialog] = useState(false);
+
+  const handleQuitClick = () => {
+    setShowQuitDialog(true);
+  };
+
+  const handleQuitConfirm = () => {
+    setShowQuitDialog(false);
+    handleQuit();
+  };
+
+  const handleQuitCancel = () => {
+    setShowQuitDialog(false);
+  };
+
   if (!inQuiz) {
-    return <Dashboard />;
+    return (
+      <Dashboard
+        qbanks={qbanks}
+        quizHistory={quizHistory}
+        onStartQuiz={handleStartQuiz}
+      />
+    );
   }
-  
+
   if (showScore) {
     return (
       <ScoreCard 
@@ -68,20 +71,17 @@ const Index = () => {
         attempts={currentQuestions.map((question) => ({
           questionId: question.id,
           selectedAnswer: question.attempts?.[question.attempts.length - 1]?.selectedAnswer ?? null,
-          isCorrect: question.attempts?.[question.attempts.length - 1]?.isCorrect ?? false,
+          isCorrect: question.attempts?.[question.attempts.length - 1]?.selectedAnswer === question.correctAnswer,
           isFlagged: Boolean(question.isFlagged)
         }))}
-        onEnd={resetQuiz}
+        onEnd={handleRestart}
       />
     );
   }
-  
-  const currentQuestion = currentQuestions[currentQuestionIndex];
-  const isFlagged = Boolean(currentQuestion?.isFlagged);
-  
+
   return (
     <QuizContent
-      currentQuestion={currentQuestion}
+      currentQuestion={currentQuestions[currentQuestionIndex]}
       currentQuestionIndex={currentQuestionIndex}
       totalQuestions={currentQuestions.length}
       selectedAnswer={selectedAnswer}
@@ -91,12 +91,12 @@ const Index = () => {
       timerEnabled={timerEnabled}
       timePerQuestion={timePerQuestion}
       isFlagged={isFlagged}
-      onAnswerClick={answerQuestion}
-      onNavigate={navigateQuestion}
-      onPause={togglePause}
-      onQuit={endQuiz}
+      onAnswerClick={handleAnswerClick}
+      onNavigate={handleQuizNavigation}
+      onPause={handlePause}
+      onQuit={handleQuit}
       onTimeUp={handleAnswerTimeout}
-      onToggleFlag={toggleFlag}
+      onToggleFlag={handleToggleFlag}
     />
   );
 };
