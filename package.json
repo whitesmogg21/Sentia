@@ -1,8 +1,22 @@
 {
+  "main": "electron/main.cjs",
+  "homepage": "./",
   "name": "vite_react_shadcn_ts",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "build": {
+    "appId": "com.yourname.yourapp",
+    "productName": "Your App Name",
+    "files": [
+      "dist/**/*",
+      "electron/**/*"
+    ],
+    "directories": {
+      "buildResources": "resources",
+      "output": "electron-output"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,7 +24,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "clean": "rimraf release electron-output",
+    "deploy": "gh-pages -d dist",
+    "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:8081 && cross-env NODE_ENV=development electron .\"",
+    "electron:build": "npm run clean && npm run build && electron-builder --dir"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -77,6 +94,11 @@
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^34.3.0",
+    "electron-builder": "^25.1.8",
+    "electron-is-dev": "^3.0.1",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
@@ -84,10 +106,12 @@
     "globals": "^15.9.0",
     "lovable-tagger": "^1.1.3",
     "postcss": "^8.4.47",
+    "rimraf": "^6.0.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.0.0",
-    "vite-plugin-pwa": "^0.21.1"
+    "vite-plugin-pwa": "^0.21.1",
+    "wait-on": "^8.0.2"
   }
 }
