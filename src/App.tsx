@@ -24,6 +24,9 @@ const queryClient = new QueryClient();
 const App = () => {
   const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
   const [inQuiz, setInQuiz] = useState(false);
+  
+  // Initialize metrics system on app load
+  useMetricsInit();
 
   useEffect(() => {
     // Load quiz history from localStorage

@@ -11,12 +11,41 @@ export const initializeMetrics = (): void => {
   // Initialize all questions
   qbanks.forEach(qbank => {
     qbank.questions.forEach(question => {
+      // Check if this question exists in metrics
       if (!existingMetrics[question.id]) {
-        existingMetrics[question.id] = {
-          status: 'unused',
-          isFlagged: Boolean(question.isFlagged)
-        };
+        // If not, initialize it as unused (or set based on attempts if they exist)
+        if (question.attempts && question.attempts.length > 0) {
+          // This question has been attempted but metrics were lost - reconstruct from attempts
+          const lastAttempt = question.attempts[question.attempts.length - 1];
+          let status: QuestionCategory = 'unused';
+          
+          if (lastAttempt.selectedAnswer === null) {
+            status = 'omitted';
+          } else if (lastAttempt.isCorrect) {
+            status = 'correct';
+          } else {
+            status = 'incorrect';
+          }
+          
+          existingMetrics[question.id] = {
+            status,
+            lastAttemptDate: lastAttempt.date,
+            isFlagged: Boolean(question.isFlagged)
+          };
+        } else {
+          // No attempts, initialize as unused
+          existingMetrics[question.id] = {
+            status: 'unused',
+            isFlagged: Boolean(question.isFlagged)
+          };
+        }
         updated = true;
+      } else {
+        // Question exists in metrics, but check if isFlagged status matches
+        if (existingMetrics[question.id].isFlagged !== Boolean(question.isFlagged)) {
+          existingMetrics[question.id].isFlagged = Boolean(question.isFlagged);
+          updated = true;
+        }
       }
     });
   });
