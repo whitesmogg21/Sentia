@@ -1,6 +1,7 @@
 
 import { Question, QBank } from "../types/quiz";
 
+// Default question banks that will be loaded if the database is empty
 export const qbanks: QBank[] = [
   {
     id: "general",

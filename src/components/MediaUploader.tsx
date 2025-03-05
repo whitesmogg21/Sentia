@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { saveMedia } from "@/services/dbService";
 
 interface MediaUploaderProps {
   onUploadComplete: (files: File[]) => void;
@@ -30,12 +31,24 @@ const MediaUploader = ({ onUploadComplete }: MediaUploaderProps) => {
 
     setIsLoading(true);
     try {
+      // Store files in IndexedDB
+      for (const file of validFiles) {
+        const url = URL.createObjectURL(file);
+        await saveMedia({
+          url: file.name,
+          data: file,
+          type: file.type.startsWith('image/') ? 'image' : 'unknown'
+        });
+        console.log(`Saved file ${file.name} to database`);
+      }
+      
       onUploadComplete(validFiles);
       toast({
         title: "Success",
         description: `${validFiles.length} images uploaded successfully`,
       });
     } catch (error) {
+      console.error("Error storing files:", error);
       toast({
         title: "Error",
         description: "Failed to upload media files",

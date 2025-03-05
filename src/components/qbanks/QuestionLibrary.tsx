@@ -10,6 +10,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useTheme } from "@/components/ThemeProvider";
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
+import { saveMedia } from "@/services/dbService";
 import {
   Table,
   TableBody,
@@ -18,10 +19,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import MediaSelector from "./MediaSelector";
 
 interface QuestionLibraryProps {
   qbanks: QBank[];
+  setQBanks: React.Dispatch<React.SetStateAction<QBank[]>>;
 }
 
 type SortConfig = {
@@ -29,7 +30,7 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 };
 
-const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
+const QuestionLibrary = ({ qbanks, setQBanks }: QuestionLibraryProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
@@ -50,7 +51,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [showTagFilterModal, setShowTagFilterModal] = useState(false);
   const [tagSearchQuery, setTagSearchQuery] = useState("");
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
@@ -114,22 +114,25 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       };
     }
 
+    const updatedQBanks = [...qbanks];
     selectedTags.forEach(tag => {
-      let qbank = qbanks.find(qb => qb.id === tag);
+      let qbankIndex = updatedQBanks.findIndex(qb => qb.id === tag);
       
-      if (!qbank) {
-        qbank = {
+      if (qbankIndex === -1) {
+        const newQBank: QBank = {
           id: tag,
           name: tag.charAt(0).toUpperCase() + tag.slice(1),
           description: `Questions tagged with ${tag}`,
           questions: []
         };
-        qbanks.push(qbank);
+        updatedQBanks.push(newQBank);
+        qbankIndex = updatedQBanks.length - 1;
       }
       
-      qbank.questions.push({ ...question });
+      updatedQBanks[qbankIndex].questions.push({ ...question });
     });
 
+    setQBanks(updatedQBanks);
     setIsOpen(false);
     setNewQuestion({
       question: "",
@@ -176,18 +179,22 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const handleUpdate = () => {
     if (!editingQuestion) return;
 
-    qbanks.forEach(qbank => {
+    const updatedQBanks = qbanks.map(qbank => {
       const questionIndex = qbank.questions.findIndex(q => q.id === editingQuestion.id);
       if (questionIndex !== -1) {
-        qbank.questions[questionIndex] = {
+        const updatedQuestions = [...qbank.questions];
+        updatedQuestions[questionIndex] = {
           ...editingQuestion,
           ...newQuestion,
           tags: selectedTags,
           qbankId: selectedTags[0]
         } as Question;
+        return { ...qbank, questions: updatedQuestions };
       }
+      return qbank;
     });
 
+    setQBanks(updatedQBanks);
     setIsOpen(false);
     setIsEditMode(false);
     setEditingQuestion(null);
@@ -259,7 +266,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
@@ -267,6 +274,8 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         const worksheet = workbook.Sheets[firstSheetName];
         const rows = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1 });
 
+        const updatedQBanks = [...qbanks];
+        
         const questions = rows.slice(1)
           .filter(row => row && row.length >= 2)
           .map((row: any) => {
@@ -284,11 +293,16 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
             ].filter(Boolean);
 
             const mediaMatch = questionText.match(/\/([^\/\s]+\.(png|jpg|jpeg|gif))/i);
-            const media = mediaMatch ? {
-              type: "image" as const,
-              url: mediaMatch[1],
-              showWith: "question" as const
-            } : undefined;
+            let media = undefined;
+            
+            if (mediaMatch) {
+              const mediaFilename = mediaMatch[1];
+              media = {
+                type: "image" as const,
+                url: mediaFilename,
+                showWith: "question" as const
+              };
+            }
 
             const newQuestion: Question = {
               id: Date.now() + Math.random(),
@@ -303,22 +317,25 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
             };
 
             tags.forEach(tag => {
-              let qbank = qbanks.find(qb => qb.id === tag);
-              if (!qbank) {
-                qbank = {
+              let qbankIndex = updatedQBanks.findIndex(qb => qb.id === tag);
+              if (qbankIndex === -1) {
+                const newQBank = {
                   id: tag,
                   name: tag.charAt(0).toUpperCase() + tag.slice(1),
                   description: `Questions tagged with ${tag}`,
                   questions: []
                 };
-                qbanks.push(qbank);
+                updatedQBanks.push(newQBank);
+                qbankIndex = updatedQBanks.length - 1;
               }
-              qbank.questions.push({ ...newQuestion });
+              updatedQBanks[qbankIndex].questions.push({ ...newQuestion });
             });
 
             return newQuestion;
           });
 
+        setQBanks(updatedQBanks);
+        
         toast({
           title: "Success",
           description: `${questions.length} questions imported successfully`,
@@ -351,6 +368,20 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     } else {
       setSelectedQuestions(sortedQuestions);
     }
+  };
+
+  const handleDeleteQuestion = (questionId: number) => {
+    const updatedQBanks = qbanks.map(qbank => ({
+      ...qbank,
+      questions: qbank.questions.filter(q => q.id !== questionId)
+    }));
+    
+    setQBanks(updatedQBanks);
+    
+    toast({
+      title: "Success",
+      description: "Question deleted successfully",
+    });
   };
 
   const filteredQuestions = qbanks.flatMap(qbank => 
@@ -820,18 +851,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        qbanks.forEach(qbank => {
-                          const index = qbank.questions.findIndex(q => q.id === question.id);
-                          if (index !== -1) {
-                            qbank.questions.splice(index, 1);
-                          }
-                        });
-                        toast({
-                          title: "Success",
-                          description: "Question deleted successfully",
-                        });
-                      }}
+                      onClick={() => handleDeleteQuestion(question.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
