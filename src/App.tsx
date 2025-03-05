@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,7 +18,6 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import QuestionLibrary from "@/components/qbanks/QuestionLibrary";
 import MediaLibrary from "@/components/qbanks/MediaLibrary";
 import { useMetricsInit } from './hooks/use-metrics-init';
-import { loadQuizData, saveQuizData } from './hooks/quiz';
 
 const queryClient = new QueryClient();
 
@@ -31,30 +29,29 @@ const App = () => {
   useMetricsInit();
 
   useEffect(() => {
-    // Load quiz history from localStorage using our improved utility
-    const savedHistory = loadQuizData();
-    if (savedHistory && Array.isArray(savedHistory) && savedHistory.length > 0) {
-      setQuizHistory(savedHistory);
-      console.log('Loaded quiz history:', savedHistory.length, 'entries');
+    // Load quiz history from localStorage
+    try {
+      const savedHistory = localStorage.getItem('quizHistory');
+      if (savedHistory) {
+        setQuizHistory(JSON.parse(savedHistory));
+      }
+    } catch (error) {
+      console.error('Error loading quiz history:', error);
     }
   }, []);
 
   // Save quiz history to localStorage whenever it changes
   useEffect(() => {
-    if (quizHistory.length > 0) {
-      saveQuizData(quizHistory);
-      console.log('Saved quiz history:', quizHistory.length, 'entries');
+    try {
+      localStorage.setItem('quizHistory', JSON.stringify(quizHistory));
+    } catch (error) {
+      console.error('Error saving quiz history:', error);
     }
   }, [quizHistory]);
 
   const handleQuizComplete = (history: QuizHistory) => {
     // Update quiz history
-    setQuizHistory((prev) => {
-      const updatedHistory = [...prev, history];
-      // Ensure immediate save to localStorage
-      saveQuizData(updatedHistory);
-      return updatedHistory;
-    });
+    setQuizHistory((prev) => [...prev, history]);
 
     // Update the qbank with the new attempts
     const selectedQBank = qbanks.find(qb => qb.id === history.qbankId);
