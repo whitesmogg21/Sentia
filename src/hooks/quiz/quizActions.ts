@@ -1,5 +1,5 @@
 
-import { Question, QuizHistory } from "@/types/quiz";
+import { Question, QuizHistory, QuestionAttempt } from "@/types/quiz";
 import { QuizState } from "./types";
 import { qbanks } from "@/data/questions";
 import { toast } from "@/components/ui/use-toast";
@@ -74,7 +74,8 @@ export const createQuizHistory = (
         selectedAnswer,
         isCorrect,
         isFlagged: Boolean(q.isFlagged),
-        tags: q.tags
+        tags: q.tags,
+        date: new Date().toISOString() // Add the missing date property
       };
     })
   };
