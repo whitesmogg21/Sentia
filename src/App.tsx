@@ -164,7 +164,7 @@ const App = () => {
                     />
                     <Route path="/qbanks" element={<QBanks qbanks={qbanks} setQBanks={setQBanks} />} />
                     <Route path="/qbanks/questions" element={<QuestionLibrary qbanks={qbanks} setQBanks={setQBanks} />} />
-                    <Route path="/qbanks/media" element={<MediaLibrary />} />
+                    <Route path="/qbanks/media" element={<MediaLibrary qbanks={qbanks} />} />
                     <Route 
                       path="/select-qbank" 
                       element={<SelectQBank qbanks={qbanks} onSelect={handleQBankSelect} />} 
