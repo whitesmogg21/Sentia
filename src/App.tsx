@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,7 +27,6 @@ const App = () => {
   const [qbanks, setQBanks] = useState<QBank[]>(defaultQBanks);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load question banks from database on app startup
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -38,7 +36,6 @@ const App = () => {
           setQBanks(loadedQBanks);
         } else {
           console.log("No question banks found in database, using defaults");
-          // Save default qbanks to database if none found
           await saveQBanks(defaultQBanks);
         }
       } catch (error) {
@@ -56,7 +53,6 @@ const App = () => {
     loadData();
   }, []);
 
-  // Save qbanks to database whenever they change
   useEffect(() => {
     if (!isLoading) {
       const saveData = async () => {
@@ -73,10 +69,8 @@ const App = () => {
   }, [qbanks, isLoading]);
 
   const handleQuizComplete = (history: QuizHistory) => {
-    // Update quiz history
     setQuizHistory((prev) => [...prev, history]);
 
-    // Update the qbank with the new attempts
     const updatedQBanks = [...qbanks];
     const selectedQBank = updatedQBanks.find(qb => qb.id === history.qbankId);
     
@@ -99,7 +93,6 @@ const App = () => {
         }
       });
       
-      // Save updated qbank to localStorage for backward compatibility
       localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
       setQBanks(updatedQBanks);
     }
@@ -111,7 +104,6 @@ const App = () => {
   };
 
   const handleQBankSelect = (qbank: QBank) => {
-    // Make sure the selected qbank is based on the current qbank state
     const selectedQBank = qbanks.find(q => q.id === qbank.id);
     if (selectedQBank) {
       localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
@@ -126,7 +118,6 @@ const App = () => {
 
   const handleClearHistory = () => {
     setQuizHistory([]);
-    // Reset attempts in qbanks
     const updatedQBanks = qbanks.map(qbank => ({
       ...qbank,
       questions: qbank.questions.map(question => ({
@@ -137,7 +128,6 @@ const App = () => {
     }));
     
     setQBanks(updatedQBanks);
-    // Clear localStorage
     localStorage.removeItem('selectedQBank');
   };
 
