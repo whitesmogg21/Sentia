@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+
+import { useState, useMemo, useEffect } from "react";
 import { QBank, QuestionFilter } from "@/types/quiz";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,77 +25,73 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
     omitted: false,
   });
 
-  // Function to update the filters based on the latest quiz results
-  const updateFiltersAfterQuiz = (quizResults: { questionId: number; selectedAnswer: number | null; isCorrect: boolean }[]) => {
-    setFilters(prevFilters => {
-      const updatedFilters = { ...prevFilters };
-
-      quizResults.forEach(({ questionId, selectedAnswer, isCorrect }) => {
-        updatedFilters.unused = false; // Mark all questions as used
-        updatedFilters.used = true;
-
-        if (selectedAnswer === null) {
-          updatedFilters.omitted = true; // Mark as omitted if skipped
-        } else {
-          updatedFilters.omitted = false;
+  // Load previously selected qbank from localStorage if available
+  useEffect(() => {
+    const storedQBank = localStorage.getItem('selectedQBank');
+    if (storedQBank) {
+      try {
+        const parsedQBank = JSON.parse(storedQBank);
+        const matchingQBank = qbanks.find(qb => qb.id === parsedQBank.id);
+        if (matchingQBank) {
+          setSelectedQBank(matchingQBank);
+          updateFilters(matchingQBank);
         }
-
-        if (isCorrect) {
-          updatedFilters.correct = true;
-          updatedFilters.incorrect = false; // Remove from incorrect if corrected
-        } else {
-          updatedFilters.correct = false;
-          updatedFilters.incorrect = true; // Mark as incorrect
-        }
-      });
-
-      return updatedFilters;
-    });
-  };
+      } catch (e) {
+        console.error("Error parsing stored qbank:", e);
+      }
+    }
+  }, [qbanks]);
 
   // Calculate metrics for the filter bar
   const metrics = useMemo(() => {
-    const seenQuestions = new Set<number>();
-    const correctQuestions = new Set<number>();
-    const incorrectQuestions = new Set<number>();
-    const omittedQuestions = new Set<number>();
-    const flaggedQuestions = new Set<number>();
-
-    qbanks.forEach(qbank => {
+    // Initialize counters
+    let unusedCount = 0;
+    let usedCount = 0;
+    let correctCount = 0;
+    let incorrectCount = 0;
+    let omittedCount = 0;
+    let flaggedCount = 0;
+    
+    // We'll only count questions from the selected qbank if one is selected
+    const relevantQBanks = selectedQBank ? [selectedQBank] : qbanks;
+    
+    relevantQBanks.forEach(qbank => {
       qbank.questions.forEach(question => {
         const attempts = question.attempts || [];
-        const lastAttempt = attempts.length > 0 ? attempts[attempts.length - 1] : null;
-
-        if (attempts.length > 0) {
-          seenQuestions.add(question.id);
-
-          if (lastAttempt?.selectedAnswer === null) {
-            omittedQuestions.add(question.id);
+        
+        if (attempts.length === 0) {
+          unusedCount++;
+        } else {
+          usedCount++;
+          
+          // Get the latest attempt
+          const lastAttempt = attempts[attempts.length - 1];
+          
+          if (lastAttempt.selectedAnswer === null) {
+            omittedCount++;
+            incorrectCount++; // Omitted is also counted as incorrect
           } else if (lastAttempt.isCorrect) {
-            correctQuestions.add(question.id);
-            incorrectQuestions.delete(question.id); // ✅ Move out of Incorrect if later answered correctly
+            correctCount++;
           } else {
-            incorrectQuestions.add(question.id);
+            incorrectCount++;
           }
         }
-
+        
         if (question.isFlagged) {
-          flaggedQuestions.add(question.id);
+          flaggedCount++;
         }
       });
     });
 
-    const totalQuestions = qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0);
-
     return {
-      unused: totalQuestions - seenQuestions.size,
-      used: seenQuestions.size,
-      correct: correctQuestions.size,
-      incorrect: incorrectQuestions.size,
-      flagged: flaggedQuestions.size,
-      omitted: omittedQuestions.size,
+      unused: unusedCount,
+      used: usedCount,
+      correct: correctCount,
+      incorrect: incorrectCount,
+      flagged: flaggedCount,
+      omitted: omittedCount,
     };
-  }, [qbanks]);
+  }, [qbanks, selectedQBank]);
 
   // Filter QBanks based on selected filter
   const filteredQBanks = useMemo(() => {
@@ -102,11 +99,12 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
 
     return qbanks.filter(qbank =>
       qbank.questions.some(question => {
-        const lastAttempt = question.attempts?.[question.attempts.length - 1] || null;
-    
+        const attempts = question.attempts || [];
+        const lastAttempt = attempts.length > 0 ? attempts[attempts.length - 1] : null;
+        
         return (
-          (filters.unused && (!question.attempts || question.attempts.length === 0)) ||
-          (filters.used && question.attempts && question.attempts.length > 0) ||
+          (filters.unused && attempts.length === 0) ||
+          (filters.used && attempts.length > 0) ||
           (filters.correct && lastAttempt?.isCorrect) ||
           (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
           (filters.omitted && lastAttempt?.selectedAnswer === null) ||
@@ -117,8 +115,21 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
   }, [qbanks, filters]);
 
   const handleQBankClick = (qbank: QBank) => {
-    setSelectedQBank(qbank);
-    updateFilters(qbank); 
+    // Toggle selection if clicking the same qbank
+    if (selectedQBank && selectedQBank.id === qbank.id) {
+      setSelectedQBank(null);
+      setFilters({
+        unused: false,
+        used: false,
+        incorrect: false,
+        correct: false,
+        flagged: false,
+        omitted: false,
+      });
+    } else {
+      setSelectedQBank(qbank);
+      updateFilters(qbank);
+    }
   };
 
   const handleConfirmSelection = () => {
@@ -134,18 +145,27 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
     }
   };
 
-  // Update the filters based on actual question attempts
+  // Update the filters based on actual question attempts for the selected qbank
   const updateFilters = (qbank: QBank) => {
-    const hasUsed = qbank.questions.some(q => q.attempts?.length > 0);
-    const hasUnused = qbank.questions.some(q => !q.attempts?.length);
-    const hasCorrect = qbank.questions.some(q => q.attempts?.[q.attempts.length - 1]?.isCorrect);
-    const hasIncorrect = qbank.questions.some(q => q.attempts?.[q.attempts.length - 1]?.isCorrect === false);
-    const hasOmitted = qbank.questions.some(q => q.attempts?.[q.attempts.length - 1]?.selectedAnswer === null);
+    const hasUnused = qbank.questions.some(q => !q.attempts || q.attempts.length === 0);
+    const hasUsed = qbank.questions.some(q => q.attempts && q.attempts.length > 0);
+    const hasCorrect = qbank.questions.some(q => {
+      const attempts = q.attempts || [];
+      return attempts.length > 0 && attempts[attempts.length - 1].isCorrect;
+    });
+    const hasIncorrect = qbank.questions.some(q => {
+      const attempts = q.attempts || [];
+      return attempts.length > 0 && !attempts[attempts.length - 1].isCorrect;
+    });
+    const hasOmitted = qbank.questions.some(q => {
+      const attempts = q.attempts || [];
+      return attempts.length > 0 && attempts[attempts.length - 1].selectedAnswer === null;
+    });
     const hasFlagged = qbank.questions.some(q => q.isFlagged);
 
     setFilters({
-      used: hasUsed,
       unused: hasUnused,
+      used: hasUsed,
       correct: hasCorrect,
       incorrect: hasIncorrect,
       omitted: hasOmitted,
@@ -161,7 +181,10 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
         filters={filters}
         onToggleFilter={(key) =>
           setFilters(prev => {
+            // Toggle the filter
             const newFilters = { ...prev, [key]: !prev[key] };
+            
+            // If all filters are off, use a default filter
             return Object.values(newFilters).some(v => v) 
               ? newFilters 
               : {
@@ -181,7 +204,9 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
             key={qbank.id}
             className={cn(
               "p-4 cursor-pointer transition-colors",
-              selectedQBank?.id === qbank.id && "border-primary border-2"
+              selectedQBank?.id === qbank.id 
+                ? "border-primary border-2" 
+                : "hover:border-primary/50"
             )}
             onClick={() => handleQBankClick(qbank)}
           >

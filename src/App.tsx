@@ -77,14 +77,14 @@ const App = () => {
     setQuizHistory((prev) => [...prev, history]);
 
     // Update the qbank with the new attempts
-    const selectedQBank = qbanks.find(qb => qb.id === history.qbankId);
+    const updatedQBanks = [...qbanks];
+    const selectedQBank = updatedQBanks.find(qb => qb.id === history.qbankId);
+    
     if (selectedQBank) {
-      const updatedQBanks = [...qbanks];
-      const qbankIndex = updatedQBanks.findIndex(qb => qb.id === history.qbankId);
-
       history.questionAttempts.forEach(attempt => {
-        const question = selectedQBank.questions.find(q => q.id === attempt.questionId);
-        if (question) {
+        const questionIndex = selectedQBank.questions.findIndex(q => q.id === attempt.questionId);
+        if (questionIndex !== -1) {
+          const question = selectedQBank.questions[questionIndex];
           question.attempts = [
             ...(question.attempts || []),
             {
@@ -99,11 +99,9 @@ const App = () => {
         }
       });
       
-      updatedQBanks[qbankIndex] = selectedQBank;
-      setQBanks(updatedQBanks);
-      
-      // Save to localStorage for backward compatibility
+      // Save updated qbank to localStorage for backward compatibility
       localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
+      setQBanks(updatedQBanks);
     }
 
     toast({
@@ -113,23 +111,15 @@ const App = () => {
   };
 
   const handleQBankSelect = (qbank: QBank) => {
-    localStorage.setItem('selectedQBank', JSON.stringify(qbank));
+    // Make sure the selected qbank is based on the current qbank state
+    const selectedQBank = qbanks.find(q => q.id === qbank.id);
+    if (selectedQBank) {
+      localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
+    }
   };
 
   const handleQuizStart = () => {
     setInQuiz(true);
-    // Reset all questions in qbanks
-    const updatedQBanks = qbanks.map(qbank => ({
-      ...qbank,
-      questions: qbank.questions.map(question => ({
-        ...question,
-        attempts: [],
-        isFlagged: false
-      }))
-    }));
-    
-    setQBanks(updatedQBanks);
-    localStorage.removeItem('selectedQBank');
   };
   
   const handleQuizEnd = () => setInQuiz(false);
@@ -184,7 +174,7 @@ const App = () => {
                     />
                     <Route path="/qbanks" element={<QBanks qbanks={qbanks} setQBanks={setQBanks} />} />
                     <Route path="/qbanks/questions" element={<QuestionLibrary qbanks={qbanks} setQBanks={setQBanks} />} />
-                    <Route path="/qbanks/media" element={<MediaLibrary qbanks={qbanks} setQBanks={setQBanks} />} />
+                    <Route path="/qbanks/media" element={<MediaLibrary />} />
                     <Route 
                       path="/select-qbank" 
                       element={<SelectQBank qbanks={qbanks} onSelect={handleQBankSelect} />} 
