@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -27,6 +28,7 @@ const App = () => {
   const [qbanks, setQBanks] = useState<QBank[]>(defaultQBanks);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Load question banks from database on app startup
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -36,6 +38,7 @@ const App = () => {
           setQBanks(loadedQBanks);
         } else {
           console.log("No question banks found in database, using defaults");
+          // Save default qbanks to database if none found
           await saveQBanks(defaultQBanks);
         }
       } catch (error) {
@@ -53,6 +56,7 @@ const App = () => {
     loadData();
   }, []);
 
+  // Save qbanks to database whenever they change
   useEffect(() => {
     if (!isLoading) {
       const saveData = async () => {
@@ -69,8 +73,10 @@ const App = () => {
   }, [qbanks, isLoading]);
 
   const handleQuizComplete = (history: QuizHistory) => {
+    // Update quiz history
     setQuizHistory((prev) => [...prev, history]);
 
+    // Update the qbank with the new attempts
     const selectedQBank = qbanks.find(qb => qb.id === history.qbankId);
     if (selectedQBank) {
       const updatedQBanks = [...qbanks];
@@ -96,6 +102,7 @@ const App = () => {
       updatedQBanks[qbankIndex] = selectedQBank;
       setQBanks(updatedQBanks);
       
+      // Save to localStorage for backward compatibility
       localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
     }
 
@@ -111,6 +118,7 @@ const App = () => {
 
   const handleQuizStart = () => {
     setInQuiz(true);
+    // Reset all questions in qbanks
     const updatedQBanks = qbanks.map(qbank => ({
       ...qbank,
       questions: qbank.questions.map(question => ({
@@ -128,6 +136,7 @@ const App = () => {
 
   const handleClearHistory = () => {
     setQuizHistory([]);
+    // Reset attempts in qbanks
     const updatedQBanks = qbanks.map(qbank => ({
       ...qbank,
       questions: qbank.questions.map(question => ({
@@ -138,6 +147,7 @@ const App = () => {
     }));
     
     setQBanks(updatedQBanks);
+    // Clear localStorage
     localStorage.removeItem('selectedQBank');
   };
 
@@ -174,7 +184,7 @@ const App = () => {
                     />
                     <Route path="/qbanks" element={<QBanks qbanks={qbanks} setQBanks={setQBanks} />} />
                     <Route path="/qbanks/questions" element={<QuestionLibrary qbanks={qbanks} setQBanks={setQBanks} />} />
-                    <Route path="/qbanks/media" element={<MediaLibrary qbanks={qbanks} />} />
+                    <Route path="/qbanks/media" element={<MediaLibrary qbanks={qbanks} setQBanks={setQBanks} />} />
                     <Route 
                       path="/select-qbank" 
                       element={<SelectQBank qbanks={qbanks} onSelect={handleQBankSelect} />} 

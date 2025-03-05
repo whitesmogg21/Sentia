@@ -10,23 +10,22 @@ interface QuizOptionProps {
   correct?: boolean;
   onClick: () => void;
   disabled?: boolean;
-  isStrikedOut?: boolean;
-  onStrikethrough?: (e: React.MouseEvent) => void;
 }
 
-const QuizOption = ({ 
-  option, 
-  selected, 
-  correct, 
-  onClick, 
-  disabled, 
-  isStrikedOut = false,
-  onStrikethrough
-}: QuizOptionProps) => {
+const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOptionProps) => {
+  const [isStrikedOut, setIsStrikedOut] = React.useState(false);
+
+  const handleStrikethrough = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the parent onClick
+    if (!disabled) {
+      setIsStrikedOut(!isStrikedOut);
+    }
+  };
+
   return (
     <div className="flex items-center gap-3 my-2">
       <div 
-        onClick={(e) => onStrikethrough?.(e)}
+        onClick={handleStrikethrough}
         className={cn(
           "text-gray-400 hover:text-error dark:text-gray-500 dark:hover:text-error/80 cursor-pointer",
           isStrikedOut && "text-error dark:text-error/80",
