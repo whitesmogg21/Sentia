@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import MediaSelector from "./MediaSelector";
+import { updateQuestionMetrics, initializeMetrics } from "@/utils/metricsUtils";
 
 interface QuestionLibraryProps {
   qbanks: QBank[];
@@ -57,6 +58,10 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
   const [formatSelection, setFormatSelection] = useState({ start: 0, end: 0 });
+
+  useEffect(() => {
+    initializeMetrics();
+  }, []);
 
   const existingTags = Array.from(new Set(
     qbanks.flatMap(qbank => qbank.questions.flatMap(q => q.tags || []))
@@ -132,8 +137,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     });
 
     saveQBanksToStorage();
-    console.log('Added new question and saved qbanks:', qbanks.length);
-
+    
+    updateQuestionMetrics(question.id, 'unused', false);
+    
     setIsOpen(false);
     setNewQuestion({
       question: "",
@@ -465,6 +471,24 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleDeleteQuestion = (questionId: number) => {
+    qbanks.forEach(qbank => {
+      const index = qbank.questions.findIndex(q => q.id === questionId);
+      if (index !== -1) {
+        qbank.questions.splice(index, 1);
+      }
+    });
+    
+    saveQBanksToStorage();
+    
+    initializeMetrics();
+    
+    toast({
+      title: "Success",
+      description: "Question deleted successfully",
+    });
   };
 
   return (
@@ -829,20 +853,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        qbanks.forEach(qbank => {
-                          const index = qbank.questions.findIndex(q => q.id === question.id);
-                          if (index !== -1) {
-                            qbank.questions.splice(index, 1);
-                          }
-                        });
-                        saveQBanksToStorage();
-                        
-                        toast({
-                          title: "Success",
-                          description: "Question deleted successfully",
-                        });
-                      }}
+                      onClick={() => handleDeleteQuestion(question.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

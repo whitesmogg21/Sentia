@@ -64,10 +64,10 @@ export interface QBank {
 export interface QuestionFilter {
   unused: boolean;
   used: boolean;
-  correct: boolean;
   incorrect: boolean;
-  omitted: boolean;
+  correct: boolean;
   flagged: boolean;
+  omitted: boolean;
 }
 
 export type QuestionCategory = 'unused' | 'correct' | 'incorrect' | 'omitted';
@@ -80,3 +80,13 @@ export interface QuestionMetrics {
   marked: number;
 }
 
+// New types for metrics tracking
+export interface QuestionMetricsEntry {
+  status: QuestionCategory;
+  lastAttemptDate?: string;
+  isFlagged: boolean;
+}
+
+export interface QuestionMetricsStore {
+  [questionId: string]: QuestionMetricsEntry;
+}

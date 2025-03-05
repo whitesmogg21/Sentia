@@ -1,8 +1,9 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { QuestionFilter } from "@/types/quiz";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { calculateMetrics, initializeMetrics } from "@/utils/metricsUtils";
 
 type FilterCategory = {
   label: string;
@@ -12,7 +13,6 @@ type FilterCategory = {
 };
 
 interface QuestionFiltersBarProps {
-  metrics: Record<keyof QuestionFilter, number>;
   filters: QuestionFilter;
   onToggleFilter: (key: keyof QuestionFilter) => void;
 }
@@ -106,22 +106,22 @@ const FilterButton = ({
   );
 };
 
-const QuestionFiltersBar = ({ metrics, filters, onToggleFilter }: QuestionFiltersBarProps) => {
+const QuestionFiltersBar = ({ filters, onToggleFilter }: QuestionFiltersBarProps) => {
+  const [metrics, setMetrics] = useState(calculateMetrics());
+  
+  // Initialize metrics on component mount
   useEffect(() => {
-    const savedMetrics = localStorage.getItem('questionMetrics');
-    if (savedMetrics) {
-      const parsedMetrics = JSON.parse(savedMetrics);
-      Object.keys(parsedMetrics).forEach((key) => {
-        if (metrics[key as keyof QuestionFilter] !== parsedMetrics[key]) {
-          metrics[key as keyof QuestionFilter] = parsedMetrics[key];
-        }
-      });
-    }
+    initializeMetrics();
+    setMetrics(calculateMetrics());
+    
+    // Re-calculate metrics when storage changes
+    const handleStorageChange = () => {
+      setMetrics(calculateMetrics());
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem('questionMetrics', JSON.stringify(metrics));
-  }, [metrics]);
 
   return (
     <div className="flex flex-wrap gap-2">

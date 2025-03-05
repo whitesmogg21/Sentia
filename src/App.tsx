@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +17,7 @@ import { toast } from "@/components/ui/use-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import QuestionLibrary from "@/components/qbanks/QuestionLibrary";
 import MediaLibrary from "@/components/qbanks/MediaLibrary";
+import { useMetricsInit } from './hooks/use-metrics-init';
 
 const queryClient = new QueryClient();
 
