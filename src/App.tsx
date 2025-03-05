@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,7 +11,7 @@ import History from "./pages/History";
 import QBanks from "./pages/QBanks";
 import SelectQBank from "./pages/SelectQBank";
 import NotFound from "./pages/NotFound";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QuizHistory, QBank } from "./types/quiz";
 import { qbanks, saveQBanksToStorage } from "./data/questions";
 import { toast } from "@/components/ui/use-toast";
@@ -23,6 +24,27 @@ const queryClient = new QueryClient();
 const App = () => {
   const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
   const [inQuiz, setInQuiz] = useState(false);
+
+  useEffect(() => {
+    // Load quiz history from localStorage
+    try {
+      const savedHistory = localStorage.getItem('quizHistory');
+      if (savedHistory) {
+        setQuizHistory(JSON.parse(savedHistory));
+      }
+    } catch (error) {
+      console.error('Error loading quiz history:', error);
+    }
+  }, []);
+
+  // Save quiz history to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('quizHistory', JSON.stringify(quizHistory));
+    } catch (error) {
+      console.error('Error saving quiz history:', error);
+    }
+  }, [quizHistory]);
 
   const handleQuizComplete = (history: QuizHistory) => {
     // Update quiz history

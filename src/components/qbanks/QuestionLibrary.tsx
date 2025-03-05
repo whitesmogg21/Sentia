@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -132,7 +131,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       qbank.questions.push({ ...question });
     });
 
-    // Save to localStorage after adding a question
     saveQBanksToStorage();
 
     setIsOpen(false);
@@ -193,7 +191,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       }
     });
 
-    // Save to localStorage after updating a question
     saveQBanksToStorage();
 
     setIsOpen(false);
@@ -327,7 +324,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
             return newQuestion;
           });
 
-        // Save to localStorage after importing questions
         saveQBanksToStorage();
 
         toast({
@@ -838,7 +834,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                             qbank.questions.splice(index, 1);
                           }
                         });
-                        // Save to localStorage after deleting a question
                         saveQBanksToStorage();
                         
                         toast({
