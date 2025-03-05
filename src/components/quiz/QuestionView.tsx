@@ -73,6 +73,7 @@ const QuestionView = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const [mediaLibrary, setMediaLibrary] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
+  const [strikedOptions, setStrikedOptions] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     const savedMedia = localStorage.getItem('mediaLibrary');
@@ -81,8 +82,23 @@ const QuestionView = ({
     }
   }, []);
 
+  // Reset strikethrough state when question changes
+  useEffect(() => {
+    setStrikedOptions({});
+  }, [question.id]);
+
   const handleImageClick = (imageData: string, imageName: string) => {
     setSelectedImage({ url: imageData, name: imageName });
+  };
+
+  const handleStrikethrough = (index: number, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the parent onClick
+    if (!isPaused && !isAnswered) {
+      setStrikedOptions(prev => ({
+        ...prev,
+        [index]: !prev[index]
+      }));
+    }
   };
 
   const renderContent = (text: string) => {
@@ -170,6 +186,8 @@ const QuestionView = ({
               }
               onClick={() => onAnswerClick(index)}
               disabled={isAnswered || isPaused}
+              isStrikedOut={strikedOptions[index] || false}
+              onStrikethrough={(e) => handleStrikethrough(index, e)}
             />
           );
         })}
