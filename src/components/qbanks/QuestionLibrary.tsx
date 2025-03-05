@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useTheme } from "@/components/ThemeProvider";
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
+import { saveQBanksToStorage } from "@/data/questions";
 import {
   Table,
   TableBody,
@@ -130,6 +132,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       qbank.questions.push({ ...question });
     });
 
+    // Save to localStorage after adding a question
+    saveQBanksToStorage();
+
     setIsOpen(false);
     setNewQuestion({
       question: "",
@@ -187,6 +192,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         } as Question;
       }
     });
+
+    // Save to localStorage after updating a question
+    saveQBanksToStorage();
 
     setIsOpen(false);
     setIsEditMode(false);
@@ -318,6 +326,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 
             return newQuestion;
           });
+
+        // Save to localStorage after importing questions
+        saveQBanksToStorage();
 
         toast({
           title: "Success",
@@ -827,6 +838,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                             qbank.questions.splice(index, 1);
                           }
                         });
+                        // Save to localStorage after deleting a question
+                        saveQBanksToStorage();
+                        
                         toast({
                           title: "Success",
                           description: "Question deleted successfully",

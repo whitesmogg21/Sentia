@@ -1,7 +1,8 @@
 
 import { Question, QBank } from "../types/quiz";
 
-export const qbanks: QBank[] = [
+// Initial default question banks
+const defaultQBanks: QBank[] = [
   {
     id: "general",
     name: "General Knowledge",
@@ -73,3 +74,28 @@ export const qbanks: QBank[] = [
     ]
   }
 ];
+
+// Load question banks from localStorage or use defaults
+const loadQBanks = (): QBank[] => {
+  try {
+    const savedQBanks = localStorage.getItem('questionLibrary');
+    if (savedQBanks) {
+      return JSON.parse(savedQBanks);
+    }
+  } catch (error) {
+    console.error('Error loading question banks from localStorage:', error);
+  }
+  return defaultQBanks;
+};
+
+// Export the loaded qbanks
+export const qbanks: QBank[] = loadQBanks();
+
+// Helper function to save qbanks to localStorage
+export const saveQBanksToStorage = (): void => {
+  try {
+    localStorage.setItem('questionLibrary', JSON.stringify(qbanks));
+  } catch (error) {
+    console.error('Error saving question banks to localStorage:', error);
+  }
+};

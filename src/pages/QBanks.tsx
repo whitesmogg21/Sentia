@@ -7,6 +7,7 @@ import MediaUploader from "@/components/MediaUploader";
 import MediaManager from "@/components/MediaManager";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import { saveQBanksToStorage } from "@/data/questions";
 import {
   Dialog,
   DialogContent,
@@ -108,6 +109,8 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       };
 
       qbanks.push(newQBank);
+      saveQBanksToStorage(); // Save after importing qbank
+      
       setMediaFiles([]); // Clear media files after import
       toast({
         title: "Success",
@@ -135,6 +138,8 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     };
 
     qbanks.push(newQBank);
+    saveQBanksToStorage(); // Save after creating qbank
+    
     setNewQBankName("");
     setNewQBankDescription("");
     setShowNewQBankDialog(false);
@@ -148,6 +153,8 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     const index = qbanks.findIndex((qbank) => qbank.id === qbankId);
     if (index !== -1) {
       qbanks.splice(index, 1);
+      saveQBanksToStorage(); // Save after deleting qbank
+      
       setSelectedQBank(null);
       toast({
         title: "Success",
@@ -175,6 +182,8 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       }
       qbank.name = editingName;
       qbank.description = editingDescription;
+      saveQBanksToStorage(); // Save after editing qbank
+      
       setEditingQBankId(null);
       toast({
         title: "Success",
@@ -217,6 +226,8 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       }
 
       selectedQBank.questions.push(question);
+      saveQBanksToStorage(); // Save after adding question
+      
       setNewQuestion({
         question: "",
         options: ["", "", "", ""],

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,7 +12,7 @@ import SelectQBank from "./pages/SelectQBank";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
 import { QuizHistory, QBank } from "./types/quiz";
-import { qbanks } from "./data/questions";
+import { qbanks, saveQBanksToStorage } from "./data/questions";
 import { toast } from "@/components/ui/use-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import QuestionLibrary from "@/components/qbanks/QuestionLibrary";
@@ -51,6 +50,7 @@ const App = () => {
       
       // Save updated qbank to localStorage
       localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
+      saveQBanksToStorage(); // Save qbanks to localStorage as well
     }
 
     toast({
@@ -72,8 +72,10 @@ const App = () => {
         question.isFlagged = false;
       });
     });
+    saveQBanksToStorage(); // Save the reset state
     localStorage.removeItem('selectedQBank');
   };
+  
   const handleQuizEnd = () => setInQuiz(false);
 
   const handleClearHistory = () => {
@@ -85,6 +87,7 @@ const App = () => {
         question.isFlagged = false;
       });
     });
+    saveQBanksToStorage(); // Save the reset state
     // Clear localStorage
     localStorage.removeItem('selectedQBank');
   };
