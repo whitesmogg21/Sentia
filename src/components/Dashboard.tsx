@@ -236,19 +236,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={toggleFullscreen}
-            className="rounded-full"
-            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-          >
-            {isFullscreen ? (
-              <Minimize className="h-5 w-5" />
-            ) : (
-              <Maximize className="h-5 w-5" />
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
             className="rounded-full"
             title={theme === "light" ? "Dark mode" : "Light mode"}
@@ -257,6 +244,19 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
               <Moon className="h-5 w-5" />
             ) : (
               <Sun className="h-5 w-5" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleFullscreen}
+            className="bg-background border"
+            aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {isFullscreen ? (
+              <Minimize className="h-4 w-4" />
+            ) : (
+              <Maximize className="h-4 w-4" />
             )}
           </Button>
         </div>
