@@ -13,7 +13,7 @@ import SelectQBank from "./pages/SelectQBank";
 import NotFound from "./pages/NotFound";
 import { useState, useEffect } from "react";
 import { QuizHistory, QBank } from "./types/quiz";
-import { qbanks, saveQBanksToStorage, ensureTagsAsQBanks } from "./data/questions";
+import { qbanks, saveQBanksToStorage } from "./data/questions";
 import { toast } from "@/components/ui/use-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import QuestionLibrary from "@/components/qbanks/QuestionLibrary";
@@ -35,9 +35,6 @@ const App = () => {
     } catch (error) {
       console.error('Error loading quiz history:', error);
     }
-    
-    // Ensure all tagged questions have corresponding QBanks
-    ensureTagsAsQBanks();
   }, []);
 
   // Save quiz history to localStorage whenever it changes

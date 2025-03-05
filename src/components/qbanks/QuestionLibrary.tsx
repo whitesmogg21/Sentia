@@ -132,9 +132,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     });
 
     saveQBanksToStorage();
-    import("@/data/questions").then(module => {
-      module.ensureTagsAsQBanks();
-    });
     console.log('Added new question and saved qbanks:', qbanks.length);
 
     setIsOpen(false);
@@ -196,9 +193,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     });
 
     saveQBanksToStorage();
-    import("@/data/questions").then(module => {
-      module.ensureTagsAsQBanks();
-    });
 
     setIsOpen(false);
     setIsEditMode(false);
@@ -332,9 +326,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           });
 
         saveQBanksToStorage();
-        import("@/data/questions").then(module => {
-          module.ensureTagsAsQBanks();
-        });
         console.log('Imported questions and saved qbanks:', qbanks.length);
 
         toast({
