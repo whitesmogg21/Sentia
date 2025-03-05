@@ -148,7 +148,7 @@ const QuizContent = ({
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "bg-background border relative p-0 overflow-hidden cursor-default select-none",
+                    "rounded-full relative p-0 overflow-hidden cursor-default select-none",
                     selectedColor.class
                   )}
                   aria-label="Select highlight color"
@@ -177,26 +177,26 @@ const QuizContent = ({
               variant="ghost"
               size="icon"
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="bg-background border"
+              className="rounded-full"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
-                <Sun className="h-4 w-4" />
+                <Sun className="h-5 w-5" />
               ) : (
-                <Moon className="h-4 w-4" />
+                <Moon className="h-5 w-5" />
               )}
             </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleFullscreen}
-              className="bg-background border"
+              className="rounded-full"
               aria-label="Toggle fullscreen"
             >
               {isFullscreen ? (
-                <Minimize className="h-4 w-4" />
+                <Minimize className="h-5 w-5" />
               ) : (
-                <Maximize className="h-4 w-4" />
+                <Maximize className="h-5 w-5" />
               )}
             </Button>
           </div>

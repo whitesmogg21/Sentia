@@ -250,13 +250,13 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             variant="ghost"
             size="icon"
             onClick={toggleFullscreen}
-            className="bg-background border"
-            aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+            className="rounded-full"
+            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
           >
             {isFullscreen ? (
-              <Minimize className="h-4 w-4" />
+              <Minimize className="h-5 w-5" />
             ) : (
-              <Maximize className="h-4 w-4" />
+              <Maximize className="h-5 w-5" />
             )}
           </Button>
         </div>
