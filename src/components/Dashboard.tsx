@@ -1,7 +1,6 @@
-
 import { useState, useMemo, useEffect } from "react";
 import { QBank, QuizHistory } from "../types/quiz";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Maximize, Minimize } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
 import { Card } from "./ui/card";
@@ -14,6 +13,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { QuestionFilter } from "@/types/quiz";
 import { useQuiz } from "@/hooks/quiz";
+import { useFullscreen } from "@/hooks/use-fullscreen";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -38,6 +38,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   });
   const { theme, setTheme } = useTheme();
   const { calculateOverallAccuracy } = useQuiz({});
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
 
   useEffect(() => {
     const storedQBank = localStorage.getItem('selectedQBank');
@@ -231,18 +232,34 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center mb-2">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          className="rounded-full"
-        >
-          {theme === "light" ? (
-            <Moon className="h-5 w-5" />
-          ) : (
-            <Sun className="h-5 w-5" />
-          )}
-        </Button>
+        <div className="flex space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleFullscreen}
+            className="rounded-full"
+            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {isFullscreen ? (
+              <Minimize className="h-5 w-5" />
+            ) : (
+              <Maximize className="h-5 w-5" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            className="rounded-full"
+            title={theme === "light" ? "Dark mode" : "Light mode"}
+          >
+            {theme === "light" ? (
+              <Moon className="h-5 w-5" />
+            ) : (
+              <Sun className="h-5 w-5" />
+            )}
+          </Button>
+        </div>
       </div>
       
       <div className="grid md:grid-cols-2 gap-6 mt-8">
