@@ -73,14 +73,6 @@ const QuestionView = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const [mediaLibrary, setMediaLibrary] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
-  const [strikedOptions, setStrikedOptions] = useState<boolean[]>(
-    Array(question.options.length).fill(false)
-  );
-
-  // Reset strikethrough state when the question changes
-  useEffect(() => {
-    setStrikedOptions(Array(question.options.length).fill(false));
-  }, [question.id]);
 
   useEffect(() => {
     const savedMedia = localStorage.getItem('mediaLibrary');
@@ -91,14 +83,6 @@ const QuestionView = ({
 
   const handleImageClick = (imageData: string, imageName: string) => {
     setSelectedImage({ url: imageData, name: imageName });
-  };
-
-  const handleStrikeToggle = (index: number) => {
-    setStrikedOptions(prev => {
-      const newState = [...prev];
-      newState[index] = !newState[index];
-      return newState;
-    });
   };
 
   const renderContent = (text: string) => {
@@ -176,7 +160,7 @@ const QuestionView = ({
           const optionContent = renderOptionContent(option);
           return (
             <QuizOption
-              key={`${question.id}-option-${index}`}
+              key={index}
               option={<div className="flex items-center">{optionContent}</div>}
               selected={selectedAnswer === index}
               correct={
@@ -186,8 +170,6 @@ const QuestionView = ({
               }
               onClick={() => onAnswerClick(index)}
               disabled={isAnswered || isPaused}
-              isStrikedOut={strikedOptions[index]}
-              onStrikeToggle={() => handleStrikeToggle(index)}
             />
           );
         })}

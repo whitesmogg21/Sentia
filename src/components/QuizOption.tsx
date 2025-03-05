@@ -10,23 +10,15 @@ interface QuizOptionProps {
   correct?: boolean;
   onClick: () => void;
   disabled?: boolean;
-  isStrikedOut?: boolean;
-  onStrikeToggle?: () => void;
 }
 
-const QuizOption = ({ 
-  option, 
-  selected, 
-  correct, 
-  onClick, 
-  disabled,
-  isStrikedOut = false,
-  onStrikeToggle
-}: QuizOptionProps) => {
+const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOptionProps) => {
+  const [isStrikedOut, setIsStrikedOut] = React.useState(false);
+
   const handleStrikethrough = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the parent onClick
-    if (!disabled && onStrikeToggle) {
-      onStrikeToggle();
+    if (!disabled) {
+      setIsStrikedOut(!isStrikedOut);
     }
   };
 

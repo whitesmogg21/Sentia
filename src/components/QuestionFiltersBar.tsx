@@ -67,6 +67,25 @@ const FilterButton = ({
   isActive: boolean; 
   onClick: () => void; 
 }) => {
+  useEffect(() => {
+    const savedFilters = localStorage.getItem('questionFilters');
+    if (savedFilters) {
+      const filters = JSON.parse(savedFilters);
+      if (filters[category.key] !== undefined) {
+        if (filters[category.key] !== isActive) {
+          onClick();
+        }
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const savedFilters = localStorage.getItem('questionFilters');
+    const filters = savedFilters ? JSON.parse(savedFilters) : {};
+    filters[category.key] = isActive;
+    localStorage.setItem('questionFilters', JSON.stringify(filters));
+  }, [isActive, category.key]);
+
   return (
     <button
       onClick={onClick}
@@ -88,11 +107,20 @@ const FilterButton = ({
 };
 
 const QuestionFiltersBar = ({ metrics, filters, onToggleFilter }: QuestionFiltersBarProps) => {
-  // Store the metrics in localStorage for debugging purposes
   useEffect(() => {
-    if (metrics && Object.keys(metrics).length > 0) {
-      localStorage.setItem('questionMetrics', JSON.stringify(metrics));
+    const savedMetrics = localStorage.getItem('questionMetrics');
+    if (savedMetrics) {
+      const parsedMetrics = JSON.parse(savedMetrics);
+      Object.keys(parsedMetrics).forEach((key) => {
+        if (metrics[key as keyof QuestionFilter] !== parsedMetrics[key]) {
+          metrics[key as keyof QuestionFilter] = parsedMetrics[key];
+        }
+      });
     }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('questionMetrics', JSON.stringify(metrics));
   }, [metrics]);
 
   return (

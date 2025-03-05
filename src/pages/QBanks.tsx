@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,6 @@ import MediaUploader from "@/components/MediaUploader";
 import MediaManager from "@/components/MediaManager";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
-import { saveMedia } from "@/services/dbService";
 import {
   Dialog,
   DialogContent,
@@ -30,10 +28,9 @@ import { Label } from "@/components/ui/label";
 
 interface QBanksProps {
   qbanks: QBank[];
-  setQBanks: React.Dispatch<React.SetStateAction<QBank[]>>;
 }
 
-const QBanks = ({ qbanks, setQBanks }: QBanksProps) => {
+const QBanks = ({ qbanks }: QBanksProps) => {
   const navigate = useNavigate();
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [showQBankConfirmDialog, setShowQBankConfirmDialog] = useState(false);
@@ -66,74 +63,56 @@ const QBanks = ({ qbanks, setQBanks }: QBanksProps) => {
     });
   };
 
-  const handleCSVUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const text = e.target?.result as string;
-        const rows = text.split('\n').map(row => 
-          row.split(',').map(cell => cell.replace(/^"|"$/g, '').replace(/""/g, '"'))
-        );
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const rows = text.split('\n').map(row => 
+        row.split(',').map(cell => cell.replace(/^"|"$/g, '').replace(/""/g, '"'))
+      );
 
-        // Skip header row
-        const questions: Question[] = rows.slice(1).map((row, index) => {
-          const options = row.slice(3, 10).filter(opt => opt.trim() !== '');
-          const imageFilename = row[10]?.trim();
-          
-          // Find matching media file
-          const mediaFile = mediaFiles.find(file => file.name === imageFilename);
-          
-          if (mediaFile && imageFilename) {
-            // Save media file to database
-            saveMedia({
-              url: imageFilename,
-              data: mediaFile,
-              type: 'image'
-            }).catch(err => console.error("Error saving media:", err));
-          }
-
-          return {
-            id: Date.now() + index,
-            question: row[1],
-            options,
-            correctAnswer: parseInt(row[2]) - 1,
-            qbankId: `imported-${Date.now()}`,
-            explanation: row[12] || undefined,
-            attempts: [],
-            tags: ['imported', 'qbank'],
-            media: imageFilename ? {
-              type: 'image',
-              url: imageFilename,
-              showWith: 'question'
-            } : undefined
-          };
-        });
-
-        const newQBank: QBank = {
-          id: `imported-${Date.now()}`,
-          name: file.name.replace('.csv', ''),
-          description: `Imported from ${file.name}`,
-          questions
-        };
-
-        setQBanks(prevQBanks => [...prevQBanks, newQBank]);
-        setMediaFiles([]); // Clear media files after import
+      // Skip header row
+      const questions: Question[] = rows.slice(1).map((row, index) => {
+        const options = row.slice(3, 10).filter(opt => opt.trim() !== '');
+        const imageFilename = row[10]?.trim();
         
-        toast({
-          title: "Success",
-          description: "QBank imported successfully with media files",
-        });
-      } catch (error) {
-        console.error("Error importing CSV:", error);
-        toast({
-          title: "Error",
-          description: "Failed to import CSV file",
-          variant: "destructive"
-        });
-      }
+        // Find matching media file
+        const mediaFile = mediaFiles.find(file => file.name === imageFilename);
+        const mediaUrl = mediaFile ? URL.createObjectURL(mediaFile) : undefined;
+
+        return {
+          id: Date.now() + index,
+          question: row[1],
+          options,
+          correctAnswer: parseInt(row[2]) - 1,
+          qbankId: `imported-${Date.now()}`,
+          explanation: row[12] || undefined,
+          attempts: [],
+          tags: ['imported', 'qbank'],
+          media: imageFilename && mediaUrl ? {
+            type: 'image',
+            url: mediaUrl,
+            showWith: 'question'
+          } : undefined
+        };
+      });
+
+      const newQBank: QBank = {
+        id: `imported-${Date.now()}`,
+        name: file.name.replace('.csv', ''),
+        description: `Imported from ${file.name}`,
+        questions
+      };
+
+      qbanks.push(newQBank);
+      setMediaFiles([]); // Clear media files after import
+      toast({
+        title: "Success",
+        description: "QBank imported successfully with media files",
+      });
     };
     reader.readAsText(file);
   };
@@ -155,7 +134,7 @@ const QBanks = ({ qbanks, setQBanks }: QBanksProps) => {
       questions: [],
     };
 
-    setQBanks(prevQBanks => [...prevQBanks, newQBank]);
+    qbanks.push(newQBank);
     setNewQBankName("");
     setNewQBankDescription("");
     setShowNewQBankDialog(false);
@@ -166,12 +145,15 @@ const QBanks = ({ qbanks, setQBanks }: QBanksProps) => {
   };
 
   const handleDeleteQBank = (qbankId: string) => {
-    setQBanks(prevQBanks => prevQBanks.filter(qbank => qbank.id !== qbankId));
-    setSelectedQBank(null);
-    toast({
-      title: "Success",
-      description: "Question bank deleted successfully",
-    });
+    const index = qbanks.findIndex((qbank) => qbank.id === qbankId);
+    if (index !== -1) {
+      qbanks.splice(index, 1);
+      setSelectedQBank(null);
+      toast({
+        title: "Success",
+        description: "Question bank deleted successfully",
+      });
+    }
   };
 
   const startEditing = (qbank: QBank) => {
@@ -181,26 +163,24 @@ const QBanks = ({ qbanks, setQBanks }: QBanksProps) => {
   };
 
   const handleSaveEdit = (qbankId: string) => {
-    if (!editingName.trim() || !editingDescription.trim()) {
+    const qbank = qbanks.find((q) => q.id === qbankId);
+    if (qbank) {
+      if (!editingName.trim() || !editingDescription.trim()) {
+        toast({
+          title: "Error",
+          description: "Name and description cannot be empty",
+          variant: "destructive",
+        });
+        return;
+      }
+      qbank.name = editingName;
+      qbank.description = editingDescription;
+      setEditingQBankId(null);
       toast({
-        title: "Error",
-        description: "Name and description cannot be empty",
-        variant: "destructive",
+        title: "Success",
+        description: "Question bank updated successfully",
       });
-      return;
     }
-
-    setQBanks(prevQBanks => prevQBanks.map(qbank => 
-      qbank.id === qbankId 
-        ? { ...qbank, name: editingName, description: editingDescription }
-        : qbank
-    ));
-
-    setEditingQBankId(null);
-    toast({
-      title: "Success",
-      description: "Question bank updated successfully",
-    });
   };
 
   const handleAddQuestion = () => {
@@ -236,12 +216,7 @@ const QBanks = ({ qbanks, setQBanks }: QBanksProps) => {
         };
       }
 
-      setQBanks(prevQBanks => prevQBanks.map(qbank => 
-        qbank.id === selectedQBank.id
-          ? { ...qbank, questions: [...qbank.questions, question] }
-          : qbank
-      ));
-
+      selectedQBank.questions.push(question);
       setNewQuestion({
         question: "",
         options: ["", "", "", ""],

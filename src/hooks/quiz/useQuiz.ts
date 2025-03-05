@@ -169,12 +169,12 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
       const question = newQuestions[prev.currentQuestionIndex];
       question.isFlagged = !question.isFlagged;
 
-      // Find the qbank this question belongs to and update the flagged state there too
       const selectedQBank = qbanks.find(qb => qb.id === question.qbankId);
       if (selectedQBank) {
         const originalQuestion = selectedQBank.questions.find(q => q.id === question.id);
         if (originalQuestion) {
           originalQuestion.isFlagged = question.isFlagged;
+          localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
         }
       }
 
@@ -196,7 +196,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     timerEnabled: state.timerEnabled,
     timePerQuestion: state.timePerQuestion,
     isFlagged: getCurrentQuestion()?.isFlagged || false,
-    calculateOverallAccuracy,
+    calculateOverallAccuracy, // Export the accuracy calculation function
     handleStartQuiz,
     handleAnswerTimeout,
     handleAnswerClick,

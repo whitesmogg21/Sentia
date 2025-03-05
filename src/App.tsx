@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,75 +11,30 @@ import History from "./pages/History";
 import QBanks from "./pages/QBanks";
 import SelectQBank from "./pages/SelectQBank";
 import NotFound from "./pages/NotFound";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { QuizHistory, QBank } from "./types/quiz";
-import { qbanks as defaultQBanks } from "./data/questions";
+import { qbanks } from "./data/questions";
 import { toast } from "@/components/ui/use-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import QuestionLibrary from "@/components/qbanks/QuestionLibrary";
 import MediaLibrary from "@/components/qbanks/MediaLibrary";
-import { loadQBanks, saveQBanks } from "./services/dbService";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
   const [inQuiz, setInQuiz] = useState(false);
-  const [qbanks, setQBanks] = useState<QBank[]>(defaultQBanks);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const loadedQBanks = await loadQBanks();
-        if (loadedQBanks && loadedQBanks.length > 0) {
-          console.log("Loaded question banks from database:", loadedQBanks.length);
-          setQBanks(loadedQBanks);
-        } else {
-          console.log("No question banks found in database, using defaults");
-          await saveQBanks(defaultQBanks);
-        }
-      } catch (error) {
-        console.error("Error loading question banks:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load question banks from database",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    if (!isLoading) {
-      const saveData = async () => {
-        try {
-          await saveQBanks(qbanks);
-          console.log("Saved question banks to database");
-        } catch (error) {
-          console.error("Error saving question banks:", error);
-        }
-      };
-
-      saveData();
-    }
-  }, [qbanks, isLoading]);
 
   const handleQuizComplete = (history: QuizHistory) => {
+    // Update quiz history
     setQuizHistory((prev) => [...prev, history]);
 
-    const updatedQBanks = [...qbanks];
-    const selectedQBank = updatedQBanks.find(qb => qb.id === history.qbankId);
-    
+    // Update the qbank with the new attempts
+    const selectedQBank = qbanks.find(qb => qb.id === history.qbankId);
     if (selectedQBank) {
       history.questionAttempts.forEach(attempt => {
-        const questionIndex = selectedQBank.questions.findIndex(q => q.id === attempt.questionId);
-        if (questionIndex !== -1) {
-          const question = selectedQBank.questions[questionIndex];
+        const question = selectedQBank.questions.find(q => q.id === attempt.questionId);
+        if (question) {
           question.attempts = [
             ...(question.attempts || []),
             {
@@ -93,8 +49,8 @@ const App = () => {
         }
       });
       
+      // Save updated qbank to localStorage
       localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
-      setQBanks(updatedQBanks);
     }
 
     toast({
@@ -104,36 +60,34 @@ const App = () => {
   };
 
   const handleQBankSelect = (qbank: QBank) => {
-    const selectedQBank = qbanks.find(q => q.id === qbank.id);
-    if (selectedQBank) {
-      localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
-    }
+    localStorage.setItem('selectedQBank', JSON.stringify(qbank));
   };
 
   const handleQuizStart = () => {
     setInQuiz(true);
+    // Reset all questions in qbanks
+    qbanks.forEach(qbank => {
+      qbank.questions.forEach(question => {
+        question.attempts = [];
+        question.isFlagged = false;
+      });
+    });
+    localStorage.removeItem('selectedQBank');
   };
-  
   const handleQuizEnd = () => setInQuiz(false);
 
   const handleClearHistory = () => {
     setQuizHistory([]);
-    const updatedQBanks = qbanks.map(qbank => ({
-      ...qbank,
-      questions: qbank.questions.map(question => ({
-        ...question,
-        attempts: [],
-        isFlagged: false
-      }))
-    }));
-    
-    setQBanks(updatedQBanks);
+    // Reset attempts in qbanks
+    qbanks.forEach(qbank => {
+      qbank.questions.forEach(question => {
+        question.attempts = [];
+        question.isFlagged = false;
+      });
+    });
+    // Clear localStorage
     localStorage.removeItem('selectedQBank');
   };
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  }
 
   return (
     <ThemeProvider defaultTheme="light">
@@ -162,8 +116,8 @@ const App = () => {
                       path="/history"
                       element={<History quizHistory={quizHistory} onClearHistory={handleClearHistory} />}
                     />
-                    <Route path="/qbanks" element={<QBanks qbanks={qbanks} setQBanks={setQBanks} />} />
-                    <Route path="/qbanks/questions" element={<QuestionLibrary qbanks={qbanks} setQBanks={setQBanks} />} />
+                    <Route path="/qbanks" element={<QBanks qbanks={qbanks} />} />
+                    <Route path="/qbanks/questions" element={<QuestionLibrary qbanks={qbanks} />} />
                     <Route path="/qbanks/media" element={<MediaLibrary qbanks={qbanks} />} />
                     <Route 
                       path="/select-qbank" 
