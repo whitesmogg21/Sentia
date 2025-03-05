@@ -7,7 +7,7 @@
   "type": "module",
   "build": {
     "appId": "com.yourname.yourapp",
-    "productName": "Your App Name",
+    "productName": "Sentia 1.0",
     "files": [
       "dist/**/*",
       "electron/**/*"
@@ -27,7 +27,7 @@
     "clean": "rimraf release electron-output",
     "deploy": "gh-pages -d dist",
     "electron:dev": "concurrently -k \"cross-env BROWSER=none npm run dev\" \"wait-on http://localhost:8081 && cross-env NODE_ENV=development electron .\"",
-    "electron:build": "npm run clean && npm run build && electron-builder --dir"
+    "electron:build": "npm run clean && npm run build && electron-builder"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
