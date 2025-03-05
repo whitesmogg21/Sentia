@@ -109,7 +109,10 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       };
 
       qbanks.push(newQBank);
-      saveQBanksToStorage(); // Save after importing qbank
+      
+      // Explicitly save to localStorage
+      saveQBanksToStorage();
+      console.log('Imported qbank from CSV and saved:', qbanks.length);
       
       setMediaFiles([]); // Clear media files after import
       toast({
@@ -138,7 +141,10 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     };
 
     qbanks.push(newQBank);
-    saveQBanksToStorage(); // Save after creating qbank
+    
+    // Explicitly save to localStorage
+    saveQBanksToStorage();
+    console.log('Created new qbank and saved:', qbanks.length);
     
     setNewQBankName("");
     setNewQBankDescription("");
@@ -153,7 +159,10 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     const index = qbanks.findIndex((qbank) => qbank.id === qbankId);
     if (index !== -1) {
       qbanks.splice(index, 1);
-      saveQBanksToStorage(); // Save after deleting qbank
+      
+      // Explicitly save to localStorage
+      saveQBanksToStorage();
+      console.log('Deleted qbank and saved:', qbanks.length);
       
       setSelectedQBank(null);
       toast({
@@ -182,7 +191,10 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       }
       qbank.name = editingName;
       qbank.description = editingDescription;
-      saveQBanksToStorage(); // Save after editing qbank
+      
+      // Explicitly save to localStorage
+      saveQBanksToStorage();
+      console.log('Updated qbank and saved:', qbanks.length);
       
       setEditingQBankId(null);
       toast({
@@ -226,7 +238,10 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       }
 
       selectedQBank.questions.push(question);
-      saveQBanksToStorage(); // Save after adding question
+      
+      // Explicitly save to localStorage
+      saveQBanksToStorage();
+      console.log('Added question to qbank and saved:', selectedQBank.questions.length);
       
       setNewQuestion({
         question: "",

@@ -75,7 +75,7 @@ const defaultQBanks: QBank[] = [
   }
 ];
 
-// Export the qbanks array that will be used throughout the app
+// Create the qbanks array that will be used throughout the app
 export let qbanks: QBank[] = [];
 
 // Load question banks from localStorage or use defaults
@@ -83,19 +83,21 @@ const loadQBanks = (): QBank[] => {
   try {
     const savedQBanks = localStorage.getItem('questionLibrary');
     if (savedQBanks) {
+      console.log('Loaded question banks from localStorage');
       return JSON.parse(savedQBanks);
     }
   } catch (error) {
     console.error('Error loading question banks from localStorage:', error);
   }
-  return [...defaultQBanks]; // Return a copy of the defaults
+  console.log('Using default question banks');
+  return JSON.parse(JSON.stringify(defaultQBanks)); // Return a deep copy of the defaults
 };
 
 // Helper function to save qbanks to localStorage
 export const saveQBanksToStorage = (): void => {
   try {
     localStorage.setItem('questionLibrary', JSON.stringify(qbanks));
-    console.log('Question banks saved to localStorage');
+    console.log('Question banks saved to localStorage:', qbanks.length);
   } catch (error) {
     console.error('Error saving question banks to localStorage:', error);
   }

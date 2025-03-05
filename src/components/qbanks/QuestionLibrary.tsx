@@ -132,6 +132,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     });
 
     saveQBanksToStorage();
+    console.log('Added new question and saved qbanks:', qbanks.length);
 
     setIsOpen(false);
     setNewQuestion({
@@ -325,6 +326,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           });
 
         saveQBanksToStorage();
+        console.log('Imported questions and saved qbanks:', qbanks.length);
 
         toast({
           title: "Success",
