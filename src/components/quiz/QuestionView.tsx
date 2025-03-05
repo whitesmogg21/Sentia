@@ -21,6 +21,13 @@ interface ImageModalProps {
   altText: string;
 }
 
+// Define a type for tracking strikethroughs
+interface StrikethroughState {
+  [questionId: string]: {
+    [optionIndex: number]: boolean;
+  };
+}
+
 const ImageModal = ({ isOpen, onClose, imageUrl, altText }: ImageModalProps) => {
   const [scale, setScale] = useState(1);
 
@@ -73,6 +80,8 @@ const QuestionView = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const [mediaLibrary, setMediaLibrary] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
+  // Track strikethroughs per question and option
+  const [strikethroughs, setStrikethroughs] = useState<StrikethroughState>({});
 
   useEffect(() => {
     const savedMedia = localStorage.getItem('mediaLibrary');
@@ -83,6 +92,25 @@ const QuestionView = ({
 
   const handleImageClick = (imageData: string, imageName: string) => {
     setSelectedImage({ url: imageData, name: imageName });
+  };
+
+  const handleStrikethrough = (questionId: number | string, optionIndex: number, isStriked: boolean) => {
+    setStrikethroughs(prev => {
+      const questionKey = questionId.toString();
+      return {
+        ...prev,
+        [questionKey]: {
+          ...(prev[questionKey] || {}),
+          [optionIndex]: isStriked
+        }
+      };
+    });
+  };
+
+  // Check if an option is striked out
+  const isOptionStrikedOut = (optionIndex: number): boolean => {
+    const questionKey = question.id.toString();
+    return strikethroughs[questionKey]?.[optionIndex] || false;
   };
 
   const renderContent = (text: string) => {
@@ -170,6 +198,10 @@ const QuestionView = ({
               }
               onClick={() => onAnswerClick(index)}
               disabled={isAnswered || isPaused}
+              questionId={question.id}
+              optionIndex={index}
+              onStrikethrough={handleStrikethrough}
+              isStrikedOut={isOptionStrikedOut(index)}
             />
           );
         })}
