@@ -1,15 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit, Trash2, Filter, Sun, Moon, Download } from "lucide-react";
+import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit, Trash2, Filter, Sun, Moon, Download, Bold, Italic, List, ListOrdered, Link, Quote, Code } from "lucide-react";
 import { Question, QBank } from "@/types/quiz";
 import { toast } from "@/components/ui/use-toast";
 import { useTheme } from "@/components/ThemeProvider";
 import * as XLSX from 'xlsx';
 import JSZip from 'jszip';
+import { saveQBanksToStorage } from "@/data/questions";
 import {
   Table,
   TableBody,
@@ -19,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import MediaSelector from "./MediaSelector";
+import { updateQuestionMetrics, initializeMetrics } from "@/utils/metricsUtils";
 
 interface QuestionLibraryProps {
   qbanks: QBank[];
@@ -55,7 +57,11 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [tagSearchQuery, setTagSearchQuery] = useState("");
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
-  const [selectAll, setSelectAll] =  useState(false);
+  const [formatSelection, setFormatSelection] = useState({ start: 0, end: 0 });
+
+  useEffect(() => {
+    initializeMetrics();
+  }, []);
 
   const existingTags = Array.from(new Set(
     qbanks.flatMap(qbank => qbank.questions.flatMap(q => q.tags || []))
@@ -130,6 +136,10 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       qbank.questions.push({ ...question });
     });
 
+    saveQBanksToStorage();
+    
+    updateQuestionMetrics(question.id, 'unused', false);
+    
     setIsOpen(false);
     setNewQuestion({
       question: "",
@@ -188,6 +198,8 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       }
     });
 
+    saveQBanksToStorage();
+
     setIsOpen(false);
     setIsEditMode(false);
     setEditingQuestion(null);
@@ -207,7 +219,54 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     });
   };
 
+  const applyFormat = (format: string) => {
+    let prefix = '';
+    let suffix = '';
+    
+    switch (format) {
+      case 'bold':
+        prefix = '**';
+        suffix = '**';
+        break;
+      case 'italic':
+        prefix = '_';
+        suffix = '_';
+        break;
+      case 'list':
+        prefix = '- ';
+        break;
+      case 'orderedList':
+        prefix = '1. ';
+        break;
+      case 'link':
+        prefix = '[';
+        suffix = '](url)';
+        break;
+      case 'code':
+        prefix = '`';
+        suffix = '`';
+        break;
+      case 'quote':
+        prefix = '> ';
+        break;
+    }
+
+    const text = newQuestion.question;
+    const newText = text.substring(0, formatSelection.start) +
+                   prefix +
+                   text.substring(formatSelection.start, formatSelection.end) +
+                   suffix +
+                   text.substring(formatSelection.end);
+
+    setNewQuestion(prev => ({
+      ...prev,
+      question: newText
+    }));
+  };
+
   const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -228,19 +287,30 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               ? [category.toString().toLowerCase().trim()] 
               : ['general'];
 
+            const questionText = question.toString().trim();
+            const explanationText = explanation?.toString().trim() || undefined;
+
             const options = [
               correctAnswer.toString().trim(),
               ...(otherChoices?.toString().split(/[;,]/).map(s => s.trim()) || [])
             ].filter(Boolean);
 
+            const mediaMatch = questionText.match(/\/([^\/\s]+\.(png|jpg|jpeg|gif))/i);
+            const media = mediaMatch ? {
+              type: "image" as const,
+              url: mediaMatch[1],
+              showWith: "question" as const
+            } : undefined;
+
             const newQuestion: Question = {
               id: Date.now() + Math.random(),
-              question: question.toString().trim(),
+              question: questionText,
               options,
               correctAnswer: 0,
               qbankId: tags[0],
               tags,
-              explanation: explanation?.toString().trim() || undefined,
+              explanation: explanationText,
+              media,
               attempts: []
             };
 
@@ -260,6 +330,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 
             return newQuestion;
           });
+
+        saveQBanksToStorage();
+        console.log('Imported questions and saved qbanks:', qbanks.length);
 
         toast({
           title: "Success",
@@ -287,13 +360,12 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     event.target.value = '';
   };
 
-  const handleSelectAll = () => {
-    if (selectAll) {
+  const handleSelectAllVisible = () => {
+    if (selectedQuestions.length === sortedQuestions.length) {
       setSelectedQuestions([]);
     } else {
       setSelectedQuestions(sortedQuestions);
     }
-    setSelectAll(!selectAll);
   };
 
   const filteredQuestions = qbanks.flatMap(qbank => 
@@ -360,13 +432,15 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         q.options[q.correctAnswer],
         q.options.filter((_, i) => i !== q.correctAnswer).join(';'),
         q.tags.join(';'),
-        q.explanation || ''
+        q.explanation || '',
+        q.media?.url ? `/${q.media.url}` : ''
       ]);
 
       const ws = XLSX.utils.aoa_to_sheet([
-        ['Question', 'Correct Answer', 'Other Options', 'Tags', 'Explanation'],
+        ['Question', 'Correct Answer', 'Other Options', 'Tags', 'Explanation', 'Media'],
         ...exportData
       ]);
+
       XLSX.utils.book_append_sheet(wb, ws, 'Questions');
 
       const zip = new JSZip();
@@ -397,6 +471,24 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleDeleteQuestion = (questionId: number) => {
+    qbanks.forEach(qbank => {
+      const index = qbank.questions.findIndex(q => q.id === questionId);
+      if (index !== -1) {
+        qbank.questions.splice(index, 1);
+      }
+    });
+    
+    saveQBanksToStorage();
+    
+    initializeMetrics();
+    
+    toast({
+      title: "Success",
+      description: "Question deleted successfully",
+    });
   };
 
   return (
@@ -455,11 +547,78 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Question Text</Label>
-                  <Textarea
-                    placeholder="Enter question text"
-                    value={newQuestion.question}
-                    onChange={(e) => setNewQuestion(prev => ({ ...prev, question: e.target.value }))}
-                  />
+                  <div className="space-y-2">
+                    <div className="flex gap-2 mb-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => applyFormat('bold')}
+                        title="Bold"
+                      >
+                        <Bold className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => applyFormat('italic')}
+                        title="Italic"
+                      >
+                        <Italic className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => applyFormat('list')}
+                        title="Bullet List"
+                      >
+                        <List className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => applyFormat('orderedList')}
+                        title="Numbered List"
+                      >
+                        <ListOrdered className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => applyFormat('link')}
+                        title="Link"
+                      >
+                        <Link className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => applyFormat('quote')}
+                        title="Quote"
+                      >
+                        <Quote className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => applyFormat('code')}
+                        title="Code"
+                      >
+                        <Code className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Textarea
+                      placeholder="Enter question text (supports markdown)"
+                      value={newQuestion.question}
+                      onChange={(e) => setNewQuestion(prev => ({ ...prev, question: e.target.value }))}
+                      onSelect={(e) => {
+                        const target = e.target as HTMLTextAreaElement;
+                        setFormatSelection({
+                          start: target.selectionStart,
+                          end: target.selectionEnd
+                        });
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -626,12 +785,18 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           <TableHeader>
             <TableRow>
               <TableHead className="w-12">
-                <input
-                  type="checkbox"
-                  checked={selectAll}
-                  onChange={handleSelectAll}
-                  className="w-4 h-4"
-                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSelectAllVisible}
+                  className="h-8 w-8"
+                >
+                  {selectedQuestions.length === sortedQuestions.length ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <div className="h-4 w-4 rounded border border-gray-400" />
+                  )}
+                </Button>
               </TableHead>
               <TableHead className="cursor-pointer" onClick={() => handleSort('question')}>
                 Question
@@ -688,18 +853,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        qbanks.forEach(qbank => {
-                          const index = qbank.questions.findIndex(q => q.id === question.id);
-                          if (index !== -1) {
-                            qbank.questions.splice(index, 1);
-                          }
-                        });
-                        toast({
-                          title: "Success",
-                          description: "Question deleted successfully",
-                        });
-                      }}
+                      onClick={() => handleDeleteQuestion(question.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

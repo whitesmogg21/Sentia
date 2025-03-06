@@ -7,6 +7,7 @@ import MediaUploader from "@/components/MediaUploader";
 import MediaManager from "@/components/MediaManager";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
+import { saveQBanksToStorage } from "@/data/questions";
 import {
   Dialog,
   DialogContent,
@@ -108,6 +109,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       };
 
       qbanks.push(newQBank);
+      
+      // Explicitly save to localStorage
+      saveQBanksToStorage();
+      console.log('Imported qbank from CSV and saved:', qbanks.length);
+      
       setMediaFiles([]); // Clear media files after import
       toast({
         title: "Success",
@@ -135,6 +141,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     };
 
     qbanks.push(newQBank);
+    
+    // Explicitly save to localStorage
+    saveQBanksToStorage();
+    console.log('Created new qbank and saved:', qbanks.length);
+    
     setNewQBankName("");
     setNewQBankDescription("");
     setShowNewQBankDialog(false);
@@ -148,6 +159,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     const index = qbanks.findIndex((qbank) => qbank.id === qbankId);
     if (index !== -1) {
       qbanks.splice(index, 1);
+      
+      // Explicitly save to localStorage
+      saveQBanksToStorage();
+      console.log('Deleted qbank and saved:', qbanks.length);
+      
       setSelectedQBank(null);
       toast({
         title: "Success",
@@ -175,6 +191,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       }
       qbank.name = editingName;
       qbank.description = editingDescription;
+      
+      // Explicitly save to localStorage
+      saveQBanksToStorage();
+      console.log('Updated qbank and saved:', qbanks.length);
+      
       setEditingQBankId(null);
       toast({
         title: "Success",
@@ -217,6 +238,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       }
 
       selectedQBank.questions.push(question);
+      
+      // Explicitly save to localStorage
+      saveQBanksToStorage();
+      console.log('Added question to qbank and saved:', selectedQBank.questions.length);
+      
       setNewQuestion({
         question: "",
         options: ["", "", "", ""],

@@ -10,15 +10,27 @@ interface QuizOptionProps {
   correct?: boolean;
   onClick: () => void;
   disabled?: boolean;
+  questionId?: number | string; // Add questionId to track which question this option belongs to
+  optionIndex: number; // Add optionIndex to identify which option this is
+  onStrikethrough?: (questionId: number | string, optionIndex: number, isStriked: boolean) => void; // Callback for strikethrough
+  isStrikedOut?: boolean; // Control strikethrough from parent
 }
 
-const QuizOption = ({ option, selected, correct, onClick, disabled }: QuizOptionProps) => {
-  const [isStrikedOut, setIsStrikedOut] = React.useState(false);
-
+const QuizOption = ({ 
+  option, 
+  selected, 
+  correct, 
+  onClick, 
+  disabled, 
+  questionId,
+  optionIndex,
+  onStrikethrough,
+  isStrikedOut = false
+}: QuizOptionProps) => {
   const handleStrikethrough = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the parent onClick
-    if (!disabled) {
-      setIsStrikedOut(!isStrikedOut);
+    if (!disabled && onStrikethrough && questionId !== undefined) {
+      onStrikethrough(questionId, optionIndex, !isStrikedOut);
     }
   };
 

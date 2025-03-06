@@ -1,7 +1,8 @@
 
 import { Question, QBank } from "../types/quiz";
 
-export const qbanks: QBank[] = [
+// Initial default question banks
+const defaultQBanks: QBank[] = [
   {
     id: "general",
     name: "General Knowledge",
@@ -73,3 +74,34 @@ export const qbanks: QBank[] = [
     ]
   }
 ];
+
+// Create the qbanks array that will be used throughout the app
+export let qbanks: QBank[] = [];
+
+// Load question banks from localStorage or use defaults
+const loadQBanks = (): QBank[] => {
+  try {
+    const savedQBanks = localStorage.getItem('questionLibrary');
+    if (savedQBanks) {
+      console.log('Loaded question banks from localStorage');
+      return JSON.parse(savedQBanks);
+    }
+  } catch (error) {
+    console.error('Error loading question banks from localStorage:', error);
+  }
+  console.log('Using default question banks');
+  return JSON.parse(JSON.stringify(defaultQBanks)); // Return a deep copy of the defaults
+};
+
+// Helper function to save qbanks to localStorage
+export const saveQBanksToStorage = (): void => {
+  try {
+    localStorage.setItem('questionLibrary', JSON.stringify(qbanks));
+    console.log('Question banks saved to localStorage:', qbanks.length);
+  } catch (error) {
+    console.error('Error saving question banks to localStorage:', error);
+  }
+};
+
+// Initialize qbanks when the module loads
+qbanks = loadQBanks();

@@ -169,6 +169,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
       const question = newQuestions[prev.currentQuestionIndex];
       question.isFlagged = !question.isFlagged;
 
+      // Update flag in the original qbank question as well
       const selectedQBank = qbanks.find(qb => qb.id === question.qbankId);
       if (selectedQBank) {
         const originalQuestion = selectedQBank.questions.find(q => q.id === question.id);
@@ -177,6 +178,11 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
           localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
         }
       }
+      
+      // Update the flag status in our metrics store
+      import('@/utils/metricsUtils').then(module => {
+        module.updateQuestionFlag(question.id, question.isFlagged);
+      });
 
       return { ...prev, currentQuestions: newQuestions };
     });

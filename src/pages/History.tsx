@@ -19,6 +19,7 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import { resetMetrics } from "@/utils/metricsUtils";
 
 interface HistoryProps {
   quizHistory: QuizHistory[];
@@ -29,6 +30,10 @@ const History = ({ quizHistory, onClearHistory }: HistoryProps) => {
   const [showClearDialog, setShowClearDialog] = useState(false);
 
   const handleClearConfirm = () => {
+    // Reset metrics (but keep flags)
+    resetMetrics();
+    
+    // Clear history
     onClearHistory();
     setShowClearDialog(false);
   };

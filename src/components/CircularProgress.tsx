@@ -2,14 +2,15 @@
 import { motion } from "framer-motion";
 
 interface CircularProgressProps {
-  percentage: number;
-  size?: 'small' | 'large';
+  value: number;
+  size?: number;
+  strokeWidth?: number;
 }
 
-const CircularProgress = ({ percentage, size = 'small' }: CircularProgressProps) => {
-  // Round to 2 decimal places for display
-  const displayPercentage = Number(percentage.toFixed(2));
-  const radius = size === 'small' ? 45 : 90;
+const CircularProgress = ({ value, size = 100, strokeWidth = 10 }: CircularProgressProps) => {
+  // Ensure value is between 0 and 100
+  const percentage = Math.min(100, Math.max(0, value));
+  const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const progressOffset = circumference - (percentage / 100) * circumference;
   
@@ -22,15 +23,15 @@ const CircularProgress = ({ percentage, size = 'small' }: CircularProgressProps)
   };
 
   return (
-    <div className={`relative ${size === 'small' ? 'w-32 h-32' : 'w-64 h-64'}`}>
+    <div className="relative" style={{ width: size, height: size }}>
       <svg className="w-full h-full transform -rotate-90">
         {/* Background circle */}
         <circle
           cx="50%"
           cy="50%"
           r={radius}
-          className="fill-none stroke-[#F1F0FB]"
-          strokeWidth="12"
+          className="fill-none stroke-[#F1F0FB] dark:stroke-gray-800"
+          strokeWidth={strokeWidth}
         />
         {/* Progress circle with dynamic color */}
         <motion.circle
@@ -39,7 +40,7 @@ const CircularProgress = ({ percentage, size = 'small' }: CircularProgressProps)
           r={radius}
           className="fill-none"
           stroke={getStrokeColor()}
-          strokeWidth="12"
+          strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
           initial={{ strokeDashoffset: circumference }}
@@ -53,10 +54,7 @@ const CircularProgress = ({ percentage, size = 'small' }: CircularProgressProps)
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={`${size === 'small' ? 'text-2xl' : 'text-4xl'} font-bold text-[#222222]`}>
-          {displayPercentage}%
-        </span>
-        <span className="text-sm text-gray-500">Accuracy</span>
+        <span className="text-xl font-bold">{percentage.toFixed(1)}%</span>
       </div>
     </div>
   );

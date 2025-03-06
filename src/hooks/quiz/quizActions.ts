@@ -1,8 +1,9 @@
 
-import { Question, QuizHistory } from "@/types/quiz";
+import { Question, QuizHistory, QuestionAttempt } from "@/types/quiz";
 import { QuizState } from "./types";
 import { qbanks } from "@/data/questions";
 import { toast } from "@/components/ui/use-toast";
+import { updateMetricsFromAttempt, updateQuestionFlag } from "@/utils/metricsUtils";
 
 export const initializeQuiz = (
   qbankId: string,
@@ -58,20 +59,33 @@ export const createQuizHistory = (
   state: QuizState,
   optionIndex: number | null
 ): QuizHistory => {
-  return {
+  const history = {
     id: Date.now().toString(),
     date: new Date().toISOString(),
     score: state.score,
     totalQuestions: state.currentQuestions.length,
     qbankId: state.currentQuestions[0].qbankId,
-    questionAttempts: state.currentQuestions.map((q, index) => ({
-      questionId: q.id,
-      selectedAnswer: index === state.currentQuestionIndex ? optionIndex : q.attempts?.[0]?.selectedAnswer ?? null,
-      isCorrect: index === state.currentQuestionIndex ? optionIndex === q.correctAnswer : q.attempts?.[0]?.isCorrect ?? false,
-      isFlagged: Boolean(q.isFlagged),
-      tags: q.tags
-    }))
+    questionAttempts: state.currentQuestions.map((q, index) => {
+      const selectedAnswer = index === state.currentQuestionIndex ? optionIndex : q.attempts?.[0]?.selectedAnswer ?? null;
+      const isCorrect = index === state.currentQuestionIndex ? optionIndex === q.correctAnswer : q.attempts?.[0]?.isCorrect ?? false;
+      
+      return {
+        questionId: q.id,
+        selectedAnswer,
+        isCorrect,
+        isFlagged: Boolean(q.isFlagged),
+        tags: q.tags,
+        date: new Date().toISOString() // Add the missing date property
+      };
+    })
   };
+  
+  // Update metrics for all attempts in this quiz
+  history.questionAttempts.forEach(attempt => {
+    updateMetricsFromAttempt(attempt);
+  });
+  
+  return history;
 };
 
 export const handleQuestionAttempt = (
@@ -97,6 +111,9 @@ export const handleQuestionAttempt = (
     ...(question.attempts || []),
     attempt
   ];
+  
+  // Update metrics for this attempt
+  updateMetricsFromAttempt(attempt);
 
   return newQuestions;
 };

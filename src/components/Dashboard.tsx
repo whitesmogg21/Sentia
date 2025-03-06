@@ -1,6 +1,6 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { QBank, QuizHistory } from "../types/quiz";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Maximize, Minimize } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
 import { Card } from "./ui/card";
@@ -11,10 +11,9 @@ import { Switch } from "./ui/switch";
 import { Slider } from "./ui/slider";
 import { toast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
-import { DraggableCanvas } from "./dashboard/DraggableCanvas";
 import { QuestionFilter } from "@/types/quiz";
-import { AddWidgetModal } from "./dashboard/AddWidgetModal";
 import { useQuiz } from "@/hooks/quiz";
+import { useFullscreen } from "@/hooks/use-fullscreen";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -38,9 +37,8 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     omitted: false,
   });
   const { theme, setTheme } = useTheme();
-  const [widgets, setWidgets] = useState<Array<{ id: string; type: string }>>([]);
-  const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
   const { calculateOverallAccuracy } = useQuiz({});
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
 
   useEffect(() => {
     const storedQBank = localStorage.getItem('selectedQBank');
@@ -52,14 +50,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       }
     }
   }, [qbanks]);
-
-  const handleAddWidget = (type: string) => {
-    const newWidget = {
-      id: `${type}-${Date.now()}`,
-      type,
-    };
-    setWidgets((prev) => [...prev, newWidget]);
-  };
 
   const metrics = useMemo(() => {
     const seenQuestionIds = new Set<number>();
@@ -242,42 +232,37 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center mb-2">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-          className="rounded-full"
-        >
-          {theme === "light" ? (
-            <Moon className="h-5 w-5" />
-          ) : (
-            <Sun className="h-5 w-5" />
-          )}
-        </Button>
+        <div className="flex space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            className="rounded-full"
+            title={theme === "light" ? "Dark mode" : "Light mode"}
+          >
+            {theme === "light" ? (
+              <Moon className="h-5 w-5" />
+            ) : (
+              <Sun className="h-5 w-5" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleFullscreen}
+            className="rounded-full"
+            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {isFullscreen ? (
+              <Minimize className="h-5 w-5" />
+            ) : (
+              <Maximize className="h-5 w-5" />
+            )}
+          </Button>
+        </div>
       </div>
       
-      <DraggableCanvas 
-        data={{
-          accuracy: overallAccuracy,
-          quizHistory,
-          qbanks,
-          metrics,
-          tagPerformance
-        }}
-        widgets={widgets}
-        setWidgets={setWidgets}
-      />
-
-      <AddWidgetModal 
-        isOpen={isAddWidgetOpen}
-        onOpenChange={setIsAddWidgetOpen}
-        onAddWidget={(type) => {
-          handleAddWidget(type);
-          setIsAddWidgetOpen(false);
-        }}
-      />
-
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-6 mt-8">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -368,6 +353,24 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             </Button>
           </div>
         </motion.div>
+      </div>
+      
+      <div className="mt-6 p-4 bg-card border rounded-lg shadow-sm">
+        <h2 className="text-xl font-bold mb-4">Your Performance Summary</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="p-4">
+            <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
+            <p className="text-2xl font-bold">{overallAccuracyCalc.toFixed(1)}%</p>
+          </Card>
+          <Card className="p-4">
+            <h3 className="text-sm font-medium mb-2">Questions Attempted</h3>
+            <p className="text-2xl font-bold">{questionsAttempted} / {totalQuestions}</p>
+          </Card>
+          <Card className="p-4">
+            <h3 className="text-sm font-medium mb-2">Total Quizzes Taken</h3>
+            <p className="text-2xl font-bold">{quizHistory.length}</p>
+          </Card>
+        </div>
       </div>
     </div>
   );

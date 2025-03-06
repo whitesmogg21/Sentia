@@ -10,6 +10,7 @@ import { ChevronLeft, ChevronRight, Maximize, Minimize, Moon, Sun } from "lucide
 import { cn } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { useTheme } from "@/components/ThemeProvider";
+import FormulaTable from "./FormulaTable";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,13 +141,14 @@ const QuizContent = ({
       )}>
         <div className="container mx-auto p-6 h-full flex flex-col">
           <div className="flex items-center justify-end gap-2 mb-4">
+            <FormulaTable />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "bg-background border relative p-0 overflow-hidden cursor-default select-none",
+                    "rounded-full relative p-0 overflow-hidden cursor-default select-none",
                     selectedColor.class
                   )}
                   aria-label="Select highlight color"
@@ -175,26 +177,26 @@ const QuizContent = ({
               variant="ghost"
               size="icon"
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="bg-background border"
+              className="rounded-full"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
-                <Sun className="h-4 w-4" />
+                <Sun className="h-5 w-5" />
               ) : (
-                <Moon className="h-4 w-4" />
+                <Moon className="h-5 w-5" />
               )}
             </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleFullscreen}
-              className="bg-background border"
+              className="rounded-full"
               aria-label="Toggle fullscreen"
             >
               {isFullscreen ? (
-                <Minimize className="h-4 w-4" />
+                <Minimize className="h-5 w-5" />
               ) : (
-                <Maximize className="h-4 w-4" />
+                <Maximize className="h-5 w-5" />
               )}
             </Button>
           </div>
