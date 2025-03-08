@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { QuestionFilter } from "@/types/quiz";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { calculateMetrics } from "@/utils/metricsUtils";
 
 type FilterCategory = {
   label: string;
@@ -66,23 +67,32 @@ const FilterButton = ({
   isActive: boolean; 
   onClick: () => void; 
 }) => {
+  // Load saved filter state once on mount
   useEffect(() => {
     const savedFilters = localStorage.getItem('questionFilters');
     if (savedFilters) {
-      const filters = JSON.parse(savedFilters);
-      if (filters[category.key] !== undefined) {
-        if (filters[category.key] !== isActive) {
+      try {
+        const filters = JSON.parse(savedFilters);
+        if (filters[category.key] !== undefined && filters[category.key] !== isActive) {
+          // Only trigger onClick if the saved state is different from current state
           onClick();
         }
+      } catch (e) {
+        console.error('Error parsing saved filters:', e);
       }
     }
   }, []);
 
+  // Save filter state whenever it changes
   useEffect(() => {
-    const savedFilters = localStorage.getItem('questionFilters');
-    const filters = savedFilters ? JSON.parse(savedFilters) : {};
-    filters[category.key] = isActive;
-    localStorage.setItem('questionFilters', JSON.stringify(filters));
+    try {
+      const savedFilters = localStorage.getItem('questionFilters');
+      const filters = savedFilters ? JSON.parse(savedFilters) : {};
+      filters[category.key] = isActive;
+      localStorage.setItem('questionFilters', JSON.stringify(filters));
+    } catch (e) {
+      console.error('Error saving filter state:', e);
+    }
   }, [isActive, category.key]);
 
   return (
@@ -117,49 +127,69 @@ const QuestionFiltersBar = ({ filters, onToggleFilter }: QuestionFiltersBarProps
   
   // Get metrics on component mount and when localStorage changes
   useEffect(() => {
-    const updateMetrics = () => {
+    const updateMetrics = async () => {
       try {
-        // First try to get metrics from IndexedDB via localStorage (for now)
-        // This is temporary until we fully convert the metrics display
-        const localMetrics = localStorage.getItem('questionMetricsStore');
-        if (localMetrics) {
-          const metricsData = JSON.parse(localMetrics);
-          
-          const counts = {
-            unused: 0,
-            used: 0,
-            correct: 0,
-            incorrect: 0,
-            omitted: 0,
-            flagged: 0
-          };
-          
-          Object.values(metricsData).forEach((entry: any) => {
-            counts[entry.status]++;
-            if (entry.status !== 'unused') {
-              counts.used++;
-            }
-            if (entry.isFlagged) {
-              counts.flagged++;
-            }
-          });
-          
-          setMetrics(counts);
-        }
+        // Use the calculateMetrics utility for consistent metrics calculation
+        const metricsData = await calculateMetrics();
+        setMetrics(metricsData);
       } catch (error) {
         console.error('Error calculating metrics:', error);
+        // Fallback to localStorage method if calculateMetrics fails
+        try {
+          const localMetrics = localStorage.getItem('questionMetricsStore');
+          if (localMetrics) {
+            const metricsData = JSON.parse(localMetrics);
+            
+            const counts = {
+              unused: 0,
+              used: 0,
+              correct: 0,
+              incorrect: 0,
+              omitted: 0,
+              flagged: 0
+            };
+            
+            Object.values(metricsData).forEach((entry: any) => {
+              counts[entry.status]++;
+              if (entry.status !== 'unused') {
+                counts.used++;
+              }
+              if (entry.isFlagged) {
+                counts.flagged++;
+              }
+            });
+            
+            setMetrics(counts);
+          }
+        } catch (error) {
+          console.error('Error calculating metrics from localStorage:', error);
+        }
       }
     };
     
+    // Update metrics immediately and when storage changes
     updateMetrics();
     
     // Re-calculate metrics when storage changes
-    const handleStorageChange = () => {
-      updateMetrics();
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'questionMetricsStore' || e.key === null) {
+        updateMetrics();
+      }
     };
     
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    
+    // Custom event for IndexedDB updates
+    const handleDBUpdate = () => {
+      updateMetrics();
+    };
+    
+    window.addEventListener('metricsUpdated', handleDBUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('metricsUpdated', handleDBUpdate);
+    };
   }, []);
 
   return (
