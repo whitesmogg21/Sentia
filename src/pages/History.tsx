@@ -1,3 +1,4 @@
+
 import {
   Table,
   TableBody,
@@ -38,6 +39,11 @@ const History = ({ quizHistory, onClearHistory }: HistoryProps) => {
     setShowClearDialog(false);
   };
 
+  // Format the ISO date to a more readable format (yyyy-MM-dd)
+  const formatDate = (isoDate: string) => {
+    return isoDate.split('T')[0];
+  };
+
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
@@ -64,7 +70,7 @@ const History = ({ quizHistory, onClearHistory }: HistoryProps) => {
           <TableBody>
             {quizHistory.map((quiz) => (
               <TableRow key={quiz.id} className="hover:bg-muted/50">
-                <TableCell className="text-foreground">{quiz.date}</TableCell>
+                <TableCell className="text-foreground">{formatDate(quiz.date)}</TableCell>
                 <TableCell className="text-foreground">{quiz.qbankId}</TableCell>
                 <TableCell className="text-foreground">{quiz.score}/{quiz.totalQuestions}</TableCell>
                 <TableCell className="text-foreground">{((quiz.score / quiz.totalQuestions) * 100).toFixed(2)}%</TableCell>
