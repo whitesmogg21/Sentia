@@ -1,23 +1,37 @@
+
 import { Question, QuestionAttempt, QuestionCategory, QuestionMetricsEntry, QuestionMetricsStore } from "@/types/quiz";
 import { qbanks, loadQBanks } from "@/data/questions";
 import { STORES, putItem, getItem } from "@/utils/indexedDB";
 
 const METRICS_STORAGE_KEY = 'questionMetricsStore';
 
+// Helper function to trigger a metrics update event
+const triggerMetricsUpdate = () => {
+  window.dispatchEvent(new CustomEvent('metricsUpdated'));
+};
+
 // Initialize metrics for all questions
 export const initializeMetrics = async (): Promise<void> => {
   try {
+    // Make sure qbanks are loaded first
+    await loadQBanks();
+    
     // Get existing metrics from IndexedDB
     const storedMetrics = await getItem<{id: string, data: QuestionMetricsStore}>(STORES.QUESTION_METRICS, 'metrics');
     let existingMetrics: QuestionMetricsStore = storedMetrics?.data || {};
     let updated = false;
     
-    // Make sure qbanks are loaded
-    await loadQBanks();
-    
     // Initialize all questions
-    qbanks.forEach(qbank => {
-      qbank.questions.forEach(question => {
+    for (const qbank of qbanks) {
+      // Ensure questions is resolved if it's a Promise
+      let questions: Question[] = [];
+      if (qbank.questions instanceof Promise) {
+        questions = await qbank.questions;
+      } else {
+        questions = qbank.questions;
+      }
+      
+      for (const question of questions) {
         // Check if this question exists in metrics
         if (!existingMetrics[question.id]) {
           // If not, initialize it as unused (or set based on attempts if they exist)
@@ -54,16 +68,23 @@ export const initializeMetrics = async (): Promise<void> => {
             updated = true;
           }
         }
-      });
-    });
+      }
+    }
     
     // Clean up metrics for deleted questions
     const allQuestionIds = new Set<number>();
-    qbanks.forEach(qbank => {
-      qbank.questions.forEach(question => {
+    for (const qbank of qbanks) {
+      let questions: Question[] = [];
+      if (qbank.questions instanceof Promise) {
+        questions = await qbank.questions;
+      } else {
+        questions = qbank.questions;
+      }
+      
+      for (const question of questions) {
         allQuestionIds.add(question.id);
-      });
-    });
+      }
+    }
     
     Object.keys(existingMetrics).forEach(idStr => {
       const id = parseInt(idStr);
@@ -79,6 +100,9 @@ export const initializeMetrics = async (): Promise<void> => {
       
       // Also update localStorage for backward compatibility
       localStorage.setItem(METRICS_STORAGE_KEY, JSON.stringify(existingMetrics));
+      
+      // Trigger update event
+      triggerMetricsUpdate();
     }
   } catch (error) {
     console.error('Error initializing metrics:', error);
@@ -106,6 +130,15 @@ export const getMetricsStore = async (): Promise<QuestionMetricsStore> => {
       return parsedMetrics;
     }
     
+    // If no metrics found, initialize them
+    await initializeMetrics();
+    
+    // Try again after initialization
+    const initializedMetrics = await getItem<{id: string, data: QuestionMetricsStore}>(STORES.QUESTION_METRICS, 'metrics');
+    if (initializedMetrics && initializedMetrics.data) {
+      return initializedMetrics.data;
+    }
+    
     return {};
   } catch (error) {
     console.error('Error getting metrics store:', error);
@@ -129,12 +162,17 @@ export const saveMetricsStore = async (metrics: QuestionMetricsStore): Promise<v
     
     // Also update localStorage for backward compatibility
     localStorage.setItem(METRICS_STORAGE_KEY, JSON.stringify(metrics));
+    
+    // Trigger update event
+    triggerMetricsUpdate();
   } catch (error) {
     console.error('Error saving metrics store:', error);
     
     // Fallback to localStorage
     try {
       localStorage.setItem(METRICS_STORAGE_KEY, JSON.stringify(metrics));
+      // Still trigger the event even if only localStorage was updated
+      triggerMetricsUpdate();
     } catch (e) {
       console.error('Failed to save to localStorage too:', e);
     }
@@ -229,6 +267,9 @@ export const resetMetrics = async (): Promise<void> => {
 // Calculate metrics counts
 export const calculateMetrics = async () => {
   try {
+    // First ensure metrics are initialized
+    await initializeMetrics();
+    
     const metrics = await getMetricsStore();
     
     const counts = {

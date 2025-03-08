@@ -1,6 +1,7 @@
 
 import { Question, QBank } from "../types/quiz";
 import { STORES, putItem, getAllItems, getItem } from "@/utils/indexedDB";
+import { initializeMetrics } from "@/utils/metricsUtils";
 
 // Initial default question banks
 const defaultQBanks: QBank[] = [
@@ -76,6 +77,13 @@ const defaultQBanks: QBank[] = [
   }
 ];
 
+// Helper function to trigger question updates
+const triggerQuestionsUpdate = () => {
+  window.dispatchEvent(new CustomEvent('questionsUpdated'));
+  // Also trigger metrics update since they're related
+  window.dispatchEvent(new CustomEvent('metricsUpdated'));
+};
+
 // Create the qbanks array that will be used throughout the app
 export let qbanks: QBank[] = [];
 
@@ -111,6 +119,9 @@ export const loadQBanks = async (): Promise<QBank[]> => {
         }
       }
       
+      // Trigger updates after loading
+      triggerQuestionsUpdate();
+      
       return qbanks;
     }
     
@@ -127,6 +138,10 @@ export const loadQBanks = async (): Promise<QBank[]> => {
         }
         
         qbanks = parsedBanks;
+        
+        // Trigger updates after migration
+        triggerQuestionsUpdate();
+        
         return qbanks;
       }
     } catch (error) {
@@ -143,6 +158,13 @@ export const loadQBanks = async (): Promise<QBank[]> => {
     }
     
     qbanks = defaultCopy;
+    
+    // Initialize metrics for default questions
+    await initializeMetrics();
+    
+    // Trigger updates after setting defaults
+    triggerQuestionsUpdate();
+    
     return qbanks;
   } catch (error) {
     console.error('Error in loadQBanks:', error);
@@ -169,12 +191,20 @@ export const saveQBanksToStorage = async (): Promise<void> => {
     // Also update localStorage for backward compatibility
     localStorage.setItem('questionLibrary', JSON.stringify(qbanks));
     console.log('Question banks saved successfully:', qbanks.length);
+    
+    // Initialize metrics to ensure they're up to date with questions
+    await initializeMetrics();
+    
+    // Trigger updates after saving
+    triggerQuestionsUpdate();
   } catch (error) {
     console.error('Error saving question banks:', error);
     
     // Fallback to localStorage
     try {
       localStorage.setItem('questionLibrary', JSON.stringify(qbanks));
+      // Still trigger the event even if only localStorage was updated
+      triggerQuestionsUpdate();
     } catch (e) {
       console.error('Failed to save to localStorage too:', e);
     }

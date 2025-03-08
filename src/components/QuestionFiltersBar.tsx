@@ -125,70 +125,81 @@ const QuestionFiltersBar = ({ filters, onToggleFilter }: QuestionFiltersBarProps
     flagged: 0
   });
   
-  // Get metrics on component mount and when localStorage changes
-  useEffect(() => {
-    const updateMetrics = async () => {
+  // Function to update metrics
+  const updateMetrics = async () => {
+    try {
+      // Use the calculateMetrics utility for consistent metrics calculation
+      const metricsData = await calculateMetrics();
+      setMetrics(metricsData);
+    } catch (error) {
+      console.error('Error calculating metrics:', error);
+      // Fallback to localStorage method if calculateMetrics fails
       try {
-        // Use the calculateMetrics utility for consistent metrics calculation
-        const metricsData = await calculateMetrics();
-        setMetrics(metricsData);
-      } catch (error) {
-        console.error('Error calculating metrics:', error);
-        // Fallback to localStorage method if calculateMetrics fails
-        try {
-          const localMetrics = localStorage.getItem('questionMetricsStore');
-          if (localMetrics) {
-            const metricsData = JSON.parse(localMetrics);
-            
-            const counts = {
-              unused: 0,
-              used: 0,
-              correct: 0,
-              incorrect: 0,
-              omitted: 0,
-              flagged: 0
-            };
-            
-            Object.values(metricsData).forEach((entry: any) => {
-              counts[entry.status]++;
-              if (entry.status !== 'unused') {
-                counts.used++;
-              }
-              if (entry.isFlagged) {
-                counts.flagged++;
-              }
-            });
-            
-            setMetrics(counts);
-          }
-        } catch (error) {
-          console.error('Error calculating metrics from localStorage:', error);
+        const localMetrics = localStorage.getItem('questionMetricsStore');
+        if (localMetrics) {
+          const metricsData = JSON.parse(localMetrics);
+          
+          const counts = {
+            unused: 0,
+            used: 0,
+            correct: 0,
+            incorrect: 0,
+            omitted: 0,
+            flagged: 0
+          };
+          
+          Object.values(metricsData).forEach((entry: any) => {
+            counts[entry.status]++;
+            if (entry.status !== 'unused') {
+              counts.used++;
+            }
+            if (entry.isFlagged) {
+              counts.flagged++;
+            }
+          });
+          
+          setMetrics(counts);
         }
+      } catch (error) {
+        console.error('Error calculating metrics from localStorage:', error);
       }
-    };
-    
-    // Update metrics immediately and when storage changes
+    }
+  };
+
+  // Get metrics on component mount and when related events occur
+  useEffect(() => {
+    // Update metrics immediately when component mounts
     updateMetrics();
     
-    // Re-calculate metrics when storage changes
+    // Listen for storage changes
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'questionMetricsStore' || e.key === null) {
+      if (e.key === 'questionMetricsStore' || e.key === 'questionLibrary' || e.key === null) {
         updateMetrics();
       }
     };
     
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Custom event for IndexedDB updates
+    // Listen for custom events when questions are added or modified
     const handleDBUpdate = () => {
       updateMetrics();
     };
     
+    // Listen for custom events for metrics changes
+    const handleMetricsUpdate = () => {
+      updateMetrics();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('metricsUpdated', handleDBUpdate);
+    window.addEventListener('questionsUpdated', handleDBUpdate);
+    
+    // Create an interval to periodically check for updates (as a fallback)
+    const intervalId = setInterval(updateMetrics, 5000);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('metricsUpdated', handleDBUpdate);
+      window.removeEventListener('questionsUpdated', handleDBUpdate);
+      clearInterval(intervalId);
     };
   }, []);
 
