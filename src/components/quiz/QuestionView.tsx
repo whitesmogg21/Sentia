@@ -5,6 +5,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Image, ZoomIn, ZoomOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { renderMarkdown } from "@/utils/markdownUtils";
 
 interface QuestionViewProps {
   question: Question;
@@ -114,37 +115,52 @@ const QuestionView = ({
   };
 
   const renderContent = (text: string) => {
+    // Split by image references first
     const parts = text.split('/');
-    return parts.map((part, index) => {
-      if (index === 0 && !text.startsWith('/')) {
-        return <span key={index} className="mr-2">{part}</span>;
-      }
-      
-      if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
-        // This is an image filename
-        const mediaItem = mediaLibrary.find(m => m.name === part);
-        if (mediaItem) {
+    if (text.includes('/') && parts.length > 1) {
+      return parts.map((part, index) => {
+        if (index === 0 && !text.startsWith('/')) {
+          // This is text before the first image
           return (
-            <Button
-              key={index}
-              variant="ghost"
-              size="icon"
-              className="mx-1 inline-flex items-center"
-              onClick={() => handleImageClick(mediaItem.data, mediaItem.name)}
-            >
-              <Image className="h-4 w-4" />
-            </Button>
+            <span key={index} className="mr-2">
+              {renderMarkdown(part)}
+            </span>
           );
         }
+        
+        if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
+          // This is an image filename
+          const mediaItem = mediaLibrary.find(m => m.name === part);
+          if (mediaItem) {
+            return (
+              <Button
+                key={index}
+                variant="ghost"
+                size="icon"
+                className="mx-1 inline-flex items-center"
+                onClick={() => handleImageClick(mediaItem.data, mediaItem.name)}
+              >
+                <Image className="h-4 w-4" />
+              </Button>
+            );
+          }
+          return null;
+        }
+        
+        if (part) {
+          return (
+            <span key={index} className="mr-2">
+              {renderMarkdown(part)}
+            </span>
+          );
+        }
+        
         return null;
-      }
-      
-      if (part) {
-        return <span key={index} className="mr-2">{part}</span>;
-      }
-      
-      return null;
-    });
+      });
+    } else {
+      // No image references, just render markdown
+      return renderMarkdown(text);
+    }
   };
 
   const renderOptionContent = (text: string): React.ReactNode[] => {
@@ -170,7 +186,11 @@ const QuestionView = ({
       }
       
       if (part) {
-        return <span key={index} className="mr-2">{part}</span>;
+        return (
+          <span key={index} className="mr-2">
+            {renderMarkdown(part)}
+          </span>
+        );
       }
       
       return null;

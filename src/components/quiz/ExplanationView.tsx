@@ -1,23 +1,41 @@
 
-import { motion } from "framer-motion";
 import { Question } from "@/types/quiz";
+import { renderMarkdown } from "@/utils/markdownUtils";
 
 interface ExplanationViewProps {
   question: Question;
+  selectedAnswer: number | null;
 }
 
-const ExplanationView = ({ question }: ExplanationViewProps) => {
+const ExplanationView = ({ question, selectedAnswer }: ExplanationViewProps) => {
+  const isCorrect = selectedAnswer === question.correctAnswer;
+  const correctOptionText = question.options[question.correctAnswer];
+
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="bg-white p-8 rounded-2xl shadow-lg"
-    >
-      <h3 className="text-xl font-bold mb-4">Explanation</h3>
-      <p className="text-lg mb-6">
-        {question.explanation || "The correct answer was: " + question.options[question.correctAnswer]}
-      </p>
-    </motion.div>
+    <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-background">
+      <div className="mb-4">
+        <div className={`text-lg font-medium ${isCorrect ? 'text-success' : 'text-error'}`}>
+          {isCorrect ? 'Correct!' : 'Incorrect!'}
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {selectedAnswer !== null
+            ? `You selected: ${question.options[selectedAnswer]}`
+            : 'You did not select an answer'}
+        </div>
+        <div className="text-sm text-success">
+          Correct answer: {correctOptionText}
+        </div>
+      </div>
+
+      {question.explanation && (
+        <div className="mt-4">
+          <div className="font-medium mb-1">Explanation:</div>
+          <div className="text-sm text-muted-foreground">
+            {renderMarkdown(question.explanation)}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
