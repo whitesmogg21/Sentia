@@ -41,6 +41,11 @@ export const clearQuizData = async () => {
   }
 };
 
+interface QuizHistoryItem {
+  id: string;
+  data: any;
+}
+
 export const saveQuizData = async (data: any) => {
   try {
     // Save to IndexedDB
@@ -61,8 +66,8 @@ export const saveQuizData = async (data: any) => {
 export const loadQuizData = async () => {
   try {
     // Attempt to load from IndexedDB
-    const result = await getItem(STORES.QUIZ_HISTORY, 'history');
-    if (result) {
+    const result = await getItem<QuizHistoryItem>(STORES.QUIZ_HISTORY, 'history');
+    if (result && 'data' in result) {
       return result.data;
     }
     
@@ -76,6 +81,11 @@ export const loadQuizData = async () => {
     return quizHistory ? JSON.parse(quizHistory) : null;
   }
 };
+
+interface QuestionMetricsItem {
+  id: string;
+  data: any;
+}
 
 export const saveQuestionMetrics = async (metrics: any) => {
   try {
@@ -97,8 +107,8 @@ export const saveQuestionMetrics = async (metrics: any) => {
 export const loadQuestionMetrics = async () => {
   try {
     // Attempt to load from IndexedDB
-    const result = await getItem(STORES.QUESTION_METRICS, 'metrics');
-    if (result) {
+    const result = await getItem<QuestionMetricsItem>(STORES.QUESTION_METRICS, 'metrics');
+    if (result && 'data' in result) {
       return result.data;
     }
     
