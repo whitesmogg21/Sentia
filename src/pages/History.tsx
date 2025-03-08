@@ -9,7 +9,7 @@ import {
 import { QuizHistory } from "../types/quiz";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -20,20 +20,34 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { resetMetrics } from "@/utils/metricsUtils";
+import { loadQuizData } from "@/hooks/quiz";
 
 interface HistoryProps {
   quizHistory: QuizHistory[];
   onClearHistory: () => void;
 }
 
-const History = ({ quizHistory, onClearHistory }: HistoryProps) => {
+const History = ({ quizHistory: initialHistory, onClearHistory }: HistoryProps) => {
   const [showClearDialog, setShowClearDialog] = useState(false);
-
-  const handleClearConfirm = () => {
-    // Reset metrics (but keep flags)
-    resetMetrics();
+  const [quizHistory, setQuizHistory] = useState<QuizHistory[]>(initialHistory);
+  
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const history = await loadQuizData();
+        if (history) {
+          setQuizHistory(history);
+        }
+      } catch (error) {
+        console.error('Error loading quiz history:', error);
+      }
+    };
     
-    // Clear history
+    loadHistory();
+  }, []);
+
+  const handleClearConfirm = async () => {
+    await resetMetrics();
     onClearHistory();
     setShowClearDialog(false);
   };
