@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { QuestionFilter } from "@/types/quiz";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { calculateMetrics, initializeMetrics } from "@/utils/metricsUtils";
 
 type FilterCategory = {
   label: string;
@@ -107,16 +106,56 @@ const FilterButton = ({
 };
 
 const QuestionFiltersBar = ({ filters, onToggleFilter }: QuestionFiltersBarProps) => {
-  const [metrics, setMetrics] = useState(calculateMetrics());
+  const [metrics, setMetrics] = useState({
+    unused: 0,
+    used: 0,
+    correct: 0,
+    incorrect: 0,
+    omitted: 0,
+    flagged: 0
+  });
   
-  // Initialize metrics on component mount
+  // Get metrics on component mount and when localStorage changes
   useEffect(() => {
-    initializeMetrics();
-    setMetrics(calculateMetrics());
+    const updateMetrics = () => {
+      try {
+        // First try to get metrics from IndexedDB via localStorage (for now)
+        // This is temporary until we fully convert the metrics display
+        const localMetrics = localStorage.getItem('questionMetricsStore');
+        if (localMetrics) {
+          const metricsData = JSON.parse(localMetrics);
+          
+          const counts = {
+            unused: 0,
+            used: 0,
+            correct: 0,
+            incorrect: 0,
+            omitted: 0,
+            flagged: 0
+          };
+          
+          Object.values(metricsData).forEach((entry: any) => {
+            counts[entry.status]++;
+            if (entry.status !== 'unused') {
+              counts.used++;
+            }
+            if (entry.isFlagged) {
+              counts.flagged++;
+            }
+          });
+          
+          setMetrics(counts);
+        }
+      } catch (error) {
+        console.error('Error calculating metrics:', error);
+      }
+    };
+    
+    updateMetrics();
     
     // Re-calculate metrics when storage changes
     const handleStorageChange = () => {
-      setMetrics(calculateMetrics());
+      updateMetrics();
     };
     
     window.addEventListener('storage', handleStorageChange);

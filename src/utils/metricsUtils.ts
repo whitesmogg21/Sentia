@@ -266,39 +266,43 @@ export const calculateMetrics = async () => {
 };
 
 // Get filtered questions based on active filters
-export const getFilteredQuestions = async (questions: Question[], activeFilters: string[]): Promise<Question[]> => {
+export const getFilteredQuestions = (questions: Question[], activeFilters: string[]): Question[] => {
   // If no filters are active, return all questions
   if (activeFilters.length === 0) return questions;
   
+  // Get metrics from localStorage (synchronous to avoid Promise in render)
+  let metrics: QuestionMetricsStore = {};
   try {
-    const metrics = await getMetricsStore();
-    
-    return questions.filter(question => {
-      // If no metrics for this question yet, it's unused
-      const questionMetrics = metrics[question.id] || { status: 'unused', isFlagged: false };
-      
-      // Check if this question matches any of the active filters
-      return activeFilters.some(filter => {
-        switch (filter) {
-          case 'unused':
-            return questionMetrics.status === 'unused';
-          case 'used':
-            return questionMetrics.status !== 'unused';
-          case 'correct':
-            return questionMetrics.status === 'correct';
-          case 'incorrect':
-            return questionMetrics.status === 'incorrect';
-          case 'omitted':
-            return questionMetrics.status === 'omitted';
-          case 'flagged':
-            return questionMetrics.isFlagged;
-          default:
-            return false;
-        }
-      });
-    });
+    const localMetrics = localStorage.getItem(METRICS_STORAGE_KEY);
+    if (localMetrics) {
+      metrics = JSON.parse(localMetrics);
+    }
   } catch (error) {
-    console.error('Error filtering questions:', error);
-    return questions;
+    console.error('Error getting metrics from localStorage:', error);
   }
+  
+  return questions.filter(question => {
+    // If no metrics for this question yet, it's unused
+    const questionMetrics = metrics[question.id] || { status: 'unused', isFlagged: false };
+    
+    // Check if this question matches any of the active filters
+    return activeFilters.some(filter => {
+      switch (filter) {
+        case 'unused':
+          return questionMetrics.status === 'unused';
+        case 'used':
+          return questionMetrics.status !== 'unused';
+        case 'correct':
+          return questionMetrics.status === 'correct';
+        case 'incorrect':
+          return questionMetrics.status === 'incorrect';
+        case 'omitted':
+          return questionMetrics.status === 'omitted';
+        case 'flagged':
+          return questionMetrics.isFlagged;
+        default:
+          return false;
+      }
+    });
+  });
 };

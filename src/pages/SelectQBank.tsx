@@ -39,8 +39,8 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
       try {
         setIsLoading(true);
         
-        // Create a deep copy of qbanks to work with
-        const banksToProcess = JSON.parse(JSON.stringify(qbanks));
+        // Create a deep copy and ensure it's properly typed as QBank[]
+        const banksToProcess = JSON.parse(JSON.stringify(qbanks)) as QBank[];
         
         // Ensure all questions are arrays
         const processed: QBank[] = banksToProcess.map((qbank: QBank) => ({
@@ -57,7 +57,7 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
         // Fallback to empty arrays if there's an error
         const fallback: QBank[] = qbanks.map(qbank => ({
           ...qbank,
-          questions: []
+          questions: Array.isArray(qbank.questions) ? qbank.questions : []
         }));
         
         setProcessedQBanks(fallback);
