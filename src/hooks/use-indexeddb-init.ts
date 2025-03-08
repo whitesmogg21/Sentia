@@ -17,7 +17,7 @@ export function useIndexedDBInit() {
         // Migrate data from localStorage if needed
         await migrateFromLocalStorage();
         
-        // Load initial qbanks data 
+        // Load initial qbanks data - this ensures they are loaded as arrays not promises
         await loadQBanks();
         
         setIsInitialized(true);

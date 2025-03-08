@@ -1,6 +1,6 @@
 
 import { useState, useMemo, useEffect } from "react";
-import { QBank, QuestionFilter } from "@/types/quiz";
+import { QBank, QuestionFilter, Question } from "@/types/quiz";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
@@ -17,6 +17,8 @@ interface SelectQBankProps {
 const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
   const navigate = useNavigate();
   const [selectedQBank, setSelectedQBank] = useState<QBank | null>(null);
+  const [processedQBanks, setProcessedQBanks] = useState<QBank[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<QuestionFilter>({
     unused: false,
     used: false,
@@ -31,16 +33,55 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
     initializeMetrics();
   }, []);
 
+  // Process QBanks to ensure questions are arrays not promises
+  useEffect(() => {
+    const processQBanks = async () => {
+      try {
+        setIsLoading(true);
+        // Ensure all questions are loaded from IndexedDB and not promises
+        const processed = await Promise.all(
+          qbanks.map(async (qbank) => {
+            // If questions is a promise, await it
+            if (qbank.questions instanceof Promise) {
+              const loadedQuestions = await qbank.questions;
+              return {
+                ...qbank,
+                questions: loadedQuestions
+              };
+            }
+            // If questions is already an array, use it as is
+            return qbank;
+          })
+        );
+        
+        setProcessedQBanks(processed);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error processing question banks:", error);
+        setIsLoading(false);
+        // Fallback to original qbanks if there's an error
+        setProcessedQBanks(qbanks.map(qbank => ({
+          ...qbank,
+          questions: Array.isArray(qbank.questions) ? qbank.questions : []
+        })));
+      }
+    };
+
+    processQBanks();
+  }, [qbanks]);
+
   // Filter QBanks based on selected filters
   const filteredQBanks = useMemo(() => {
-    if (!Object.values(filters).some(v => v)) return qbanks; // Show all if no filter is active
+    if (isLoading || !processedQBanks.length) return [];
+    
+    if (!Object.values(filters).some(v => v)) return processedQBanks; // Show all if no filter is active
 
     // Create an array of active filter keys
     const activeFilters = Object.entries(filters)
       .filter(([_, isActive]) => isActive)
       .map(([key]) => key);
 
-    return qbanks
+    return processedQBanks
       .map(qbank => {
         // Get filtered questions for this qbank
         const filteredQuestions = getFilteredQuestions(qbank.questions, activeFilters);
@@ -55,7 +96,7 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
         };
       })
       .filter(Boolean) as QBank[]; // Remove null entries
-  }, [qbanks, filters]);
+  }, [processedQBanks, filters, isLoading]);
 
   const handleQBankClick = (qbank: QBank) => {
     setSelectedQBank(qbank);
@@ -65,7 +106,7 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
     if (selectedQBank) {
       // Since we're filtering questions, we need to make sure we preserve
       // the original qbank structure with all questions when selecting
-      const originalQBank = qbanks.find(q => q.id === selectedQBank.id);
+      const originalQBank = processedQBanks.find(q => q.id === selectedQBank.id);
       if (originalQBank) {
         onSelect(originalQBank);
         localStorage.setItem("selectedQBank", JSON.stringify(originalQBank));
@@ -78,6 +119,18 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
       }
     }
   };
+
+  // Show loading indicator while loading
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <h1 className="text-2xl font-bold">Select Question Bank</h1>
+        <div className="flex justify-center items-center h-40">
+          <p>Loading question banks...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -101,20 +154,24 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
         }
       />
       <div className="grid gap-4">
-        {filteredQBanks.map(qbank => (
-          <Card
-            key={qbank.id}
-            className={cn(
-              "p-4 cursor-pointer transition-colors",
-              selectedQBank?.id === qbank.id && "border-primary border-2"
-            )}
-            onClick={() => handleQBankClick(qbank)}
-          >
-            <h3 className="font-bold">{qbank.name}</h3>
-            <p className="text-sm text-gray-600">{qbank.description}</p>
-            <p className="text-sm text-gray-600">Questions: {qbank.questions.length}</p>
-          </Card>
-        ))}
+        {filteredQBanks.length > 0 ? (
+          filteredQBanks.map(qbank => (
+            <Card
+              key={qbank.id}
+              className={cn(
+                "p-4 cursor-pointer transition-colors",
+                selectedQBank?.id === qbank.id && "border-primary border-2"
+              )}
+              onClick={() => handleQBankClick(qbank)}
+            >
+              <h3 className="font-bold">{qbank.name}</h3>
+              <p className="text-sm text-gray-600">{qbank.description}</p>
+              <p className="text-sm text-gray-600">Questions: {qbank.questions.length}</p>
+            </Card>
+          ))
+        ) : (
+          <p>No question banks match the selected filters.</p>
+        )}
       </div>
       <div className="flex justify-end">
         <Button onClick={handleConfirmSelection} disabled={!selectedQBank}>

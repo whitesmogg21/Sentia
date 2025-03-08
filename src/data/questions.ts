@@ -87,7 +87,11 @@ export const loadQBanks = async (): Promise<QBank[]> => {
     
     if (banksFromDB && banksFromDB.length > 0) {
       console.log('Loaded question banks from IndexedDB:', banksFromDB.length);
-      qbanks = banksFromDB;
+      // Ensure questions are arrays, not promises
+      qbanks = banksFromDB.map(bank => ({
+        ...bank,
+        questions: Array.isArray(bank.questions) ? bank.questions : []
+      }));
       return qbanks;
     }
     
@@ -135,7 +139,12 @@ export const saveQBanksToStorage = async (): Promise<void> => {
   try {
     // Save each qbank to IndexedDB
     for (const bank of qbanks) {
-      await putItem(STORES.QBANKS, bank);
+      // Make sure questions is an array before saving
+      const bankToSave = {
+        ...bank,
+        questions: Array.isArray(bank.questions) ? bank.questions : []
+      };
+      await putItem(STORES.QBANKS, bankToSave);
     }
     
     // Also update localStorage for backward compatibility
@@ -153,11 +162,12 @@ export const saveQBanksToStorage = async (): Promise<void> => {
   }
 };
 
-// Initialize qbanks when the module loads (this can be removed after proper initialization is implemented)
 // We'll initialize on-demand now instead of on load
-loadQBanks().then(loaded => {
-  qbanks = loaded;
-}).catch(error => {
-  console.error("Error initializing qbanks:", error);
-  qbanks = JSON.parse(JSON.stringify(defaultQBanks)); // Fallback to defaults
-});
+if (qbanks.length === 0) {
+  loadQBanks().then(loaded => {
+    qbanks = loaded;
+  }).catch(error => {
+    console.error("Error initializing qbanks:", error);
+    qbanks = JSON.parse(JSON.stringify(defaultQBanks)); // Fallback to defaults
+  });
+}
