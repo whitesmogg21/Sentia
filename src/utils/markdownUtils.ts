@@ -12,10 +12,16 @@ export const renderMarkdown = (text: string): React.ReactNode[] => {
     // Process markdown formatting
     let processed = paragraph;
     
-    // Handle bold text with proper regex replacement
+    // Handle bold text with double asterisks: **text** -> <strong>text</strong>
     processed = processed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     
-    // Process italic text: _text_ -> <em>text</em>
+    // Handle bold text with double underscores: __text__ -> <strong>text</strong>
+    processed = processed.replace(/__(.*?)__/g, '<strong>$1</strong>');
+    
+    // Process italic text with single asterisk: *text* -> <em>text</em>
+    processed = processed.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // Process italic text with single underscore: _text_ -> <em>text</em>
     processed = processed.replace(/_(.*?)_/g, '<em>$1</em>');
     
     // Process code: `text` -> <code>text</code>
