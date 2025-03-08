@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-// A simple function to convert markdown to React elements
+// A function to convert markdown to React elements
 export const renderMarkdown = (text: string): React.ReactNode[] => {
   if (!text) return [null];
 
@@ -10,13 +10,22 @@ export const renderMarkdown = (text: string): React.ReactNode[] => {
   
   return paragraphs.map((paragraph, pIndex) => {
     // Process bold text: **text** -> <strong>text</strong>
-    let processed = paragraph.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    let processed = paragraph;
+    
+    // Handle bold text with proper regex replacement
+    processed = processed.replace(/\*\*(.*?)\*\*/g, (match, content) => {
+      return `<strong>${content}</strong>`;
+    });
     
     // Process italic text: _text_ -> <em>text</em>
-    processed = processed.replace(/_(.*?)_/g, '<em>$1</em>');
+    processed = processed.replace(/_(.*?)_/g, (match, content) => {
+      return `<em>${content}</em>`;
+    });
     
     // Process code: `text` -> <code>text</code>
-    processed = processed.replace(/`(.*?)`/g, '<code>$1</code>');
+    processed = processed.replace(/`(.*?)`/g, (match, content) => {
+      return `<code>${content}</code>`;
+    });
     
     // Process lists
     if (paragraph.match(/^-\s/m)) {
