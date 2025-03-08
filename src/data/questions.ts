@@ -87,11 +87,30 @@ export const loadQBanks = async (): Promise<QBank[]> => {
     
     if (banksFromDB && banksFromDB.length > 0) {
       console.log('Loaded question banks from IndexedDB:', banksFromDB.length);
+      
       // Ensure questions are arrays, not promises
-      qbanks = banksFromDB.map(bank => ({
-        ...bank,
-        questions: Array.isArray(bank.questions) ? bank.questions : []
-      }));
+      qbanks = banksFromDB.map(bank => {
+        // If bank.questions is a Promise, handle it properly
+        if (bank.questions instanceof Promise) {
+          // Initialize with empty array and update later
+          return { ...bank, questions: [] };
+        }
+        return { ...bank, questions: Array.isArray(bank.questions) ? bank.questions : [] };
+      });
+      
+      // Now we need to ensure all question arrays are properly loaded
+      for (let i = 0; i < qbanks.length; i++) {
+        if (banksFromDB[i].questions instanceof Promise) {
+          try {
+            const resolvedQuestions = await banksFromDB[i].questions;
+            qbanks[i].questions = resolvedQuestions || [];
+          } catch (error) {
+            console.error(`Failed to load questions for bank ${qbanks[i].id}:`, error);
+            qbanks[i].questions = [];
+          }
+        }
+      }
+      
       return qbanks;
     }
     

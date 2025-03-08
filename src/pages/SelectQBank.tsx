@@ -38,32 +38,29 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
     const processQBanks = async () => {
       try {
         setIsLoading(true);
-        // Ensure all questions are loaded from IndexedDB and not promises
-        const processed = await Promise.all(
-          qbanks.map(async (qbank) => {
-            // If questions is a promise, await it
-            if (qbank.questions instanceof Promise) {
-              const loadedQuestions = await qbank.questions;
-              return {
-                ...qbank,
-                questions: loadedQuestions
-              };
-            }
-            // If questions is already an array, use it as is
-            return qbank;
-          })
-        );
+        
+        // Create a deep copy of qbanks to work with
+        const banksToProcess = JSON.parse(JSON.stringify(qbanks));
+        
+        // Ensure all questions are arrays
+        const processed: QBank[] = banksToProcess.map((qbank: QBank) => ({
+          ...qbank,
+          questions: Array.isArray(qbank.questions) ? qbank.questions : []
+        }));
         
         setProcessedQBanks(processed);
         setIsLoading(false);
       } catch (error) {
         console.error("Error processing question banks:", error);
         setIsLoading(false);
-        // Fallback to original qbanks if there's an error
-        setProcessedQBanks(qbanks.map(qbank => ({
+        
+        // Fallback to empty arrays if there's an error
+        const fallback: QBank[] = qbanks.map(qbank => ({
           ...qbank,
-          questions: Array.isArray(qbank.questions) ? qbank.questions : []
-        })));
+          questions: []
+        }));
+        
+        setProcessedQBanks(fallback);
       }
     };
 
