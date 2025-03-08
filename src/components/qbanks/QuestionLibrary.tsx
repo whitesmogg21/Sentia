@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit, Trash2, Filter, Sun, Moon, Download, Bold, Italic, List, ListOrdered, Link, Quote, Code } from "lucide-react";
+import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit, Trash2, Filter, Sun, Moon, Download, Bold, Italic, List, ListOrdered, Link, Quote, Code, Maximize, Minimize } from "lucide-react";
 import { Question, QBank } from "@/types/quiz";
 import { toast } from "@/components/ui/use-toast";
 import { useTheme } from "@/components/ThemeProvider";
@@ -31,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useFullscreen } from "@/hooks/use-fullscreen";
 
 interface QuestionLibraryProps {
   qbanks: QBank[];
@@ -46,6 +47,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const { theme, setTheme } = useTheme();
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
   const [newQuestion, setNewQuestion] = useState<Partial<Question>>({
     question: "",
     options: ["", "", "", ""],
@@ -767,6 +769,20 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
             </DialogContent>
           </Dialog>
 
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleFullscreen}
+            className="rounded-full"
+            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {isFullscreen ? (
+              <Minimize className="h-4 w-4" />
+            ) : (
+              <Maximize className="h-4 w-4" />
+            )}
+          </Button>
+          
           <Button
             variant="ghost"
             size="icon"
