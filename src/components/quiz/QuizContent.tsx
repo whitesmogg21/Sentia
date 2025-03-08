@@ -221,7 +221,10 @@ const QuizContent = ({
               />
 
               {isAnswered && showExplanation && (
-                <ExplanationView question={currentQuestion} />
+                <ExplanationView 
+                  question={currentQuestion} 
+                  selectedAnswer={selectedAnswer}
+                />
               )}
             </div>
           </div>
