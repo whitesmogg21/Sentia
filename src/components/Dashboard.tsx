@@ -1,9 +1,10 @@
+
 import { useState, useMemo, useEffect } from "react";
 import { QBank, QuizHistory } from "../types/quiz";
-import { Moon, Sun, Maximize, Minimize } from "lucide-react";
+import { Moon, Sun, Maximize, Minimize, BarChart } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "@/components/ThemeProvider";
-import { Card } from "./ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -14,6 +15,16 @@ import { useNavigate } from "react-router-dom";
 import { QuestionFilter } from "@/types/quiz";
 import { useQuiz } from "@/hooks/quiz";
 import { useFullscreen } from "@/hooks/use-fullscreen";
+import { 
+  BarChart as RechartsBarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  LabelList 
+} from 'recharts';
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -222,11 +233,27 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         score: stats.total > 0 ? (stats.correct / stats.total) * 100 : 0,
         correct: stats.correct,
         total: stats.total,
-      }));
+      }))
+      .sort((a, b) => b.score - a.score); // Sort by score descending
   }, [qbanks, quizHistory]);
 
   const overallAccuracyCalc = useMemo(() => totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0, [correctAttempts, totalAttempts]);
   const completionRate = useMemo(() => totalQuestions > 0 ? (questionsAttempted / totalQuestions) * 100 : 0, [questionsAttempted, totalQuestions]);
+
+  // Custom tooltip for the bar chart
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-background border p-2 rounded shadow-lg text-sm">
+          <p className="font-bold">{data.tag}</p>
+          <p>Accuracy: {data.score.toFixed(1)}%</p>
+          <p>Correct: {data.correct} / {data.total}</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -371,6 +398,51 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             <p className="text-2xl font-bold">{quizHistory.length}</p>
           </Card>
         </div>
+        
+        {/* Tag Performance Chart */}
+        {tagPerformance.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart className="h-5 w-5" />
+                Performance by Tag
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsBarChart
+                    data={tagPerformance}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="tag" 
+                      angle={-45} 
+                      textAnchor="end" 
+                      height={60} 
+                      interval={0}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis
+                      label={{ value: 'Accuracy (%)', angle: -90, position: 'insideLeft' }}
+                      domain={[0, 100]}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar 
+                      dataKey="score" 
+                      fill="#8884d8" 
+                      name="Accuracy" 
+                      radius={[4, 4, 0, 0]}
+                    >
+                      <LabelList dataKey="score" position="top" formatter={(value: number) => `${value.toFixed(0)}%`} />
+                    </Bar>
+                  </RechartsBarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
