@@ -1,7 +1,5 @@
 
 import { Question, QBank } from "../types/quiz";
-import { STORES, putItem, getAllItems, getItem } from "@/utils/indexedDB";
-import { initializeMetrics } from "@/utils/metricsUtils";
 
 // Initial default question banks
 const defaultQBanks: QBank[] = [
@@ -77,146 +75,33 @@ const defaultQBanks: QBank[] = [
   }
 ];
 
-// Helper function to trigger question updates
-const triggerQuestionsUpdate = () => {
-  window.dispatchEvent(new CustomEvent('questionsUpdated'));
-  // Also trigger metrics update since they're related
-  window.dispatchEvent(new CustomEvent('metricsUpdated'));
-};
-
 // Create the qbanks array that will be used throughout the app
 export let qbanks: QBank[] = [];
 
-// Load question banks from IndexedDB or use defaults
-export const loadQBanks = async (): Promise<QBank[]> => {
+// Load question banks from localStorage or use defaults
+const loadQBanks = (): QBank[] => {
   try {
-    // Try to get qbanks from IndexedDB
-    const banksFromDB = await getAllItems<QBank>(STORES.QBANKS);
-    
-    if (banksFromDB && banksFromDB.length > 0) {
-      console.log('Loaded question banks from IndexedDB:', banksFromDB.length);
-      
-      // Ensure questions are arrays, not promises
-      qbanks = banksFromDB.map(bank => {
-        // If bank.questions is a Promise, handle it properly
-        if (bank.questions instanceof Promise) {
-          // Initialize with empty array and update later
-          return { ...bank, questions: [] };
-        }
-        return { ...bank, questions: Array.isArray(bank.questions) ? bank.questions : [] };
-      });
-      
-      // Now we need to ensure all question arrays are properly loaded
-      for (let i = 0; i < qbanks.length; i++) {
-        if (banksFromDB[i].questions instanceof Promise) {
-          try {
-            const resolvedQuestions = await banksFromDB[i].questions;
-            qbanks[i].questions = resolvedQuestions || [];
-          } catch (error) {
-            console.error(`Failed to load questions for bank ${qbanks[i].id}:`, error);
-            qbanks[i].questions = [];
-          }
-        }
-      }
-      
-      // Trigger updates after loading
-      triggerQuestionsUpdate();
-      
-      return qbanks;
+    const savedQBanks = localStorage.getItem('questionLibrary');
+    if (savedQBanks) {
+      console.log('Loaded question banks from localStorage');
+      return JSON.parse(savedQBanks);
     }
-    
-    // If not in IndexedDB, try localStorage for migration
-    try {
-      const savedQBanks = localStorage.getItem('questionLibrary');
-      if (savedQBanks) {
-        const parsedBanks = JSON.parse(savedQBanks);
-        console.log('Loaded question banks from localStorage for migration');
-        
-        // Migrate to IndexedDB
-        for (const bank of parsedBanks) {
-          await putItem(STORES.QBANKS, bank);
-        }
-        
-        qbanks = parsedBanks;
-        
-        // Trigger updates after migration
-        triggerQuestionsUpdate();
-        
-        return qbanks;
-      }
-    } catch (error) {
-      console.error('Error loading question banks from localStorage:', error);
-    }
-    
-    // If no stored qbanks found, use defaults
-    console.log('Using default question banks');
-    const defaultCopy = JSON.parse(JSON.stringify(defaultQBanks)); // Return a deep copy of the defaults
-    
-    // Save defaults to IndexedDB for future use
-    for (const bank of defaultCopy) {
-      await putItem(STORES.QBANKS, bank);
-    }
-    
-    qbanks = defaultCopy;
-    
-    // Initialize metrics for default questions
-    await initializeMetrics();
-    
-    // Trigger updates after setting defaults
-    triggerQuestionsUpdate();
-    
-    return qbanks;
   } catch (error) {
-    console.error('Error in loadQBanks:', error);
-    
-    // Last resort - use default question banks without saving
-    qbanks = JSON.parse(JSON.stringify(defaultQBanks));
-    return qbanks;
+    console.error('Error loading question banks from localStorage:', error);
   }
+  console.log('Using default question banks');
+  return JSON.parse(JSON.stringify(defaultQBanks)); // Return a deep copy of the defaults
 };
 
-// Helper function to save qbanks to IndexedDB
-export const saveQBanksToStorage = async (): Promise<void> => {
+// Helper function to save qbanks to localStorage
+export const saveQBanksToStorage = (): void => {
   try {
-    // Save each qbank to IndexedDB
-    for (const bank of qbanks) {
-      // Make sure questions is an array before saving
-      const bankToSave = {
-        ...bank,
-        questions: Array.isArray(bank.questions) ? bank.questions : []
-      };
-      await putItem(STORES.QBANKS, bankToSave);
-    }
-    
-    // Also update localStorage for backward compatibility
     localStorage.setItem('questionLibrary', JSON.stringify(qbanks));
-    console.log('Question banks saved successfully:', qbanks.length);
-    
-    // Initialize metrics to ensure they're up to date with questions
-    await initializeMetrics();
-    
-    // Trigger updates after saving
-    triggerQuestionsUpdate();
+    console.log('Question banks saved to localStorage:', qbanks.length);
   } catch (error) {
-    console.error('Error saving question banks:', error);
-    
-    // Fallback to localStorage
-    try {
-      localStorage.setItem('questionLibrary', JSON.stringify(qbanks));
-      // Still trigger the event even if only localStorage was updated
-      triggerQuestionsUpdate();
-    } catch (e) {
-      console.error('Failed to save to localStorage too:', e);
-    }
+    console.error('Error saving question banks to localStorage:', error);
   }
 };
 
-// We'll initialize on-demand now instead of on load
-if (qbanks.length === 0) {
-  loadQBanks().then(loaded => {
-    qbanks = loaded;
-  }).catch(error => {
-    console.error("Error initializing qbanks:", error);
-    qbanks = JSON.parse(JSON.stringify(defaultQBanks)); // Fallback to defaults
-  });
-}
+// Initialize qbanks when the module loads
+qbanks = loadQBanks();

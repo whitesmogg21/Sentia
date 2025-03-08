@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { QuestionFilter } from "@/types/quiz";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { calculateMetrics } from "@/utils/metricsUtils";
+import { calculateMetrics, initializeMetrics } from "@/utils/metricsUtils";
 
 type FilterCategory = {
   label: string;
@@ -67,32 +67,23 @@ const FilterButton = ({
   isActive: boolean; 
   onClick: () => void; 
 }) => {
-  // Load saved filter state once on mount
   useEffect(() => {
     const savedFilters = localStorage.getItem('questionFilters');
     if (savedFilters) {
-      try {
-        const filters = JSON.parse(savedFilters);
-        if (filters[category.key] !== undefined && filters[category.key] !== isActive) {
-          // Only trigger onClick if the saved state is different from current state
+      const filters = JSON.parse(savedFilters);
+      if (filters[category.key] !== undefined) {
+        if (filters[category.key] !== isActive) {
           onClick();
         }
-      } catch (e) {
-        console.error('Error parsing saved filters:', e);
       }
     }
   }, []);
 
-  // Save filter state whenever it changes
   useEffect(() => {
-    try {
-      const savedFilters = localStorage.getItem('questionFilters');
-      const filters = savedFilters ? JSON.parse(savedFilters) : {};
-      filters[category.key] = isActive;
-      localStorage.setItem('questionFilters', JSON.stringify(filters));
-    } catch (e) {
-      console.error('Error saving filter state:', e);
-    }
+    const savedFilters = localStorage.getItem('questionFilters');
+    const filters = savedFilters ? JSON.parse(savedFilters) : {};
+    filters[category.key] = isActive;
+    localStorage.setItem('questionFilters', JSON.stringify(filters));
   }, [isActive, category.key]);
 
   return (
@@ -116,91 +107,20 @@ const FilterButton = ({
 };
 
 const QuestionFiltersBar = ({ filters, onToggleFilter }: QuestionFiltersBarProps) => {
-  const [metrics, setMetrics] = useState({
-    unused: 0,
-    used: 0,
-    correct: 0,
-    incorrect: 0,
-    omitted: 0,
-    flagged: 0
-  });
+  const [metrics, setMetrics] = useState(calculateMetrics());
   
-  // Function to update metrics
-  const updateMetrics = async () => {
-    try {
-      // Use the calculateMetrics utility for consistent metrics calculation
-      const metricsData = await calculateMetrics();
-      setMetrics(metricsData);
-    } catch (error) {
-      console.error('Error calculating metrics:', error);
-      // Fallback to localStorage method if calculateMetrics fails
-      try {
-        const localMetrics = localStorage.getItem('questionMetricsStore');
-        if (localMetrics) {
-          const metricsData = JSON.parse(localMetrics);
-          
-          const counts = {
-            unused: 0,
-            used: 0,
-            correct: 0,
-            incorrect: 0,
-            omitted: 0,
-            flagged: 0
-          };
-          
-          Object.values(metricsData).forEach((entry: any) => {
-            counts[entry.status]++;
-            if (entry.status !== 'unused') {
-              counts.used++;
-            }
-            if (entry.isFlagged) {
-              counts.flagged++;
-            }
-          });
-          
-          setMetrics(counts);
-        }
-      } catch (error) {
-        console.error('Error calculating metrics from localStorage:', error);
-      }
-    }
-  };
-
-  // Get metrics on component mount and when related events occur
+  // Initialize metrics on component mount
   useEffect(() => {
-    // Update metrics immediately when component mounts
-    updateMetrics();
+    initializeMetrics();
+    setMetrics(calculateMetrics());
     
-    // Listen for storage changes
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'questionMetricsStore' || e.key === 'questionLibrary' || e.key === null) {
-        updateMetrics();
-      }
-    };
-    
-    // Listen for custom events when questions are added or modified
-    const handleDBUpdate = () => {
-      updateMetrics();
-    };
-    
-    // Listen for custom events for metrics changes
-    const handleMetricsUpdate = () => {
-      updateMetrics();
+    // Re-calculate metrics when storage changes
+    const handleStorageChange = () => {
+      setMetrics(calculateMetrics());
     };
     
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('metricsUpdated', handleDBUpdate);
-    window.addEventListener('questionsUpdated', handleDBUpdate);
-    
-    // Create an interval to periodically check for updates (as a fallback)
-    const intervalId = setInterval(updateMetrics, 5000);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('metricsUpdated', handleDBUpdate);
-      window.removeEventListener('questionsUpdated', handleDBUpdate);
-      clearInterval(intervalId);
-    };
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   return (
