@@ -772,6 +772,19 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           <Button
             variant="ghost"
             size="icon"
+            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+            className="rounded-full"
+          >
+            {theme === "light" ? (
+              <Moon className="h-4 w-4" />
+            ) : (
+              <Sun className="h-4 w-4" />
+            )}
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={toggleFullscreen}
             className="rounded-full"
             title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
@@ -780,19 +793,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               <Minimize className="h-4 w-4" />
             ) : (
               <Maximize className="h-4 w-4" />
-            )}
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            className="rounded-full"
-          >
-            {theme === "light" ? (
-              <Moon className="h-4 w-4" />
-            ) : (
-              <Sun className="h-4 w-4" />
             )}
           </Button>
         </div>
