@@ -1,10 +1,10 @@
+
 import { Question } from "@/types/quiz";
 import QuizOption from "../QuizOption";
 import React, { useRef, useEffect, useState } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Image, ZoomIn, ZoomOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getItem, STORES } from '@/utils/indexedDBUtils';
 
 interface QuestionViewProps {
   question: Question;
@@ -21,6 +21,7 @@ interface ImageModalProps {
   altText: string;
 }
 
+// Define a type for tracking strikethroughs
 interface StrikethroughState {
   [questionId: string]: {
     [optionIndex: number]: boolean;
@@ -79,47 +80,14 @@ const QuestionView = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const [mediaLibrary, setMediaLibrary] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
+  // Track strikethroughs per question and option
   const [strikethroughs, setStrikethroughs] = useState<StrikethroughState>({});
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadMediaLibrary = async () => {
-      setIsLoading(true);
-      try {
-        const result = await getItem<{ data: any[] }>(STORES.MEDIA_LIBRARY, 'media');
-        if (result && result.data) {
-          setMediaLibrary(result.data);
-        } else {
-          const savedMedia = localStorage.getItem('mediaLibrary');
-          if (savedMedia) {
-            setMediaLibrary(JSON.parse(savedMedia));
-          }
-        }
-      } catch (error) {
-        console.error('Error loading media library:', error);
-        const savedMedia = localStorage.getItem('mediaLibrary');
-        if (savedMedia) {
-          setMediaLibrary(JSON.parse(savedMedia));
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadMediaLibrary();
-
-    const handleMediaLibraryUpdated = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      if (customEvent.detail && customEvent.detail.store === STORES.MEDIA_LIBRARY) {
-        loadMediaLibrary();
-      }
-    };
-
-    window.addEventListener('dbUpdated', handleMediaLibraryUpdated);
-
-    return () => {
-      window.removeEventListener('dbUpdated', handleMediaLibraryUpdated);
-    };
+    const savedMedia = localStorage.getItem('mediaLibrary');
+    if (savedMedia) {
+      setMediaLibrary(JSON.parse(savedMedia));
+    }
   }, []);
 
   const handleImageClick = (imageData: string, imageName: string) => {
@@ -139,6 +107,7 @@ const QuestionView = ({
     });
   };
 
+  // Check if an option is striked out
   const isOptionStrikedOut = (optionIndex: number): boolean => {
     const questionKey = question.id.toString();
     return strikethroughs[questionKey]?.[optionIndex] || false;
@@ -152,6 +121,7 @@ const QuestionView = ({
       }
       
       if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
+        // This is an image filename
         const mediaItem = mediaLibrary.find(m => m.name === part);
         if (mediaItem) {
           return (
@@ -181,6 +151,7 @@ const QuestionView = ({
     const parts = text.split('/');
     return parts.map((part, index) => {
       if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
+        // This is an image filename
         const mediaItem = mediaLibrary.find(m => m.name === part);
         if (mediaItem) {
           return (
@@ -208,49 +179,41 @@ const QuestionView = ({
 
   return (
     <div className="dark:text-gray-100">
-      {isLoading ? (
-        <div className="flex justify-center items-center py-10">
-          <span>Loading question content...</span>
-        </div>
-      ) : (
-        <>
-          <div ref={contentRef} className="mb-4">
-            {renderContent(question.question)}
-          </div>
-          
-          <div className="space-y-4">
-            {question.options.map((option, index) => {
-              const optionContent = renderOptionContent(option);
-              return (
-                <QuizOption
-                  key={index}
-                  option={<div className="flex items-center">{optionContent}</div>}
-                  selected={selectedAnswer === index}
-                  correct={
-                    isAnswered
-                      ? index === question.correctAnswer
-                      : undefined
-                  }
-                  onClick={() => onAnswerClick(index)}
-                  disabled={isAnswered || isPaused}
-                  questionId={question.id}
-                  optionIndex={index}
-                  onStrikethrough={handleStrikethrough}
-                  isStrikedOut={isOptionStrikedOut(index)}
-                />
-              );
-            })}
-          </div>
-
-          {selectedImage && (
-            <ImageModal
-              isOpen={true}
-              onClose={() => setSelectedImage(null)}
-              imageUrl={selectedImage.url}
-              altText={selectedImage.name}
+      <div ref={contentRef} className="mb-4">
+        {renderContent(question.question)}
+      </div>
+      
+      <div className="space-y-4">
+        {question.options.map((option, index) => {
+          const optionContent = renderOptionContent(option);
+          return (
+            <QuizOption
+              key={index}
+              option={<div className="flex items-center">{optionContent}</div>}
+              selected={selectedAnswer === index}
+              correct={
+                isAnswered
+                  ? index === question.correctAnswer
+                  : undefined
+              }
+              onClick={() => onAnswerClick(index)}
+              disabled={isAnswered || isPaused}
+              questionId={question.id}
+              optionIndex={index}
+              onStrikethrough={handleStrikethrough}
+              isStrikedOut={isOptionStrikedOut(index)}
             />
-          )}
-        </>
+          );
+        })}
+      </div>
+
+      {selectedImage && (
+        <ImageModal
+          isOpen={true}
+          onClose={() => setSelectedImage(null)}
+          imageUrl={selectedImage.url}
+          altText={selectedImage.name}
+        />
       )}
     </div>
   );
