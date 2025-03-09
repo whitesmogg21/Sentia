@@ -4,6 +4,7 @@ import { renderMarkdown } from "@/utils/markdownUtils";
 import { useState } from "react";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 import ImageModal from "./ImageModal";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ExplanationViewProps {
   question: Question;
@@ -52,9 +53,11 @@ const ExplanationView = ({ question, selectedAnswer }: ExplanationViewProps) => 
       {question.explanation && (
         <div className="mt-4">
           <div className="font-medium mb-1">Explanation:</div>
-          <div className="text-sm text-muted-foreground">
-            {renderExplanationContent()}
-          </div>
+          <ScrollArea className="max-h-[300px]">
+            <div className="text-sm text-muted-foreground">
+              {renderExplanationContent()}
+            </div>
+          </ScrollArea>
         </div>
       )}
 
