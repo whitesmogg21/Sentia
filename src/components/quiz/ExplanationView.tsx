@@ -2,7 +2,7 @@
 import { Question } from "@/types/quiz";
 import { renderMarkdown } from "@/utils/markdownUtils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Image, ZoomIn, ZoomOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -66,72 +66,17 @@ const ExplanationView = ({ question, selectedAnswer }: ExplanationViewProps) => 
   const [mediaLibrary, setMediaLibrary] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
 
-  useState(() => {
+  useEffect(() => {
     const savedMedia = localStorage.getItem('mediaLibrary');
     if (savedMedia) {
       setMediaLibrary(JSON.parse(savedMedia));
     }
-  });
+  }, []);
 
   const handleImageClick = (imageName: string) => {
     const mediaItem = mediaLibrary.find(m => m.name === imageName);
     if (mediaItem) {
       setSelectedImage({ url: mediaItem.data, name: mediaItem.name });
-    }
-  };
-
-  const renderExplanationContent = () => {
-    if (!question.explanation) return null;
-
-    // Split by image references first
-    const parts = question.explanation.split('/');
-    if (question.explanation.includes('/') && parts.length > 1) {
-      return (
-        <div className="flex flex-wrap items-center">
-          {parts.map((part, index) => {
-            if (index === 0 && !question.explanation.startsWith('/')) {
-              // This is text before the first image
-              return (
-                <span key={index} className="mr-2 prose prose-sm dark:prose-invert">
-                  {renderMarkdown(part)}
-                </span>
-              );
-            }
-            
-            if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
-              // This is an image filename
-              const mediaItem = mediaLibrary.find(m => m.name === part);
-              if (mediaItem) {
-                return (
-                  <Button
-                    key={index}
-                    variant="ghost"
-                    size="icon"
-                    className="mx-1 inline-flex items-center"
-                    onClick={() => handleImageClick(part)}
-                  >
-                    <Image className="h-4 w-4" />
-                  </Button>
-                );
-              }
-              return null;
-            }
-            
-            if (part) {
-              return (
-                <span key={index} className="mr-2 prose prose-sm dark:prose-invert">
-                  {renderMarkdown(part)}
-                </span>
-              );
-            }
-            
-            return null;
-          }).filter(Boolean)}
-        </div>
-      );
-    } else {
-      // No image references, just render markdown
-      return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(question.explanation)}</div>;
     }
   };
 
@@ -155,7 +100,7 @@ const ExplanationView = ({ question, selectedAnswer }: ExplanationViewProps) => 
         <div className="mt-4">
           <div className="font-medium mb-1">Explanation:</div>
           <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none">
-            {renderExplanationContent()}
+            {renderMarkdown(question.explanation, handleImageClick)}
           </div>
         </div>
       )}
