@@ -1,9 +1,8 @@
-
 import { Question } from "@/types/quiz";
-import { renderMarkdown } from "@/utils/markdownUtils";
+import { renderMarkdown, extractImageReferences, createImageButtons } from "@/utils/markdownUtils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useState, useEffect } from "react";
-import { Image, ZoomIn, ZoomOut, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ZoomIn, ZoomOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ExplanationViewProps {
@@ -80,6 +79,31 @@ const ExplanationView = ({ question, selectedAnswer }: ExplanationViewProps) => 
     }
   };
 
+  const renderExplanationContent = () => {
+    if (!question.explanation) return null;
+
+    // Extract standalone image references
+    const imageNames = extractImageReferences(question.explanation);
+    const imageButtons = createImageButtons(imageNames, mediaLibrary, handleImageClick);
+    
+    // If we have standalone images, display them in a row
+    if (imageButtons.length > 0) {
+      return (
+        <div>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {imageButtons}
+          </div>
+          <div className="prose prose-sm dark:prose-invert">
+            {renderMarkdown(question.explanation)}
+          </div>
+        </div>
+      );
+    }
+    
+    // Otherwise just render the markdown
+    return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(question.explanation)}</div>;
+  };
+
   return (
     <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-background">
       <div className="mb-4">
@@ -99,8 +123,8 @@ const ExplanationView = ({ question, selectedAnswer }: ExplanationViewProps) => 
       {question.explanation && (
         <div className="mt-4">
           <div className="font-medium mb-1">Explanation:</div>
-          <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none">
-            {renderMarkdown(question.explanation, handleImageClick)}
+          <div className="text-sm text-muted-foreground">
+            {renderExplanationContent()}
           </div>
         </div>
       )}
