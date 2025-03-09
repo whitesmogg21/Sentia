@@ -17,7 +17,7 @@ const ImageModal = ({ isOpen, onClose, imageUrl, altText }: ImageModalProps) => 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl w-[90vw] h-[90vh] flex flex-col">
-        <div className="absolute right-4 top-4 flex gap-2">
+        <div className="absolute left-4 top-4 flex gap-2">
           <Button variant="ghost" size="icon" onClick={handleZoomIn} aria-label="Zoom in">
             <ZoomIn className="h-4 w-4" />
           </Button>
