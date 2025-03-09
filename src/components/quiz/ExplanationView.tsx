@@ -1,8 +1,9 @@
+
 import { Question } from "@/types/quiz";
-import { renderMarkdown, extractImageReferences, createImageButtons } from "@/utils/markdownUtils";
+import { renderMarkdown } from "@/utils/markdownUtils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useEffect, useState } from "react";
-import { ZoomIn, ZoomOut, X } from "lucide-react";
+import { useState } from "react";
+import { Image, ZoomIn, ZoomOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ExplanationViewProps {
@@ -65,12 +66,12 @@ const ExplanationView = ({ question, selectedAnswer }: ExplanationViewProps) => 
   const [mediaLibrary, setMediaLibrary] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
 
-  useEffect(() => {
+  useState(() => {
     const savedMedia = localStorage.getItem('mediaLibrary');
     if (savedMedia) {
       setMediaLibrary(JSON.parse(savedMedia));
     }
-  }, []);
+  });
 
   const handleImageClick = (imageName: string) => {
     const mediaItem = mediaLibrary.find(m => m.name === imageName);
@@ -82,26 +83,56 @@ const ExplanationView = ({ question, selectedAnswer }: ExplanationViewProps) => 
   const renderExplanationContent = () => {
     if (!question.explanation) return null;
 
-    // Extract standalone image references
-    const imageNames = extractImageReferences(question.explanation);
-    const imageButtons = createImageButtons(imageNames, mediaLibrary, handleImageClick);
-    
-    // If we have standalone images, display them in a row
-    if (imageButtons.length > 0) {
+    // Split by image references first
+    const parts = question.explanation.split('/');
+    if (question.explanation.includes('/') && parts.length > 1) {
       return (
-        <div>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {imageButtons}
-          </div>
-          <div className="prose prose-sm dark:prose-invert">
-            {renderMarkdown(question.explanation)}
-          </div>
+        <div className="flex flex-wrap items-center">
+          {parts.map((part, index) => {
+            if (index === 0 && !question.explanation.startsWith('/')) {
+              // This is text before the first image
+              return (
+                <span key={index} className="mr-2 prose prose-sm dark:prose-invert">
+                  {renderMarkdown(part)}
+                </span>
+              );
+            }
+            
+            if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
+              // This is an image filename
+              const mediaItem = mediaLibrary.find(m => m.name === part);
+              if (mediaItem) {
+                return (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    size="icon"
+                    className="mx-1 inline-flex items-center"
+                    onClick={() => handleImageClick(part)}
+                  >
+                    <Image className="h-4 w-4" />
+                  </Button>
+                );
+              }
+              return null;
+            }
+            
+            if (part) {
+              return (
+                <span key={index} className="mr-2 prose prose-sm dark:prose-invert">
+                  {renderMarkdown(part)}
+                </span>
+              );
+            }
+            
+            return null;
+          }).filter(Boolean)}
         </div>
       );
+    } else {
+      // No image references, just render markdown
+      return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(question.explanation)}</div>;
     }
-    
-    // Otherwise just render the markdown
-    return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(question.explanation)}</div>;
   };
 
   return (
@@ -123,7 +154,7 @@ const ExplanationView = ({ question, selectedAnswer }: ExplanationViewProps) => 
       {question.explanation && (
         <div className="mt-4">
           <div className="font-medium mb-1">Explanation:</div>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none">
             {renderExplanationContent()}
           </div>
         </div>
