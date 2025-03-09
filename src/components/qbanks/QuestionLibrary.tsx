@@ -235,11 +235,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const applyFormat = (format: string) => {
     let prefix = '';
     let suffix = '';
-    const textarea = document.getElementById(isEditMode ? 'edit-question-textarea' : 'new-question-textarea') as HTMLTextAreaElement;
-    const textareaValue = textarea.value;
-    const selectionStart = textarea.selectionStart;
-    const selectionEnd = textarea.selectionEnd;
-    const selectedText = textareaValue.substring(selectionStart, selectionEnd);
     
     switch (format) {
       case 'bold':
@@ -267,32 +262,19 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       case 'quote':
         prefix = '> ';
         break;
-      case 'latex':
-        prefix = '$';
-        suffix = '$';
-        break;
-      case 'latexDisplay':
-        prefix = '$$';
-        suffix = '$$';
-        break;
     }
 
-    const newText = textareaValue.substring(0, selectionStart) +
+    const text = newQuestion.question;
+    const newText = text.substring(0, formatSelection.start) +
                    prefix +
-                   selectedText +
+                   text.substring(formatSelection.start, formatSelection.end) +
                    suffix +
-                   textareaValue.substring(selectionEnd);
+                   text.substring(formatSelection.end);
 
     setNewQuestion(prev => ({
       ...prev,
       question: newText
     }));
-    
-    setTimeout(() => {
-      textarea.focus();
-      const newCursorPos = selectionStart + prefix.length + selectedText.length + suffix.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
   };
 
   const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -616,7 +598,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                 <div className="space-y-2">
                   <Label>Question Text</Label>
                   <div className="space-y-2">
-                    <div className="flex flex-wrap gap-2 mb-2">
+                    <div className="flex gap-2 mb-2">
                       <Button
                         variant="outline"
                         size="icon"
@@ -673,26 +655,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                       >
                         <Code className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => applyFormat('latex')}
-                        title="Inline LaTeX"
-                      >
-                        $x^2$
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => applyFormat('latexDisplay')}
-                        title="Display LaTeX"
-                      >
-                        $$x^2$$
-                      </Button>
                     </div>
                     <Textarea
-                      id={isEditMode ? "edit-question-textarea" : "new-question-textarea"}
-                      placeholder="Enter question text (supports markdown and LaTeX with $...$ or $$...$$)"
+                      placeholder="Enter question text (supports markdown)"
                       value={newQuestion.question}
                       onChange={(e) => setNewQuestion(prev => ({ ...prev, question: e.target.value }))}
                       onSelect={(e) => {
@@ -787,80 +752,14 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 
                 <div className="space-y-2">
                   <Label>Explanation (Optional)</Label>
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          const textarea = document.getElementById('explanation-textarea') as HTMLTextAreaElement;
-                          const start = textarea.selectionStart;
-                          const end = textarea.selectionEnd;
-                          const text = textarea.value;
-                          const newText = text.substring(0, start) + '**' + text.substring(start, end) + '**' + text.substring(end);
-                          setNewQuestion(prev => ({ ...prev, explanation: newText }));
-                        }}
-                        title="Bold"
-                      >
-                        <Bold className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          const textarea = document.getElementById('explanation-textarea') as HTMLTextAreaElement;
-                          const start = textarea.selectionStart;
-                          const end = textarea.selectionEnd;
-                          const text = textarea.value;
-                          const newText = text.substring(0, start) + '_' + text.substring(start, end) + '_' + text.substring(end);
-                          setNewQuestion(prev => ({ ...prev, explanation: newText }));
-                        }}
-                        title="Italic"
-                      >
-                        <Italic className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const textarea = document.getElementById('explanation-textarea') as HTMLTextAreaElement;
-                          const start = textarea.selectionStart;
-                          const end = textarea.selectionEnd;
-                          const text = textarea.value;
-                          const newText = text.substring(0, start) + '$' + text.substring(start, end) + '$' + text.substring(end);
-                          setNewQuestion(prev => ({ ...prev, explanation: newText }));
-                        }}
-                        title="Inline LaTeX"
-                      >
-                        $x^2$
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const textarea = document.getElementById('explanation-textarea') as HTMLTextAreaElement;
-                          const start = textarea.selectionStart;
-                          const end = textarea.selectionEnd;
-                          const text = textarea.value;
-                          const newText = text.substring(0, start) + '$$' + text.substring(start, end) + '$$' + text.substring(end);
-                          setNewQuestion(prev => ({ ...prev, explanation: newText }));
-                        }}
-                        title="Display LaTeX"
-                      >
-                        $$x^2$$
-                      </Button>
-                    </div>
-                    <Textarea
-                      id="explanation-textarea"
-                      placeholder="Enter explanation (supports markdown and LaTeX with $...$ or $$...$$)"
-                      value={newQuestion.explanation}
-                      onChange={(e) => setNewQuestion(prev => ({
-                        ...prev,
-                        explanation: e.target.value
-                      }))}
-                      className="min-h-[120px]"
-                    />
-                  </div>
+                  <Textarea
+                    placeholder="Enter explanation"
+                    value={newQuestion.explanation}
+                    onChange={(e) => setNewQuestion(prev => ({
+                      ...prev,
+                      explanation: e.target.value
+                    }))}
+                  />
                 </div>
 
                 <Button onClick={isEditMode ? handleUpdate : handleSubmit}>
