@@ -7,12 +7,29 @@ import React from 'react';
 export const renderMarkdown = (text: string): React.ReactNode[] => {
   if (!text) return [null];
 
-  // Pre-process text to avoid processing image references with /path format
-  const imageReferences: { index: number; match: string }[] = [];
-  let processedText = text.replace(/\/([^\/\s]+\.(png|jpg|jpeg|gif))/gi, (match, _, __, offset) => {
-    imageReferences.push({ index: offset, match });
-    return `__IMAGE_PLACEHOLDER_${imageReferences.length - 1}__`;
-  });
+  // Extract image references with /path format first
+  const imageReferences: { placeholder: string; imageName: string }[] = [];
+  let processedText = text;
+  
+  // Find all standalone image references like /image.png
+  const imageRegex = /\/([^\/\s]+\.(png|jpg|jpeg|gif))/gi;
+  let match;
+  let placeholderIndex = 0;
+  
+  while ((match = imageRegex.exec(text)) !== null) {
+    const fullMatch = match[0];
+    const imageName = match[1];
+    const placeholder = `__IMAGE_PLACEHOLDER_${placeholderIndex}__`;
+    
+    imageReferences.push({ 
+      placeholder, 
+      imageName 
+    });
+    
+    // Replace the image reference with a placeholder
+    processedText = processedText.replace(fullMatch, placeholder);
+    placeholderIndex++;
+  }
 
   // Split text by newlines to handle paragraphs
   const paragraphs = processedText.split('\n\n').filter(Boolean);
@@ -97,9 +114,12 @@ export const renderMarkdown = (text: string): React.ReactNode[] => {
       formattedText = '<hr />';
     }
     
-    // Replace image placeholders with their original notation
-    imageReferences.forEach((ref, i) => {
-      formattedText = formattedText.replace(`__IMAGE_PLACEHOLDER_${i}__`, `/${ref.match}`);
+    // Replace image placeholders with their original notation for later processing
+    imageReferences.forEach(ref => {
+      formattedText = formattedText.replace(
+        ref.placeholder, 
+        `<span class="image-reference" data-image="${ref.imageName}">${ref.imageName}</span>`
+      );
     });
     
     // Return paragraph with processed markdown
@@ -109,4 +129,52 @@ export const renderMarkdown = (text: string): React.ReactNode[] => {
       className: "mb-2" 
     });
   });
+};
+
+/**
+ * Extract all image references from text
+ */
+export const extractImageReferences = (text: string): string[] => {
+  if (!text) return [];
+  
+  const imageRegex = /\/([^\/\s]+\.(png|jpg|jpeg|gif))/gi;
+  const matches: string[] = [];
+  let match;
+  
+  while ((match = imageRegex.exec(text)) !== null) {
+    matches.push(match[1]);
+  }
+  
+  return matches;
+};
+
+/**
+ * Create image buttons from image references
+ */
+export const createImageButtons = (
+  imageNames: string[], 
+  mediaLibrary: any[], 
+  onImageClick: (imageName: string) => void
+): React.ReactNode[] => {
+  return imageNames.map((imageName, index) => {
+    const mediaItem = mediaLibrary.find(m => m.name === imageName);
+    if (mediaItem) {
+      return (
+        <button
+          key={index}
+          onClick={() => onImageClick(imageName)}
+          className="inline-flex items-center justify-center p-1 mx-1 bg-muted hover:bg-muted/80 rounded-md"
+          aria-label={`View image ${imageName}`}
+        >
+          <span className="sr-only">View image</span>
+          <img 
+            src={mediaItem.data} 
+            alt={imageName} 
+            className="h-6 w-6 object-cover rounded"
+          />
+        </button>
+      );
+    }
+    return null;
+  }).filter(Boolean);
 };

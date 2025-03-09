@@ -1,11 +1,10 @@
-
 import { Question } from "@/types/quiz";
 import QuizOption from "../QuizOption";
 import React, { useRef, useEffect, useState } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Image, ZoomIn, ZoomOut, X } from "lucide-react";
+import { ZoomIn, ZoomOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { renderMarkdown } from "@/utils/markdownUtils";
+import { renderMarkdown, extractImageReferences, createImageButtons } from "@/utils/markdownUtils";
 
 interface QuestionViewProps {
   question: Question;
@@ -118,99 +117,47 @@ const QuestionView = ({
   };
 
   const renderContent = (text: string) => {
-    // Split by image references first
-    const parts = text.split('/');
-    if (text.includes('/') && parts.length > 1) {
+    // Extract standalone image references
+    const imageNames = extractImageReferences(text);
+    const imageButtons = createImageButtons(imageNames, mediaLibrary, handleImageClick);
+    
+    // If we have standalone images, display them in a row
+    if (imageButtons.length > 0) {
       return (
-        <div className="flex flex-wrap items-center">
-          {parts.map((part, index) => {
-            if (index === 0 && !text.startsWith('/')) {
-              // This is text before the first image
-              return (
-                <span key={index} className="mr-2 prose prose-sm dark:prose-invert">
-                  {renderMarkdown(part)}
-                </span>
-              );
-            }
-            
-            if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
-              // This is an image filename
-              const mediaItem = mediaLibrary.find(m => m.name === part);
-              if (mediaItem) {
-                return (
-                  <Button
-                    key={index}
-                    variant="ghost"
-                    size="icon"
-                    className="mx-1 inline-flex items-center"
-                    onClick={() => handleImageClick(part)}
-                  >
-                    <Image className="h-4 w-4" />
-                  </Button>
-                );
-              }
-              return null;
-            }
-            
-            if (part) {
-              return (
-                <span key={index} className="mr-2 prose prose-sm dark:prose-invert">
-                  {renderMarkdown(part)}
-                </span>
-              );
-            }
-            
-            return null;
-          }).filter(Boolean)}
+        <div>
+          <div className="flex flex-wrap gap-2 mb-2">
+            {imageButtons}
+          </div>
+          <div className="prose prose-sm dark:prose-invert">
+            {renderMarkdown(text)}
+          </div>
         </div>
       );
-    } else {
-      // No image references, just render markdown
-      return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(text)}</div>;
     }
+    
+    // Otherwise just render the markdown
+    return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(text)}</div>;
   };
 
   const renderOptionContent = (text: string): React.ReactNode => {
-    const parts = text.split('/');
-    if (parts.length > 1) {
+    // Extract standalone image references for this option
+    const imageNames = extractImageReferences(text);
+    const imageButtons = createImageButtons(imageNames, mediaLibrary, handleImageClick);
+    
+    // If we have standalone images, display them inline with the text
+    if (imageButtons.length > 0) {
       return (
-        <div className="flex items-center">
-          {parts.map((part, index) => {
-            if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
-              // This is an image filename
-              const mediaItem = mediaLibrary.find(m => m.name === part);
-              if (mediaItem) {
-                return (
-                  <Button
-                    key={index}
-                    variant="ghost"
-                    size="icon"
-                    className="mx-1 inline-flex items-center"
-                    onClick={() => handleImageClick(part)}
-                  >
-                    <Image className="h-4 w-4" />
-                  </Button>
-                );
-              }
-              return null;
-            }
-            
-            if (part) {
-              return (
-                <span key={index} className="mr-2 prose prose-sm dark:prose-invert">
-                  {renderMarkdown(part)}
-                </span>
-              );
-            }
-            
-            return null;
-          }).filter(Boolean)}
+        <div className="flex items-center gap-2">
+          {imageButtons}
+          <div className="prose prose-sm dark:prose-invert">
+            {renderMarkdown(text)}
+          </div>
         </div>
       );
-    } else {
-      // No image references, just render markdown
-      return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(text)}</div>;
     }
+    
+    // Otherwise just render the markdown
+    return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(text)}</div>;
   };
 
   return (
