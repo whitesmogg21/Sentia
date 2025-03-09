@@ -1,10 +1,12 @@
 
 import React from 'react';
+import { ImageIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 /**
  * Parse and render Markdown text as React elements
  */
-export const renderMarkdown = (text: string): React.ReactNode[] => {
+export const renderMarkdown = (text: string, onImageClick?: (imageName: string) => void): React.ReactNode[] => {
   if (!text) return [null];
 
   // Extract image references with /path format first
@@ -114,20 +116,39 @@ export const renderMarkdown = (text: string): React.ReactNode[] => {
       formattedText = '<hr />';
     }
     
-    // Replace image placeholders with their original notation for later processing
+    // Replace image placeholders with buttons
     imageReferences.forEach(ref => {
-      formattedText = formattedText.replace(
-        ref.placeholder, 
-        `<span class="image-reference" data-image="${ref.imageName}">${ref.imageName}</span>`
-      );
+      if (formattedText.includes(ref.placeholder)) {
+        if (onImageClick) {
+          const buttonHtml = `<button class="inline-flex items-center justify-center p-1 mx-1 bg-muted hover:bg-muted/80 rounded-md" data-image-name="${ref.imageName}" aria-label="View image"><span class="sr-only">View image</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></button>`;
+          formattedText = formattedText.replace(ref.placeholder, buttonHtml);
+        } else {
+          formattedText = formattedText.replace(ref.placeholder, '');
+        }
+      }
     });
     
     // Return paragraph with processed markdown
-    return React.createElement('div', { 
+    const el = React.createElement('div', { 
       key: pIndex,
       dangerouslySetInnerHTML: { __html: formattedText },
-      className: "mb-2" 
+      className: "mb-2",
+      onClick: (e) => {
+        // Handle clicks on image buttons
+        if (onImageClick) {
+          const target = e.target as HTMLElement;
+          const button = target.closest('button[data-image-name]');
+          if (button) {
+            const imageName = button.getAttribute('data-image-name');
+            if (imageName) {
+              onImageClick(imageName);
+            }
+          }
+        }
+      }
     });
+    
+    return el;
   });
 };
 
@@ -168,11 +189,7 @@ export const createImageButtons = (
           'aria-label': `View image ${imageName}`
         },
         React.createElement('span', { className: "sr-only" }, "View image"),
-        React.createElement('img', {
-          src: mediaItem.data,
-          alt: imageName,
-          className: "h-6 w-6 object-cover rounded"
-        })
+        React.createElement(ImageIcon, { className: "h-4 w-4" })
       );
     }
     return null;

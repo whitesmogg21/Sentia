@@ -1,10 +1,11 @@
+
 import { Question } from "@/types/quiz";
 import QuizOption from "../QuizOption";
 import React, { useRef, useEffect, useState } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ZoomIn, ZoomOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { renderMarkdown, extractImageReferences, createImageButtons } from "@/utils/markdownUtils";
+import { renderMarkdown } from "@/utils/markdownUtils";
 
 interface QuestionViewProps {
   question: Question;
@@ -113,55 +114,21 @@ const QuestionView = ({
     return strikethroughs[questionKey]?.[optionIndex] || false;
   };
 
-  const renderContent = (text: string) => {
-    const imageNames = extractImageReferences(text);
-    const imageButtons = createImageButtons(imageNames, mediaLibrary, handleImageClick);
-    
-    if (imageButtons.length > 0) {
-      return (
-        <div>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {imageButtons}
-          </div>
-          <div className="prose prose-sm dark:prose-invert">
-            {renderMarkdown(text)}
-          </div>
-        </div>
-      );
-    }
-    
-    return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(text)}</div>;
-  };
-
-  const renderOptionContent = (text: string): React.ReactNode => {
-    const imageNames = extractImageReferences(text);
-    const imageButtons = createImageButtons(imageNames, mediaLibrary, handleImageClick);
-    
-    if (imageButtons.length > 0) {
-      return (
-        <div className="flex items-center gap-2">
-          {imageButtons}
-          <div className="prose prose-sm dark:prose-invert">
-            {renderMarkdown(text)}
-          </div>
-        </div>
-      );
-    }
-    
-    return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(text)}</div>;
-  };
-
   return (
     <div className="dark:text-gray-100">
       <div ref={contentRef} className="mb-4">
-        {renderContent(question.question)}
+        {renderMarkdown(question.question, handleImageClick)}
       </div>
       
       <div className="space-y-4">
         {question.options.map((option, index) => (
           <QuizOption
             key={index}
-            option={renderOptionContent(option)}
+            option={
+              <div className="prose prose-sm dark:prose-invert">
+                {renderMarkdown(option, handleImageClick)}
+              </div>
+            }
             selected={selectedAnswer === index}
             correct={
               isAnswered

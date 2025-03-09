@@ -1,3 +1,4 @@
+
 import { Question } from "@/types/quiz";
 import { renderMarkdown, extractImageReferences, createImageButtons } from "@/utils/markdownUtils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -81,27 +82,13 @@ const ExplanationView = ({ question, selectedAnswer }: ExplanationViewProps) => 
 
   const renderExplanationContent = () => {
     if (!question.explanation) return null;
-
-    // Extract standalone image references
-    const imageNames = extractImageReferences(question.explanation);
-    const imageButtons = createImageButtons(imageNames, mediaLibrary, handleImageClick);
     
-    // If we have standalone images, display them in a row
-    if (imageButtons.length > 0) {
-      return (
-        <div>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {imageButtons}
-          </div>
-          <div className="prose prose-sm dark:prose-invert">
-            {renderMarkdown(question.explanation)}
-          </div>
-        </div>
-      );
-    }
-    
-    // Otherwise just render the markdown
-    return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(question.explanation)}</div>;
+    // Render the markdown with image click handler
+    return (
+      <div className="prose prose-sm dark:prose-invert">
+        {renderMarkdown(question.explanation, handleImageClick)}
+      </div>
+    );
   };
 
   return (
