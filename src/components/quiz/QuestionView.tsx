@@ -122,7 +122,7 @@ const QuestionView = ({
         if (index === 0 && !text.startsWith('/')) {
           // This is text before the first image
           return (
-            <span key={index} className="mr-2">
+            <span key={index} className="mr-2 prose prose-sm dark:prose-invert">
               {renderMarkdown(part)}
             </span>
           );
@@ -149,7 +149,7 @@ const QuestionView = ({
         
         if (part) {
           return (
-            <span key={index} className="mr-2">
+            <span key={index} className="mr-2 prose prose-sm dark:prose-invert">
               {renderMarkdown(part)}
             </span>
           );
@@ -159,42 +159,51 @@ const QuestionView = ({
       });
     } else {
       // No image references, just render markdown
-      return renderMarkdown(text);
+      return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(text)}</div>;
     }
   };
 
-  const renderOptionContent = (text: string): React.ReactNode[] => {
+  const renderOptionContent = (text: string): React.ReactNode => {
     const parts = text.split('/');
-    return parts.map((part, index) => {
-      if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
-        // This is an image filename
-        const mediaItem = mediaLibrary.find(m => m.name === part);
-        if (mediaItem) {
-          return (
-            <Button
-              key={index}
-              variant="ghost"
-              size="icon"
-              className="mx-1 inline-flex items-center"
-              onClick={() => handleImageClick(mediaItem.data, mediaItem.name)}
-            >
-              <Image className="h-4 w-4" />
-            </Button>
-          );
-        }
-        return null;
-      }
-      
-      if (part) {
-        return (
-          <span key={index} className="mr-2">
-            {renderMarkdown(part)}
-          </span>
-        );
-      }
-      
-      return null;
-    }).filter(Boolean);
+    if (parts.length > 1) {
+      return (
+        <div className="flex items-center">
+          {parts.map((part, index) => {
+            if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
+              // This is an image filename
+              const mediaItem = mediaLibrary.find(m => m.name === part);
+              if (mediaItem) {
+                return (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    size="icon"
+                    className="mx-1 inline-flex items-center"
+                    onClick={() => handleImageClick(mediaItem.data, mediaItem.name)}
+                  >
+                    <Image className="h-4 w-4" />
+                  </Button>
+                );
+              }
+              return null;
+            }
+            
+            if (part) {
+              return (
+                <span key={index} className="mr-2 prose prose-sm dark:prose-invert">
+                  {renderMarkdown(part)}
+                </span>
+              );
+            }
+            
+            return null;
+          }).filter(Boolean)}
+        </div>
+      );
+    } else {
+      // No image references, just render markdown
+      return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(text)}</div>;
+    }
   };
 
   return (
@@ -204,27 +213,24 @@ const QuestionView = ({
       </div>
       
       <div className="space-y-4">
-        {question.options.map((option, index) => {
-          const optionContent = renderOptionContent(option);
-          return (
-            <QuizOption
-              key={index}
-              option={<div className="flex items-center">{optionContent}</div>}
-              selected={selectedAnswer === index}
-              correct={
-                isAnswered
-                  ? index === question.correctAnswer
-                  : undefined
-              }
-              onClick={() => onAnswerClick(index)}
-              disabled={isAnswered || isPaused}
-              questionId={question.id}
-              optionIndex={index}
-              onStrikethrough={handleStrikethrough}
-              isStrikedOut={isOptionStrikedOut(index)}
-            />
-          );
-        })}
+        {question.options.map((option, index) => (
+          <QuizOption
+            key={index}
+            option={renderOptionContent(option)}
+            selected={selectedAnswer === index}
+            correct={
+              isAnswered
+                ? index === question.correctAnswer
+                : undefined
+            }
+            onClick={() => onAnswerClick(index)}
+            disabled={isAnswered || isPaused}
+            questionId={question.id}
+            optionIndex={index}
+            onStrikethrough={handleStrikethrough}
+            isStrikedOut={isOptionStrikedOut(index)}
+          />
+        ))}
       </div>
 
       {selectedImage && (

@@ -30,7 +30,7 @@ const ExplanationView = ({ question, selectedAnswer }: ExplanationViewProps) => 
       {question.explanation && (
         <div className="mt-4">
           <div className="font-medium mb-1">Explanation:</div>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none">
             {renderMarkdown(question.explanation)}
           </div>
         </div>
