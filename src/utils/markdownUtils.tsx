@@ -120,7 +120,7 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
     imageReferences.forEach(ref => {
       if (formattedText.includes(ref.placeholder)) {
         if (onImageClick) {
-          const buttonHtml = `<button class="inline-flex items-center justify-center p-1 mx-1 bg-muted hover:bg-muted/80 rounded-md" data-image-name="${ref.imageName}" aria-label="View image"><span class="sr-only">View image</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></button>`;
+          const buttonHtml = `<button class="inline-flex items-center justify-center p-1 mx-1 bg-muted hover:bg-muted/80 rounded-md" data-image-name="${ref.imageName}" aria-label="View image ${ref.imageName}"><span class="sr-only">View image</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></button>`;
           formattedText = formattedText.replace(ref.placeholder, buttonHtml);
         } else {
           formattedText = formattedText.replace(ref.placeholder, '');
@@ -129,7 +129,7 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
     });
     
     // Return paragraph with processed markdown
-    const el = React.createElement('div', { 
+    return React.createElement('div', { 
       key: pIndex,
       dangerouslySetInnerHTML: { __html: formattedText },
       className: "mb-2",
@@ -142,13 +142,26 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
             const imageName = button.getAttribute('data-image-name');
             if (imageName) {
               onImageClick(imageName);
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }
+        }
+      },
+      onKeyDown: (e) => {
+        // Add keyboard accessibility for image buttons
+        if (onImageClick && e.key === 'Enter') {
+          const target = e.target as HTMLElement;
+          if (target.tagName === 'BUTTON' && target.hasAttribute('data-image-name')) {
+            const imageName = target.getAttribute('data-image-name');
+            if (imageName) {
+              onImageClick(imageName);
+              e.preventDefault();
             }
           }
         }
       }
     });
-    
-    return el;
   });
 };
 
@@ -174,24 +187,21 @@ export const extractImageReferences = (text: string): string[] => {
  */
 export const createImageButtons = (
   imageNames: string[], 
-  mediaLibrary: any[], 
   onImageClick: (imageName: string) => void
 ): React.ReactNode[] => {
   return imageNames.map((imageName, index) => {
-    const mediaItem = mediaLibrary.find(m => m.name === imageName);
-    if (mediaItem) {
-      return React.createElement(
-        'button',
-        {
-          key: index,
-          onClick: () => onImageClick(imageName),
-          className: "inline-flex items-center justify-center p-1 mx-1 bg-muted hover:bg-muted/80 rounded-md",
-          'aria-label': `View image ${imageName}`
-        },
-        React.createElement('span', { className: "sr-only" }, "View image"),
-        React.createElement(ImageIcon, { className: "h-4 w-4" })
-      );
-    }
-    return null;
-  }).filter(Boolean);
+    return React.createElement(
+      Button,
+      {
+        key: index,
+        onClick: () => onImageClick(imageName),
+        variant: "ghost",
+        size: "icon",
+        className: "mx-1 inline-flex items-center",
+        'aria-label': `View image ${imageName}`
+      },
+      React.createElement(ImageIcon, { className: "h-4 w-4" }),
+      React.createElement('span', { className: "sr-only" }, `View image ${imageName}`)
+    );
+  });
 };
