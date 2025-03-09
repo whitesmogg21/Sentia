@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Question } from "@/types/quiz";
 import QuestionView from "./QuestionView";
@@ -259,6 +260,24 @@ const QuizContent = ({
           <ChevronLeft className="h-4 w-4" />
         )}
       </Button>
+
+      {/* Add the QuizController back */}
+      <div className="fixed bottom-0 left-0 right-0 z-10">
+        <QuizController
+          currentQuestionIndex={currentQuestionIndex}
+          totalQuestions={totalQuestions}
+          isAnswered={isAnswered}
+          isPaused={isPaused}
+          isFlagged={isFlagged}
+          timerEnabled={timerEnabled}
+          timeLimit={timePerQuestion}
+          onTimeUp={onTimeUp}
+          onNavigate={onNavigate}
+          onPause={onPause}
+          onQuit={() => setShowQuitDialog(true)}
+          onToggleFlag={onToggleFlag}
+        />
+      </div>
 
       <AlertDialog open={showQuitDialog} onOpenChange={setShowQuitDialog}>
         <AlertDialogContent>
