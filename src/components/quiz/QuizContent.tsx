@@ -134,12 +134,12 @@ const QuizContent = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-background dark:bg-background">
+    <div className="bg-background dark:bg-background min-h-screen">
       <div className={cn(
-        "transition-all duration-300",
+        "transition-all duration-300 pb-24",
         sidebarCollapsed ? "ml-0" : "ml-[160px]"
       )}>
-        <div className="container mx-auto p-6 h-full flex flex-col">
+        <div className="container mx-auto p-6 flex flex-col">
           <div className="flex items-center justify-end gap-2 mb-4">
             <FormulaTable />
             <DropdownMenu>
@@ -205,13 +205,13 @@ const QuizContent = ({
             <ProgressBar current={currentQuestionIndex + 1} total={totalQuestions} />
           </div>
 
-          <div className="flex-1 overflow-y-auto relative">
+          <div className="relative">
             {isPaused && (
               <div className="absolute inset-0 bg-gray-800/50 dark:bg-black/50 flex items-center justify-center z-10">
                 <p className="text-white text-lg font-bold">Quiz is paused</p>
               </div>
             )}
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 gap-6 mb-20">
               <QuestionView
                 question={currentQuestion}
                 selectedAnswer={selectedAnswer}
@@ -228,26 +228,11 @@ const QuizContent = ({
               )}
             </div>
           </div>
-
-          <QuizController
-            currentQuestionIndex={currentQuestionIndex}
-            totalQuestions={totalQuestions}
-            isAnswered={isAnswered}
-            isPaused={isPaused}
-            isFlagged={isFlagged}
-            timerEnabled={timerEnabled}
-            timeLimit={timePerQuestion}
-            onTimeUp={onTimeUp}
-            onNavigate={onNavigate}
-            onPause={onPause}
-            onQuit={() => setShowQuitDialog(true)}
-            onToggleFlag={onToggleFlag}
-          />
         </div>
       </div>
 
       <div className={cn(
-        "fixed left-0 top-0 h-full w-[160px] transition-transform duration-300",
+        "fixed left-0 top-0 h-full w-[160px] transition-transform duration-300 z-10",
         sidebarCollapsed && "-translate-x-[160px]"
       )}>
         <QuestionsSidebar
@@ -262,7 +247,7 @@ const QuizContent = ({
         variant="ghost"
         size="icon"
         className={cn(
-          "fixed top-4 transition-all duration-300 bg-background border",
+          "fixed top-4 transition-all duration-300 bg-background border z-20",
           sidebarCollapsed ? "left-4" : "left-[150px]"
         )}
         onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
