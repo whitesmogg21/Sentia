@@ -1,7 +1,9 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, protocol} = require('electron');
 const path = require('path');
 const fs = require('fs');
 const isDev = process.env.NODE_ENV === 'development';
+// const { app, BrowserWindow, protocol } = require('electron');
+
 
 console.log('Electron app starting...');
 console.log('Current working directory:', process.cwd());
@@ -68,6 +70,13 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Register protocol for loading local resources
+  protocol.registerFileProtocol('app', (request, callback) => {
+    const url = request.url.substr(6); // Remove 'app://' prefix
+    const filePath = path.join(__dirname, '../assets', url);
+    callback({ path: filePath });
+  });
+  
   console.log('App is ready');
   createWindow();
 });

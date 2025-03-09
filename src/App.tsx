@@ -29,6 +29,18 @@ const App = () => {
   useMetricsInit();
 
   useEffect(() => {
+    // Small delay to ensure the UI has time to render
+    const timer = setTimeout(() => {
+      if (window.electronAPI && typeof window.electronAPI.removePreloader === 'function') {
+        console.log('Removing preloader...');
+        window.electronAPI.removePreloader();
+      }
+    }, 1000); // 1 second delay gives the app time to render
+
+    return () => clearTimeout(timer);
+  }, []);
+  
+  useEffect(() => {
     // Load quiz history from localStorage
     try {
       const savedHistory = localStorage.getItem('quizHistory');
