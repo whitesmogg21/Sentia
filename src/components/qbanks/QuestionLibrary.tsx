@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit, Trash2, Filter, Sun, Moon, Download, Bold, Italic, List, ListOrdered, Link, Quote, Code } from "lucide-react";
+import { Plus, Tag, Check, X, ArrowUpDown, Upload, Edit, Trash2, Filter, Sun, Moon, Download, Maximize, Minimize } from "lucide-react";
 import { Question, QBank } from "@/types/quiz";
 import { toast } from "@/components/ui/use-toast";
 import { useTheme } from "@/components/ThemeProvider";
@@ -21,6 +21,17 @@ import {
 } from "@/components/ui/table";
 import MediaSelector from "./MediaSelector";
 import { updateQuestionMetrics, initializeMetrics } from "@/utils/metricsUtils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useFullscreen } from "@/hooks/use-fullscreen";
 
 interface QuestionLibraryProps {
   qbanks: QBank[];
@@ -36,6 +47,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const { theme, setTheme } = useTheme();
+  const { isFullscreen, toggleFullscreen } = useFullscreen();
   const [newQuestion, setNewQuestion] = useState<Partial<Question>>({
     question: "",
     options: ["", "", "", ""],
@@ -57,7 +69,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [tagSearchQuery, setTagSearchQuery] = useState("");
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
-  const [formatSelection, setFormatSelection] = useState({ start: 0, end: 0 });
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   useEffect(() => {
     initializeMetrics();
@@ -219,51 +231,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     });
   };
 
-  const applyFormat = (format: string) => {
-    let prefix = '';
-    let suffix = '';
-    
-    switch (format) {
-      case 'bold':
-        prefix = '**';
-        suffix = '**';
-        break;
-      case 'italic':
-        prefix = '_';
-        suffix = '_';
-        break;
-      case 'list':
-        prefix = '- ';
-        break;
-      case 'orderedList':
-        prefix = '1. ';
-        break;
-      case 'link':
-        prefix = '[';
-        suffix = '](url)';
-        break;
-      case 'code':
-        prefix = '`';
-        suffix = '`';
-        break;
-      case 'quote':
-        prefix = '> ';
-        break;
-    }
-
-    const text = newQuestion.question;
-    const newText = text.substring(0, formatSelection.start) +
-                   prefix +
-                   text.substring(formatSelection.start, formatSelection.end) +
-                   suffix +
-                   text.substring(formatSelection.end);
-
-    setNewQuestion(prev => ({
-      ...prev,
-      question: newText
-    }));
-  };
-
   const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -366,6 +333,50 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     } else {
       setSelectedQuestions(sortedQuestions);
     }
+  };
+
+  const handleDeleteSelected = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteSelected = () => {
+    if (selectedQuestions.length === 0) return;
+    
+    const questionIds = selectedQuestions.map(q => q.id);
+    
+    qbanks.forEach(qbank => {
+      qbank.questions = qbank.questions.filter(q => !questionIds.includes(q.id));
+    });
+    
+    saveQBanksToStorage();
+    
+    initializeMetrics();
+    
+    setSelectedQuestions([]);
+    setShowDeleteDialog(false);
+    
+    toast({
+      title: "Success",
+      description: `${questionIds.length} questions deleted successfully`,
+    });
+  };
+
+  const handleDeleteQuestion = (questionId: number) => {
+    qbanks.forEach(qbank => {
+      const index = qbank.questions.findIndex(q => q.id === questionId);
+      if (index !== -1) {
+        qbank.questions.splice(index, 1);
+      }
+    });
+    
+    saveQBanksToStorage();
+    
+    initializeMetrics();
+    
+    toast({
+      title: "Success",
+      description: "Question deleted successfully",
+    });
   };
 
   const filteredQuestions = qbanks.flatMap(qbank => 
@@ -473,24 +484,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     }
   };
 
-  const handleDeleteQuestion = (questionId: number) => {
-    qbanks.forEach(qbank => {
-      const index = qbank.questions.findIndex(q => q.id === questionId);
-      if (index !== -1) {
-        qbank.questions.splice(index, 1);
-      }
-    });
-    
-    saveQBanksToStorage();
-    
-    initializeMetrics();
-    
-    toast({
-      title: "Success",
-      description: "Question deleted successfully",
-    });
-  };
-
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -527,10 +520,21 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           </label>
 
           {selectedQuestions.length > 0 && (
-            <Button onClick={handleExport} className="flex items-center gap-2">
-              <Download className="w-4 h-4" />
-              Export Selected ({selectedQuestions.length})
-            </Button>
+            <>
+              <Button onClick={handleExport} className="flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                Export Selected ({selectedQuestions.length})
+              </Button>
+              
+              <Button 
+                onClick={handleDeleteSelected} 
+                variant="destructive"
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Selected ({selectedQuestions.length})
+              </Button>
+            </>
           )}
 
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -547,78 +551,11 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Question Text</Label>
-                  <div className="space-y-2">
-                    <div className="flex gap-2 mb-2">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => applyFormat('bold')}
-                        title="Bold"
-                      >
-                        <Bold className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => applyFormat('italic')}
-                        title="Italic"
-                      >
-                        <Italic className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => applyFormat('list')}
-                        title="Bullet List"
-                      >
-                        <List className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => applyFormat('orderedList')}
-                        title="Numbered List"
-                      >
-                        <ListOrdered className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => applyFormat('link')}
-                        title="Link"
-                      >
-                        <Link className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => applyFormat('quote')}
-                        title="Quote"
-                      >
-                        <Quote className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => applyFormat('code')}
-                        title="Code"
-                      >
-                        <Code className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <Textarea
-                      placeholder="Enter question text (supports markdown)"
-                      value={newQuestion.question}
-                      onChange={(e) => setNewQuestion(prev => ({ ...prev, question: e.target.value }))}
-                      onSelect={(e) => {
-                        const target = e.target as HTMLTextAreaElement;
-                        setFormatSelection({
-                          start: target.selectionStart,
-                          end: target.selectionEnd
-                        });
-                      }}
-                    />
-                  </div>
+                  <Textarea
+                    placeholder="Enter question text"
+                    value={newQuestion.question}
+                    onChange={(e) => setNewQuestion(prev => ({ ...prev, question: e.target.value }))}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -731,9 +668,40 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               <Sun className="h-4 w-4" />
             )}
           </Button>
+          
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleFullscreen}
+            className="rounded-full"
+            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {isFullscreen ? (
+              <Minimize className="h-4 w-4" />
+            ) : (
+              <Maximize className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </div>
 
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Selected Questions</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedQuestions.length} question{selectedQuestions.length > 1 ? 's' : ''}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <Button variant="destructive" onClick={confirmDeleteSelected}>
+              Delete
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
       <Dialog open={showTagFilterModal} onOpenChange={setShowTagFilterModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -849,13 +817,6 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                       onClick={() => handleEdit(question)}
                     >
                       <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteQuestion(question.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>

@@ -1,23 +1,77 @@
 
-import { motion } from "framer-motion";
 import { Question } from "@/types/quiz";
+import { renderMarkdown } from "@/utils/markdownUtils";
+import { useState } from "react";
+import { useMediaLibrary } from "@/hooks/useMediaLibrary";
+import ImageModal from "./ImageModal";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ExplanationViewProps {
   question: Question;
+  selectedAnswer: number | null;
 }
 
-const ExplanationView = ({ question }: ExplanationViewProps) => {
+const ExplanationView = ({ question, selectedAnswer }: ExplanationViewProps) => {
+  const isCorrect = selectedAnswer === question.correctAnswer;
+  const correctOptionText = question.options[question.correctAnswer];
+  const { mediaLibrary, getMediaItem } = useMediaLibrary();
+  const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
+
+  const handleImageClick = (imageName: string) => {
+    const mediaItem = getMediaItem(imageName);
+    if (mediaItem) {
+      setSelectedImage({ url: mediaItem.data, name: mediaItem.name });
+    }
+  };
+
+  const renderExplanationContent = () => {
+    if (!question.explanation) return null;
+    
+    return (
+      <div className="prose prose-sm dark:prose-invert">
+        {renderMarkdown(question.explanation, handleImageClick)}
+      </div>
+    );
+  };
+
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="bg-white p-8 rounded-2xl shadow-lg"
-    >
-      <h3 className="text-xl font-bold mb-4">Explanation</h3>
-      <p className="text-lg mb-6">
-        {question.explanation || "The correct answer was: " + question.options[question.correctAnswer]}
-      </p>
-    </motion.div>
+    <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-background">
+      <div className="mb-4">
+        <div className={`text-lg font-medium ${isCorrect ? 'text-success' : 'text-error'}`}>
+          {isCorrect ? 'Correct!' : 'Incorrect!'}
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {selectedAnswer !== null
+            ? `You selected: ${question.options[selectedAnswer]}`
+            : 'You did not select an answer'}
+        </div>
+        <div className="text-sm text-success">
+          Correct answer: {correctOptionText}
+        </div>
+      </div>
+
+      {question.explanation && (
+        <div className="mt-4">
+          <div className="font-medium mb-1">Explanation:</div>
+          <div className="h-[300px] overflow-hidden">
+            <ScrollArea className="h-full w-full pr-4">
+              <div className="text-sm text-muted-foreground pb-4">
+                {renderExplanationContent()}
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
+      )}
+
+      {selectedImage && (
+        <ImageModal
+          isOpen={true}
+          onClose={() => setSelectedImage(null)}
+          imageUrl={selectedImage.url}
+          altText={selectedImage.name}
+        />
+      )}
+    </div>
   );
 };
 
