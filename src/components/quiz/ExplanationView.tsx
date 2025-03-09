@@ -53,11 +53,13 @@ const ExplanationView = ({ question, selectedAnswer }: ExplanationViewProps) => 
       {question.explanation && (
         <div className="mt-4">
           <div className="font-medium mb-1">Explanation:</div>
-          <ScrollArea className="max-h-[300px]">
-            <div className="text-sm text-muted-foreground">
-              {renderExplanationContent()}
-            </div>
-          </ScrollArea>
+          <div className="h-[300px] overflow-hidden">
+            <ScrollArea className="h-full w-full pr-4">
+              <div className="text-sm text-muted-foreground pb-4">
+                {renderExplanationContent()}
+              </div>
+            </ScrollArea>
+          </div>
         </div>
       )}
 
