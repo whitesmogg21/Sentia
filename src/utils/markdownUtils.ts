@@ -7,8 +7,15 @@ import React from 'react';
 export const renderMarkdown = (text: string): React.ReactNode[] => {
   if (!text) return [null];
 
+  // Pre-process text to avoid processing image references with /path format
+  const imageReferences: { index: number; match: string }[] = [];
+  let processedText = text.replace(/\/([^\/\s]+\.(png|jpg|jpeg|gif))/gi, (match, _, __, offset) => {
+    imageReferences.push({ index: offset, match });
+    return `__IMAGE_PLACEHOLDER_${imageReferences.length - 1}__`;
+  });
+
   // Split text by newlines to handle paragraphs
-  const paragraphs = text.split('\n\n').filter(Boolean);
+  const paragraphs = processedText.split('\n\n').filter(Boolean);
   
   return paragraphs.map((paragraph, pIndex) => {
     // Process paragraph text with markdown formatting
@@ -73,7 +80,7 @@ export const renderMarkdown = (text: string): React.ReactNode[] => {
     // Convert links: [title](url) to <a href="url">title</a>
     formattedText = formattedText.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
     
-    // Convert images: ![alt](url) to <img src="url" alt="alt" />
+    // Convert markdown images: ![alt](url) to <img src="url" alt="alt" />
     formattedText = formattedText.replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" style="max-width: 100%;" />');
     
     // Convert headings: # Heading to <h1>Heading</h1>
@@ -89,6 +96,11 @@ export const renderMarkdown = (text: string): React.ReactNode[] => {
     if (formattedText === '---') {
       formattedText = '<hr />';
     }
+    
+    // Replace image placeholders with their original notation
+    imageReferences.forEach((ref, i) => {
+      formattedText = formattedText.replace(`__IMAGE_PLACEHOLDER_${i}__`, `/${ref.match}`);
+    });
     
     // Return paragraph with processed markdown
     return React.createElement('div', { 

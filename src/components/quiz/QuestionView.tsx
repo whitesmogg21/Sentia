@@ -91,8 +91,11 @@ const QuestionView = ({
     }
   }, []);
 
-  const handleImageClick = (imageData: string, imageName: string) => {
-    setSelectedImage({ url: imageData, name: imageName });
+  const handleImageClick = (imageName: string) => {
+    const mediaItem = mediaLibrary.find(m => m.name === imageName);
+    if (mediaItem) {
+      setSelectedImage({ url: mediaItem.data, name: mediaItem.name });
+    }
   };
 
   const handleStrikethrough = (questionId: number | string, optionIndex: number, isStriked: boolean) => {
@@ -118,45 +121,49 @@ const QuestionView = ({
     // Split by image references first
     const parts = text.split('/');
     if (text.includes('/') && parts.length > 1) {
-      return parts.map((part, index) => {
-        if (index === 0 && !text.startsWith('/')) {
-          // This is text before the first image
-          return (
-            <span key={index} className="mr-2 prose prose-sm dark:prose-invert">
-              {renderMarkdown(part)}
-            </span>
-          );
-        }
-        
-        if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
-          // This is an image filename
-          const mediaItem = mediaLibrary.find(m => m.name === part);
-          if (mediaItem) {
-            return (
-              <Button
-                key={index}
-                variant="ghost"
-                size="icon"
-                className="mx-1 inline-flex items-center"
-                onClick={() => handleImageClick(mediaItem.data, mediaItem.name)}
-              >
-                <Image className="h-4 w-4" />
-              </Button>
-            );
-          }
-          return null;
-        }
-        
-        if (part) {
-          return (
-            <span key={index} className="mr-2 prose prose-sm dark:prose-invert">
-              {renderMarkdown(part)}
-            </span>
-          );
-        }
-        
-        return null;
-      });
+      return (
+        <div className="flex flex-wrap items-center">
+          {parts.map((part, index) => {
+            if (index === 0 && !text.startsWith('/')) {
+              // This is text before the first image
+              return (
+                <span key={index} className="mr-2 prose prose-sm dark:prose-invert">
+                  {renderMarkdown(part)}
+                </span>
+              );
+            }
+            
+            if (part.match(/\.(png|jpg|jpeg|gif)$/i)) {
+              // This is an image filename
+              const mediaItem = mediaLibrary.find(m => m.name === part);
+              if (mediaItem) {
+                return (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    size="icon"
+                    className="mx-1 inline-flex items-center"
+                    onClick={() => handleImageClick(part)}
+                  >
+                    <Image className="h-4 w-4" />
+                  </Button>
+                );
+              }
+              return null;
+            }
+            
+            if (part) {
+              return (
+                <span key={index} className="mr-2 prose prose-sm dark:prose-invert">
+                  {renderMarkdown(part)}
+                </span>
+              );
+            }
+            
+            return null;
+          }).filter(Boolean)}
+        </div>
+      );
     } else {
       // No image references, just render markdown
       return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(text)}</div>;
@@ -179,7 +186,7 @@ const QuestionView = ({
                     variant="ghost"
                     size="icon"
                     className="mx-1 inline-flex items-center"
-                    onClick={() => handleImageClick(mediaItem.data, mediaItem.name)}
+                    onClick={() => handleImageClick(part)}
                   >
                     <Image className="h-4 w-4" />
                   </Button>
