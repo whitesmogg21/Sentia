@@ -159,20 +159,20 @@ export const createImageButtons = (
   return imageNames.map((imageName, index) => {
     const mediaItem = mediaLibrary.find(m => m.name === imageName);
     if (mediaItem) {
-      return (
-        <button
-          key={index}
-          onClick={() => onImageClick(imageName)}
-          className="inline-flex items-center justify-center p-1 mx-1 bg-muted hover:bg-muted/80 rounded-md"
-          aria-label={`View image ${imageName}`}
-        >
-          <span className="sr-only">View image</span>
-          <img 
-            src={mediaItem.data} 
-            alt={imageName} 
-            className="h-6 w-6 object-cover rounded"
-          />
-        </button>
+      return React.createElement(
+        'button',
+        {
+          key: index,
+          onClick: () => onImageClick(imageName),
+          className: "inline-flex items-center justify-center p-1 mx-1 bg-muted hover:bg-muted/80 rounded-md",
+          'aria-label': `View image ${imageName}`
+        },
+        React.createElement('span', { className: "sr-only" }, "View image"),
+        React.createElement('img', {
+          src: mediaItem.data,
+          alt: imageName,
+          className: "h-6 w-6 object-cover rounded"
+        })
       );
     }
     return null;

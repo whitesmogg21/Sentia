@@ -21,7 +21,6 @@ interface ImageModalProps {
   altText: string;
 }
 
-// Define a type for tracking strikethroughs
 interface StrikethroughState {
   [questionId: string]: {
     [optionIndex: number]: boolean;
@@ -80,7 +79,6 @@ const QuestionView = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const [mediaLibrary, setMediaLibrary] = useState<any[]>([]);
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
-  // Track strikethroughs per question and option
   const [strikethroughs, setStrikethroughs] = useState<StrikethroughState>({});
 
   useEffect(() => {
@@ -110,18 +108,15 @@ const QuestionView = ({
     });
   };
 
-  // Check if an option is striked out
   const isOptionStrikedOut = (optionIndex: number): boolean => {
     const questionKey = question.id.toString();
     return strikethroughs[questionKey]?.[optionIndex] || false;
   };
 
   const renderContent = (text: string) => {
-    // Extract standalone image references
     const imageNames = extractImageReferences(text);
     const imageButtons = createImageButtons(imageNames, mediaLibrary, handleImageClick);
     
-    // If we have standalone images, display them in a row
     if (imageButtons.length > 0) {
       return (
         <div>
@@ -135,16 +130,13 @@ const QuestionView = ({
       );
     }
     
-    // Otherwise just render the markdown
     return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(text)}</div>;
   };
 
   const renderOptionContent = (text: string): React.ReactNode => {
-    // Extract standalone image references for this option
     const imageNames = extractImageReferences(text);
     const imageButtons = createImageButtons(imageNames, mediaLibrary, handleImageClick);
     
-    // If we have standalone images, display them inline with the text
     if (imageButtons.length > 0) {
       return (
         <div className="flex items-center gap-2">
@@ -156,7 +148,6 @@ const QuestionView = ({
       );
     }
     
-    // Otherwise just render the markdown
     return <div className="prose prose-sm dark:prose-invert">{renderMarkdown(text)}</div>;
   };
 
