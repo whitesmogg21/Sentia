@@ -1,6 +1,6 @@
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ZoomIn, ZoomOut, X } from "lucide-react";
+import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useImageZoom } from "@/hooks/useImageZoom";
 
@@ -23,9 +23,6 @@ const ImageModal = ({ isOpen, onClose, imageUrl, altText }: ImageModalProps) => 
           </Button>
           <Button variant="ghost" size="icon" onClick={handleZoomOut} aria-label="Zoom out">
             <ZoomOut className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
-            <X className="h-4 w-4" />
           </Button>
         </div>
         <div className="flex-1 overflow-auto flex items-center justify-center p-4">
