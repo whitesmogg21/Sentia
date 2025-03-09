@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-// A function to convert markdown to React elements
+// A simplified function to render text as plain HTML
 export const renderMarkdown = (text: string): React.ReactNode[] => {
   if (!text) return [null];
 
@@ -9,58 +9,10 @@ export const renderMarkdown = (text: string): React.ReactNode[] => {
   const paragraphs = text.split('\n\n').filter(Boolean);
   
   return paragraphs.map((paragraph, pIndex) => {
-    // Process bold text: **text** -> <strong>text</strong>
-    let processed = paragraph;
-    
-    // Handle bold text with proper regex replacement
-    processed = processed.replace(/\*\*(.*?)\*\*/g, (match, content) => {
-      return `<strong>${content}</strong>`;
-    });
-    
-    // Process italic text: _text_ -> <em>text</em>
-    processed = processed.replace(/_(.*?)_/g, (match, content) => {
-      return `<em>${content}</em>`;
-    });
-    
-    // Process code: `text` -> <code>text</code>
-    processed = processed.replace(/`(.*?)`/g, (match, content) => {
-      return `<code>${content}</code>`;
-    });
-    
-    // Process lists
-    if (paragraph.match(/^-\s/m)) {
-      const items = paragraph.split(/^-\s/m).filter(Boolean);
-      return React.createElement(
-        'ul',
-        { key: pIndex, className: "list-disc pl-5 my-2" },
-        items.map((item, i) => 
-          React.createElement('li', { 
-            key: i, 
-            dangerouslySetInnerHTML: { __html: item } 
-          })
-        )
-      );
-    }
-    
-    // Process numbered lists
-    if (paragraph.match(/^\d+\.\s/m)) {
-      const items = paragraph.split(/^\d+\.\s/m).filter(Boolean);
-      return React.createElement(
-        'ol',
-        { key: pIndex, className: "list-decimal pl-5 my-2" },
-        items.map((item, i) => 
-          React.createElement('li', { 
-            key: i, 
-            dangerouslySetInnerHTML: { __html: item } 
-          })
-        )
-      );
-    }
-    
-    // Return paragraph with inline formatting
+    // Return paragraph as plain text
     return React.createElement('p', { 
-      key: pIndex, 
-      dangerouslySetInnerHTML: { __html: processed },
+      key: pIndex,
+      dangerouslySetInnerHTML: { __html: paragraph },
       className: "mb-2" 
     });
   });
