@@ -12,8 +12,8 @@ export default defineConfig(({ mode }) => ({
   // Server configuration for development
   server: {
     host: 'localhost', // Changed from '::' to 'localhost' for better compatibility
-    port: 8080, // Updated to use port 8080
-    strictPort: true, // Ensure the server uses exactly port 8080
+    port: 8081, 
+    strictPort: true,
     hmr: {
       overlay: true,
     },
@@ -69,7 +69,7 @@ export default defineConfig(({ mode }) => ({
       },
       manifest: {
         name: 'Sentia',
-        short_name: 'Quiz',
+        short_name: 'Sentia',
         description: 'A Progressive Web App for quizzes',
         theme_color: '#9b87f5',
         icons: [

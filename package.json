@@ -6,8 +6,8 @@
   "version": "0.0.0",
   "type": "module",
   "build": {
-    "appId": "com.yourname.yourapp",
-    "productName": "Sentia v1.0",
+    "appId": "com.yourname.sentia",
+    "productName": "Sentia v1.2",
     "files": [
       "dist/**/*",
       "electron/**/*"
@@ -15,8 +15,32 @@
     "directories": {
       "buildResources": "resources",
       "output": "electron-output"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.education",
+      "icon": "resources/icon.icns"
+    },
+    "dmg": {
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "contents": [
+        {
+          "x": 130,
+          "y": 150
+        },
+        {
+          "x": 410,
+          "y": 150,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
     }
   },
+  
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -98,6 +122,7 @@
     "cross-env": "^7.0.3",
     "electron": "^34.3.0",
     "electron-builder": "^25.1.8",
+    "electron-installer-dmg": "^5.0.1",
     "electron-is-dev": "^3.0.1",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
