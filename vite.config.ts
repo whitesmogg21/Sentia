@@ -12,8 +12,8 @@ export default defineConfig(({ mode }) => ({
   // Server configuration for development
   server: {
     host: 'localhost', // Changed from '::' to 'localhost' for better compatibility
-    port: 8081, // Updated to use port 8080
-    strictPort: true, // Ensure the server uses exactly port 8080
+    port: 8081, 
+    strictPort: true,
     hmr: {
       overlay: true,
     },

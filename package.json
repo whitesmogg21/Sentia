@@ -6,7 +6,7 @@
   "version": "0.0.0",
   "type": "module",
   "build": {
-    "appId": "com.yourname.yourapp",
+    "appId": "com.yourname.sentia",
     "productName": "Sentia v1.2",
     "files": [
       "dist/**/*",
@@ -15,6 +15,30 @@
     "directories": {
       "buildResources": "resources",
       "output": "electron-output"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.education",
+      "icon": "resources/icon.icns",
+      "artifactName": "${productName}-${version}-mac.${ext}"
+    },
+    "dmg": {
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "contents": [
+        {
+          "x": 130,
+          "y": 150
+        },
+        {
+          "x": 410,
+          "y": 150,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
     }
   },
   
