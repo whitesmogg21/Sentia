@@ -19,8 +19,7 @@
     "mac": {
       "target": ["dmg"],
       "category": "public.app-category.education",
-      "icon": "resources/icon.icns",
-      "artifactName": "${productName}-${version}-mac.${ext}"
+      "icon": "resources/icon.icns"
     },
     "dmg": {
       "window": {
