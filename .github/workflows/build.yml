@@ -1,4 +1,4 @@
-name: Build Application
+name: Build
 
 on:
   push:
@@ -13,10 +13,10 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
       
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: 18
           cache: 'npm'
@@ -27,7 +27,8 @@ jobs:
       - name: Create resources directory
         run: |
           mkdir -p resources
-          # Use electron icon as fallback
+          # Create a simple icon.icns file
+          # This is a placeholder - you should replace with your actual icon
           cp node_modules/electron/dist/Electron.app/Contents/Resources/electron.icns resources/icon.icns
         
       - name: Build application
@@ -36,7 +37,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
       - name: Upload DMG artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: mac-dmg
           path: electron-output/*.dmg
