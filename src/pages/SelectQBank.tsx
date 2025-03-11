@@ -81,7 +81,7 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Select Question Bank</h1>
+      <h1 className="text-2xl font-bold">Select Questions</h1>
       <QuestionFiltersBar
         filters={filters}
         onToggleFilter={(key) =>
