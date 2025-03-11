@@ -18,13 +18,20 @@ import { useFullscreen } from "@/hooks/use-fullscreen";
 interface DashboardProps {
   qbanks: QBank[];
   quizHistory: QuizHistory[];
-  onStartQuiz: (qbankId: string, questionCount: number, tutorMode: boolean, timerEnabled: boolean, timeLimit: number) => void;
+  onStartQuiz: (
+    qbankId: string, 
+    questionCount: number, 
+    tutorMode: boolean, 
+    timerEnabled: boolean, 
+    timeLimit: number,
+    filteredQuestionIds?: number[] // Add this parameter
+  ) => void;
 }
 
 const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   const navigate = useNavigate();
   const [selectedQBank, setSelectedQBank] = useState<QBank | null>(null);
-  const [questionCount, setQuestionCount] = useState<number>(5);
+  const [questionCount, setQuestionCount] = useState<number>(40);
   const [tutorMode, setTutorMode] = useState(false);
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timeLimit, setTimeLimit] = useState(60);
@@ -107,39 +114,49 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       date: quiz.date,
     })), [quizHistory]);
 
-  const filteredQuestions = useMemo(() => {
-    if (!selectedQBank) return [];
-      
-    return selectedQBank.questions.filter(question => {
-      if (!Object.values(filters).some(v => v)) return true;
+    const filteredQuestions = useMemo(() => {
+      if (!selectedQBank) return [];
         
-      const hasBeenAttempted = question.attempts && question.attempts.length > 0;
-      const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
-        
-      return (
-        (filters.unused && !hasBeenAttempted) ||
-        (filters.used && hasBeenAttempted) ||
-        (filters.correct && lastAttempt?.isCorrect) ||
-        (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
-        (filters.flagged && question.isFlagged) ||
-        (filters.omitted && lastAttempt?.selectedAnswer === null)
-      );
-    });
-  }, [selectedQBank, filters]);
+      return selectedQBank.questions.filter(question => {
+        // If no filters are active, return all questions
+        if (!Object.values(filters).some(v => v)) return true;
+          
+        const hasBeenAttempted = question.attempts && question.attempts.length > 0;
+        const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
+          
+        return (
+          (filters.unused && !hasBeenAttempted) ||
+          (filters.used && hasBeenAttempted) ||
+          (filters.correct && lastAttempt?.isCorrect) ||
+          (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
+          (filters.flagged && question.isFlagged) ||
+          (filters.omitted && lastAttempt?.selectedAnswer === null)
+        );
+      });
+    }, [selectedQBank, filters]);
   
-  const handleStartQuiz = () => {
-    if (selectedQBank && questionCount > 0) {
-      if (questionCount > filteredQuestions.length) {
-        toast({
-          title: "Invalid Question Count",
-          description: "The selected number of questions exceeds the available questions in the filtered set.",
-          variant: "destructive"
-        });
-        return;
+    const handleStartQuiz = () => {
+      if (selectedQBank && questionCount > 0) {
+        if (filteredQuestions.length === 0) {
+          toast({
+            title: "No Questions Available",
+            description: "There are no questions available with the current filters.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
+        // Only use filtered questions for the quiz
+        onStartQuiz(
+          selectedQBank.id, 
+          Math.min(questionCount, filteredQuestions.length), 
+          tutorMode, 
+          timerEnabled, 
+          timeLimit,
+          filteredQuestions.map(q => q.id) // Pass only the IDs of filtered questions
+        );
       }
-      onStartQuiz(selectedQBank.id, questionCount, tutorMode, timerEnabled, timeLimit);
-    }
-  };
+    };
 
   const toggleFilter = (key: keyof QuestionFilter) => {
     setFilters(prev => ({
@@ -228,6 +245,19 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   const overallAccuracyCalc = useMemo(() => totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0, [correctAttempts, totalAttempts]);
   const completionRate = useMemo(() => totalQuestions > 0 ? (questionsAttempted / totalQuestions) * 100 : 0, [questionsAttempted, totalQuestions]);
 
+  
+  useEffect(() => {
+    if (selectedQBank) {
+      // Default to 40 questions or all available filtered questions if less than 40
+      const defaultCount = Math.min(40, filteredQuestions.length);
+      
+      // Only update if the current count is invalid (0, greater than available, or not set)
+      if (questionCount <= 0 || questionCount > filteredQuestions.length) {
+        setQuestionCount(defaultCount);
+      }
+    }
+  }, [selectedQBank, filteredQuestions.length]);
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center mb-2">
@@ -300,19 +330,23 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         >
           <h2 className="text-xl font-bold">Quiz Configuration</h2>
           <div className="space-y-4">
-            <div>
-              <Label className="block text-sm font-medium mb-2">
-                Number of Questions
-              </Label>
-              <Input
-                type="number"
-                min={1}
-                max={20}
-                value={questionCount}
-                onChange={(e) => setQuestionCount(Number(e.target.value))}
-                className="w-48"
-              />
-            </div>
+          <div>
+            <Label className="block text-sm font-medium mb-2">
+              Number of Questions (max: {filteredQuestions.length})
+            </Label>
+            <Input
+              type="number"
+              min={1}
+              max={filteredQuestions.length || 1}
+              value={questionCount > filteredQuestions.length ? filteredQuestions.length : questionCount}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                const validValue = Math.min(Math.max(1, value), filteredQuestions.length);
+                setQuestionCount(validValue);
+              }}
+              className="w-48"
+            />
+          </div>
             <div className="flex items-center space-x-2">
               <Switch
                 id="tutor-mode"

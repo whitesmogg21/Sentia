@@ -755,9 +755,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               <TableHead className="w-12">
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   onClick={handleSelectAllVisible}
-                  className="h-8 w-8"
+                  className="h-4 w-4"
                 >
                   {selectedQuestions.length === sortedQuestions.length ? (
                     <Check className="h-4 w-4" />
