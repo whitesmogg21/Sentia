@@ -1,5 +1,5 @@
 
-import { Question, QuizHistory } from "@/types/quiz";
+import { Question, QuizHistory, QuestionAttempt } from "@/types/quiz";
 
 export interface UseQuizProps {
   onQuizComplete?: (history: QuizHistory) => void;
@@ -21,4 +21,6 @@ export interface QuizState {
   timerEnabled: boolean;
   timePerQuestion: number;
   initialTimeLimit: number;
+  quizStartTime?: string;
+  questionAttempts?: QuestionAttempt[];
 }

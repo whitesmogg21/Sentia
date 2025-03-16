@@ -1,4 +1,4 @@
-name: Build Application
+name: Build
 
 on:
   push:
@@ -27,7 +27,8 @@ jobs:
       - name: Create resources directory
         run: |
           mkdir -p resources
-          # Use electron icon as fallback
+          # Create a simple icon.icns file
+          # This is a placeholder - you should replace with your actual icon
           cp node_modules/electron/dist/Electron.app/Contents/Resources/electron.icns resources/icon.icns
         
       - name: Build application

@@ -80,6 +80,7 @@ const FilterButton = ({
   }, []);
 
   useEffect(() => {
+    // This will update localStorage when filters change
     const savedFilters = localStorage.getItem('questionFilters');
     const filters = savedFilters ? JSON.parse(savedFilters) : {};
     filters[category.key] = isActive;

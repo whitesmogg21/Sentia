@@ -52,6 +52,7 @@ interface QuizContentProps {
   onQuit: () => void;
   onTimeUp: () => void;
   onToggleFlag: () => void;
+  onJumpToQuestion: (index: number) => void;
 }
 
 const QuizContent = ({
@@ -70,7 +71,8 @@ const QuizContent = ({
   onPause,
   onQuit,
   onTimeUp,
-  onToggleFlag
+  onToggleFlag,
+  onJumpToQuestion
 }: QuizContentProps) => {
   const [showQuitDialog, setShowQuitDialog] = React.useState(false);
   const [answeredQuestions, setAnsweredQuestions] = React.useState<Array<{ questionIndex: number; isCorrect: boolean }>>([]);
@@ -122,11 +124,7 @@ const QuizContent = ({
   };
 
   const handleQuestionClick = (index: number) => {
-    if (index > currentQuestionIndex) {
-      onNavigate('next');
-    } else if (index < currentQuestionIndex) {
-      onNavigate('prev');
-    }
+    onJumpToQuestion(index); 
   };
 
   const handleQuizComplete = () => {
@@ -241,6 +239,8 @@ const QuizContent = ({
           currentQuestionIndex={currentQuestionIndex}
           answeredQuestions={answeredQuestions}
           onQuestionClick={handleQuestionClick}
+          currentQuestion={currentQuestion} 
+          // currentQuestions={currentQuestions}
         />
       </div>
 
@@ -276,6 +276,7 @@ const QuizContent = ({
           onPause={onPause}
           onQuit={() => setShowQuitDialog(true)}
           onToggleFlag={onToggleFlag}
+          // onJumpToQuestion={jumpToQuestion}
         />
       </div>
 

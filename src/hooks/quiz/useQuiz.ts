@@ -22,6 +22,97 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     initialTimeLimit: 60,
   });
 
+  const handleStartQuiz = (
+    qbankId: string, 
+    questions: Question[], // Complete set of questions
+    isTutorMode: boolean, 
+    withTimer: boolean, 
+    timeLimit: number
+  ) => {
+    // Load filtered question IDs from localStorage if present
+    let selectedQuestions = [...questions];
+    const filteredIdsString = localStorage.getItem("filteredQuestionIds");
+    
+    if (filteredIdsString) {
+      try {
+        const filteredIds = JSON.parse(filteredIdsString);
+        // Only use questions that are in the filtered IDs list
+        selectedQuestions = questions.filter(q => filteredIds.includes(q.id));
+        console.log(`Using ${selectedQuestions.length} filtered questions from localStorage`);
+      } catch (error) {
+        console.error("Error parsing filtered question IDs:", error);
+      }
+    }
+  
+    // Randomize the answer options for each question
+    const questionsWithRandomizedOptions = selectedQuestions.map(question => {
+      // Create a copy of the question to avoid mutating the original
+      const questionCopy = { ...question };
+      
+      // Only randomize if the question has options
+      if (questionCopy.options && questionCopy.options.length > 0) {
+        // Create pairs of [index, option text] to keep track of original positions
+        const optionPairs = questionCopy.options.map((option, index) => ({ 
+          originalIndex: index, 
+          text: option 
+        }));
+        
+        // Shuffle the pairs
+        const shuffledPairs = [...optionPairs].sort(() => Math.random() - 0.5);
+        
+        // Update the options with the shuffled text
+        questionCopy.options = shuffledPairs.map(pair => pair.text);
+        
+        // Update the correct answer index to match the new position
+        const correctOptionPair = shuffledPairs.find(
+          pair => pair.originalIndex === questionCopy.correctAnswer
+        );
+        
+        if (correctOptionPair) {
+          // Find the new index of the correct answer
+          questionCopy.correctAnswer = shuffledPairs.findIndex(
+            pair => pair.originalIndex === questionCopy.correctAnswer
+          );
+        }
+      }
+      
+      return questionCopy;
+    });
+  
+    // Initialize the quiz with the randomized questions
+    setState({
+      currentQuestionIndex: 0,
+      score: 0,
+      showScore: false,
+      selectedAnswer: null,
+      isAnswered: false,
+      inQuiz: true,
+      currentQuestions: questionsWithRandomizedOptions,
+      tutorMode: isTutorMode,
+      showExplanation: false,
+      isPaused: false,
+      timerEnabled: withTimer,
+      timePerQuestion: timeLimit,
+      initialTimeLimit: timeLimit,
+      quizStartTime: new Date().toISOString(),
+      questionAttempts: []
+    });
+    
+    // Call the onQuizStart callback if provided
+    onQuizStart?.();
+  };
+
+  const handleJumpToQuestion = (questionIndex: number) => {
+    if (questionIndex >= 0 && questionIndex < state.currentQuestions.length) {
+      setState(prevState => ({
+        ...prevState,
+        currentQuestionIndex: questionIndex,
+        selectedAnswer: null,
+        isAnswered: false,
+        showExplanation: false
+      }));
+    }
+  };
   // Calculate overall accuracy from all attempts in qbanks
   const calculateOverallAccuracy = () => {
     let totalCorrect = 0;
@@ -47,15 +138,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   };
 
   const getCurrentQuestion = () => state.currentQuestions[state.currentQuestionIndex];
-
-  const handleStartQuiz = (qbankId: string, questionCount: number, isTutorMode: boolean, withTimer: boolean, timeLimit: number) => {
-    const initialState = initializeQuiz(qbankId, questionCount, isTutorMode, withTimer, timeLimit);
-    if (initialState) {
-      setState(prev => ({ ...prev, ...initialState }));
-      onQuizStart?.();
-    }
-  };
-
+  
   const handleAnswerTimeout = () => {
     const currentQuestion = getCurrentQuestion();
     if (!currentQuestion) return;
@@ -128,23 +211,38 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   };
 
   const handleRestart = () => {
-    setState({
-      currentQuestionIndex: 0,
-      score: 0,
-      showScore: false,
-      selectedAnswer: null,
-      isAnswered: false,
-      inQuiz: false,
-      currentQuestions: [],
-      tutorMode: false,
-      showExplanation: false,
-      isPaused: false,
-      timerEnabled: false,
-      timePerQuestion: 0,
-      initialTimeLimit: 0
-    });
-    onQuizEnd?.();
+  // Clear any filtered question IDs from localStorage
+  localStorage.removeItem("filteredQuestionIds");
+  localStorage.removeItem("filteredQBank");
+  
+  // Also clear the filter settings
+  const defaultFilters = {
+    unused: false,
+    used: false, 
+    incorrect: false,
+    correct: false,
+    flagged: false,
+    omitted: false
   };
+  localStorage.setItem('questionFilters', JSON.stringify(defaultFilters));
+  
+  setState({
+    currentQuestionIndex: 0,
+    score: 0,
+    showScore: false,
+    selectedAnswer: null,
+    isAnswered: false,
+    inQuiz: false,
+    currentQuestions: [],
+    tutorMode: false,
+    showExplanation: false,
+    isPaused: false,
+    timerEnabled: false,
+    timePerQuestion: 0,
+    initialTimeLimit: 0
+  });
+  onQuizEnd?.();
+};
 
   const handleQuizNavigation = (direction: 'prev' | 'next') => {
     if (direction === 'prev' && state.currentQuestionIndex > 0) {
@@ -210,6 +308,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     handlePause,
     handleRestart,
     handleQuizNavigation,
-    handleToggleFlag
+    handleToggleFlag,
+    jumpToQuestion: handleJumpToQuestion 
   };
 };

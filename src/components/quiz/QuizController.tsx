@@ -15,6 +15,7 @@ interface QuizControllerProps {
   onPause: () => void;
   onQuit: () => void;
   onToggleFlag: () => void;
+  // onJumpToQuestion: (index: number) => void;
 }
 
 const QuizController = ({
@@ -29,7 +30,8 @@ const QuizController = ({
   onNavigate,
   onPause,
   onQuit,
-  onToggleFlag
+  onToggleFlag,
+  // onJumpToQuestion
 }: QuizControllerProps) => {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
