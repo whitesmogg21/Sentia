@@ -7,7 +7,7 @@
   "type": "module",
   "build": {
     "appId": "com.yourname.sentia",
-    "productName": "Sentia v1.3",
+    "productName": "Sentia v1.6",
     "files": [
       "dist/**/*",
       "electron/**/*"

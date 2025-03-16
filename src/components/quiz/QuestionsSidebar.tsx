@@ -1,6 +1,7 @@
-
 import { cn } from "@/lib/utils";
 import { Check, X } from "lucide-react";
+import { Question } from "@/types/quiz";
+import { useEffect, useState } from "react";
 
 interface QuestionsSidebarProps {
   totalQuestions: number;
@@ -10,6 +11,8 @@ interface QuestionsSidebarProps {
     isCorrect: boolean;
   }[];
   onQuestionClick: (index: number) => void;
+  currentQuestion?: Question;
+  currentQuestions?: Question[]; // Add this to access all questions
 }
 
 const QuestionsSidebar = ({
@@ -17,7 +20,42 @@ const QuestionsSidebar = ({
   currentQuestionIndex,
   answeredQuestions,
   onQuestionClick,
+  currentQuestion,
+  currentQuestions = [] // Default to empty array
 }: QuestionsSidebarProps) => {
+  // Keep track of flagged questions in component state
+  const [flaggedQuestions, setFlaggedQuestions] = useState<Record<number, boolean>>({});
+  
+  // Update flagged status when currentQuestion changes
+  useEffect(() => {
+    if (currentQuestion && currentQuestion.isFlagged) {
+      setFlaggedQuestions(prev => ({
+        ...prev,
+        [currentQuestionIndex]: true
+      }));
+    } else if (currentQuestion && currentQuestionIndex in flaggedQuestions && !currentQuestion.isFlagged) {
+      // If the question was flagged and is now unflagged, update state
+      setFlaggedQuestions(prev => {
+        const newState = {...prev};
+        delete newState[currentQuestionIndex];
+        return newState;
+      });
+    }
+  }, [currentQuestion, currentQuestionIndex]);
+
+  // Initialize flagged status from currentQuestions if available
+  useEffect(() => {
+    if (currentQuestions && currentQuestions.length > 0) {
+      const flaggedState: Record<number, boolean> = {};
+      currentQuestions.forEach((question, index) => {
+        if (question.isFlagged) {
+          flaggedState[index] = true;
+        }
+      });
+      setFlaggedQuestions(flaggedState);
+    }
+  }, [currentQuestions]);
+  
   return (
     <div className="fixed left-0 top-0 h-full w-[160px] bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shadow-lg">
       <div className="p-3 border-b border-gray-200">
@@ -30,8 +68,9 @@ const QuestionsSidebar = ({
             const answered = answeredQuestions.find(
               (q) => q.questionIndex === index
             );
-            const isFlagged = window.localStorage.getItem(`question-${index}-flagged`) === 'true';
-            const isUnanswered = !answered;
+            
+            // Check if this question is flagged from our component state
+            const isFlagged = flaggedQuestions[index] || false;
             
             return (
               <button

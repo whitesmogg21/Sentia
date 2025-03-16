@@ -1,4 +1,4 @@
-import { Question, QuestionAttempt, QuestionCategory, QuestionMetricsEntry, QuestionMetricsStore } from "@/types/quiz";
+import { Question, QuestionAttempt, QuestionCategory, QuestionMetricsEntry, QuestionMetricsStore, QuestionFilter } from "@/types/quiz";
 import { qbanks } from "@/data/questions";
 
 const METRICS_STORAGE_KEY = 'questionMetricsStore';
@@ -193,24 +193,100 @@ export const getFilteredQuestions = (questions: Question[], activeFilters: strin
     // If no metrics for this question yet, it's unused
     const questionMetrics = metrics[question.id] || { status: 'unused', isFlagged: false };
     
+    // Also check question attempts directly in case metrics are out of sync
+    const hasBeenAttempted = question.attempts && question.attempts.length > 0;
+    const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
+    
     // Check if this question matches any of the active filters
     return activeFilters.some(filter => {
       switch (filter) {
         case 'unused':
-          return questionMetrics.status === 'unused';
+          return questionMetrics.status === 'unused' || !hasBeenAttempted;
         case 'used':
-          return questionMetrics.status !== 'unused';
+          return questionMetrics.status !== 'unused' || hasBeenAttempted;
         case 'correct':
-          return questionMetrics.status === 'correct';
+          return questionMetrics.status === 'correct' || 
+                 (lastAttempt && lastAttempt.isCorrect);
         case 'incorrect':
-          return questionMetrics.status === 'incorrect';
+          return questionMetrics.status === 'incorrect' || 
+                 (lastAttempt && !lastAttempt.isCorrect && lastAttempt.selectedAnswer !== null);
         case 'omitted':
-          return questionMetrics.status === 'omitted';
+          return questionMetrics.status === 'omitted' || 
+                 (lastAttempt && lastAttempt.selectedAnswer === null);
         case 'flagged':
-          return questionMetrics.isFlagged;
+          return questionMetrics.isFlagged || question.isFlagged;
         default:
           return false;
       }
     });
   });
+};
+
+// Add this new function to metricsUtils.ts
+export function syncFiltersWithLocalStorage(): QuestionFilter {
+  // Default state - all filters off
+  const defaultFilters: QuestionFilter = {
+    unused: false,
+    used: false,
+    incorrect: false,
+    correct: false,
+    flagged: false,
+    omitted: false,
+  };
+  
+  // Check if we have a filtered QBank stored
+  const filteredQBankString = localStorage.getItem("filteredQBank");
+  if (!filteredQBankString) {
+    return defaultFilters;
+  }
+  
+  try {
+    // Get the filtered QBank and the active filters from localStorage
+    const savedFilters = localStorage.getItem('questionFilters');
+    if (savedFilters) {
+      return JSON.parse(savedFilters);
+    }
+    
+    // If no saved filters but we have a filtered QBank, 
+    // we need to determine which filters were active
+    const filteredQBank = JSON.parse(filteredQBankString);
+    const metrics = getMetricsStore();
+    
+    // Create a map to track if we've found questions for each filter
+    const foundFilters: QuestionFilter = { ...defaultFilters };
+    
+    // Check each question in the filtered QBank to determine which filters are active
+    filteredQBank.questions.forEach((question: Question) => {
+      const questionId = question.id;
+      const metric = metrics[questionId] || { status: 'unused', isFlagged: false };
+      
+      // Set filters based on question status
+      switch (metric.status) {
+        case 'unused':
+          foundFilters.unused = true;
+          break;
+        case 'correct':
+          foundFilters.correct = true;
+          foundFilters.used = true;
+          break;
+        case 'incorrect':
+          foundFilters.incorrect = true;
+          foundFilters.used = true;
+          break;
+        case 'omitted':
+          foundFilters.omitted = true;
+          foundFilters.used = true;
+          break;
+      }
+      
+      if (question.isFlagged || metric.isFlagged) {
+        foundFilters.flagged = true;
+      }
+    });
+    
+    return foundFilters;
+  } catch (error) {
+    console.error("Error syncing filters with localStorage:", error);
+    return defaultFilters;
+  }
 };
