@@ -39,22 +39,6 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     jumpToQuestion
   } = useQuiz({ onQuizComplete, onQuizStart, onQuizEnd });
 
-  const [showQuitDialog, setShowQuitDialog] = useState(false);
-
-  const handleQuitClick = () => {
-    setShowQuitDialog(true);
-  };
-
-  const handleQuitConfirm = () => {
-    setShowQuitDialog(false);
-    handleQuit();
-  };
-
-  const handleQuitCancel = () => {
-    setShowQuitDialog(false);
-  };
-
-
   const startQuiz = (
     qbankId: string, 
     questionCount: number, 
