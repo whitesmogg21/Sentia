@@ -488,7 +488,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     }
   };
 
-  const paginatedQuestions = paginationUtil(sortedQuestions, ROWS_PER_PAGE);
+  const paginatedQuestions = paginationUtil(sortedQuestions, ROWS_PER_PAGE) || [];
 
   return (
     <div className="p-6">
@@ -790,7 +790,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedQuestions[pageNumber-1].map((question) => (
+            {paginatedQuestions[pageNumber-1]?.map((question) => (
               <TableRow key={question.id}>
                 <TableCell>
                   <input

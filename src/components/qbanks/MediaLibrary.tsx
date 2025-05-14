@@ -178,7 +178,7 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
       item.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
-  const paginatedMedia = paginationUtil(filteredMedia, ROWS_PER_PAGE);
+  const paginatedMedia = paginationUtil(filteredMedia, ROWS_PER_PAGE) || [];
 
   return (
     <div className="p-6">
@@ -263,7 +263,7 @@ const MediaLibrary = ({ qbanks }: MediaLibraryProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedMedia[pageNumber-1].map((item) => (
+            {paginatedMedia[pageNumber-1]?.map((item) => (
               <TableRow key={item.id}>
                 <TableCell>
                   <img
