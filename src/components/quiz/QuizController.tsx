@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Play, Pause, XCircle, Flag } from "lucide-react";
 import Timer from "./Timer";
@@ -16,6 +15,7 @@ interface QuizControllerProps {
   onPause: () => void;
   onQuit: () => void;
   onToggleFlag: () => void;
+  // onJumpToQuestion: (index: number) => void;
 }
 
 const QuizController = ({
@@ -31,9 +31,10 @@ const QuizController = ({
   onPause,
   onQuit,
   onToggleFlag,
+  // onJumpToQuestion
 }: QuizControllerProps) => {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 z-20">
+    <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
       <div className="container mx-auto flex items-center justify-between">
         <div className="w-32">
           {timerEnabled && (
