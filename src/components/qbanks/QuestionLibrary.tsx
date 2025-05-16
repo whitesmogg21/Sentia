@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useFullscreen } from "@/hooks/use-fullscreen";
+import Pagination from "@/components/Pagintion";
 
 interface QuestionLibraryProps {
   qbanks: QBank[];
@@ -70,6 +71,63 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  // Use local state for qbanks
+
+
+  const filteredQuestions = qbanks.flatMap(qbank =>
+    qbank.questions.filter(q => {
+      if (selectedFilterTags.length > 0 && !q.tags.some(tag => selectedFilterTags.includes(tag))) {
+        return false;
+      }
+
+      if (searchQuery) {
+        const searchTerm = searchQuery.toLowerCase();
+        return (
+          q.question.toLowerCase().includes(searchTerm) ||
+          q.options.some(option => option.toLowerCase().includes(searchTerm)) ||
+          (q.explanation && q.explanation.toLowerCase().includes(searchTerm)) ||
+          q.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+        );
+      }
+
+      return true;
+    })
+  );
+
+  const sortedQuestions = [...filteredQuestions].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+
+    if (sortConfig.key === 'tags') {
+      const aTags = a.tags.join(', ');
+      const bTags = b.tags.join(', ');
+      return sortConfig.direction === 'asc'
+        ? aTags.localeCompare(bTags)
+        : bTags.localeCompare(aTags);
+    }
+
+    let aValue = sortConfig.key === 'correctAnswerText'
+      ? a.options[a.correctAnswer]
+      : a[sortConfig.key];
+    let bValue = sortConfig.key === 'correctAnswerText'
+      ? b.options[b.correctAnswer]
+      : b[sortConfig.key];
+
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      return sortConfig.direction === 'asc'
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue);
+    }
+    return 0;
+  });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const QUESTIONS_PER_PAGE = 10;
+  const totalPages = Math.ceil(sortedQuestions.length / QUESTIONS_PER_PAGE);
+  const paginatedQuestions = sortedQuestions.slice(
+    (currentPage - 1) * QUESTIONS_PER_PAGE,
+    currentPage * QUESTIONS_PER_PAGE
+  );
 
   useEffect(() => {
     initializeMetrics();
@@ -134,7 +192,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 
     selectedTags.forEach(tag => {
       let qbank = qbanks.find(qb => qb.id === tag);
-      
+
       if (!qbank) {
         qbank = {
           id: tag,
@@ -144,14 +202,14 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         };
         qbanks.push(qbank);
       }
-      
+
       qbank.questions.push({ ...question });
     });
 
     saveQBanksToStorage();
-    
+
     updateQuestionMetrics(question.id, 'unused', false);
-    
+
     setIsOpen(false);
     setNewQuestion({
       question: "",
@@ -250,8 +308,8 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           .filter(row => row && row.length >= 2)
           .map((row: any) => {
             const [question, correctAnswer, otherChoices, category, explanation] = row;
-            const tags = category?.toString().trim() 
-              ? [category.toString().toLowerCase().trim()] 
+            const tags = category?.toString().trim()
+              ? [category.toString().toLowerCase().trim()]
               : ['general'];
 
             const questionText = question.toString().trim();
@@ -341,20 +399,20 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 
   const confirmDeleteSelected = () => {
     if (selectedQuestions.length === 0) return;
-    
+
     const questionIds = selectedQuestions.map(q => q.id);
-    
+
     qbanks.forEach(qbank => {
       qbank.questions = qbank.questions.filter(q => !questionIds.includes(q.id));
     });
-    
+
     saveQBanksToStorage();
-    
+
     initializeMetrics();
-    
+
     setSelectedQuestions([]);
     setShowDeleteDialog(false);
-    
+
     toast({
       title: "Success",
       description: `${questionIds.length} questions deleted successfully`,
@@ -368,62 +426,16 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         qbank.questions.splice(index, 1);
       }
     });
-    
+
     saveQBanksToStorage();
-    
+
     initializeMetrics();
-    
+
     toast({
       title: "Success",
       description: "Question deleted successfully",
     });
   };
-
-  const filteredQuestions = qbanks.flatMap(qbank => 
-    qbank.questions.filter(q => {
-      if (selectedFilterTags.length > 0 && !q.tags.some(tag => selectedFilterTags.includes(tag))) {
-        return false;
-      }
-  
-      if (searchQuery) {
-        const searchTerm = searchQuery.toLowerCase();
-        return (
-          q.question.toLowerCase().includes(searchTerm) ||
-          q.options.some(option => option.toLowerCase().includes(searchTerm)) ||
-          (q.explanation && q.explanation.toLowerCase().includes(searchTerm)) ||
-          q.tags.some(tag => tag.toLowerCase().includes(searchTerm))
-        );
-      }
-  
-      return true;
-    })
-  );
-
-  const sortedQuestions = [...filteredQuestions].sort((a, b) => {
-    if (!sortConfig.key) return 0;
-    
-    if (sortConfig.key === 'tags') {
-      const aTags = a.tags.join(', ');
-      const bTags = b.tags.join(', ');
-      return sortConfig.direction === 'asc'
-        ? aTags.localeCompare(bTags)
-        : bTags.localeCompare(aTags);
-    }
-
-    let aValue = sortConfig.key === 'correctAnswerText' 
-      ? a.options[a.correctAnswer]
-      : a[sortConfig.key];
-    let bValue = sortConfig.key === 'correctAnswerText'
-      ? b.options[b.correctAnswer]
-      : b[sortConfig.key];
-
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return sortConfig.direction === 'asc'
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
-    }
-    return 0;
-  });
 
   const handleExport = async () => {
     if (selectedQuestions.length === 0) {
@@ -437,7 +449,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 
     try {
       const wb = XLSX.utils.book_new();
-      
+
       const exportData = selectedQuestions.map(q => [
         q.question,
         q.options[q.correctAnswer],
@@ -457,7 +469,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       const zip = new JSZip();
       const excelBuffer = XLSX.write(wb, { type: 'array' });
       zip.file('questions.xlsx', excelBuffer);
-      
+
       const content = await zip.generateAsync({ type: 'blob' });
       const url = window.URL.createObjectURL(content);
       const a = document.createElement('a');
@@ -502,7 +514,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               </span>
             )}
           </Button>
-          
+
           <label className="flex items-center gap-2">
             <Input
               type="file"
@@ -525,9 +537,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                 <Download className="w-4 h-4" />
                 Export Selected ({selectedQuestions.length})
               </Button>
-              
-              <Button 
-                onClick={handleDeleteSelected} 
+
+              <Button
+                onClick={handleDeleteSelected}
                 variant="destructive"
                 className="flex items-center gap-2"
               >
@@ -668,7 +680,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               <Sun className="h-4 w-4" />
             )}
           </Button>
-          
+
           <Button
             variant="ghost"
             size="icon"
@@ -701,7 +713,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
+
       <Dialog open={showTagFilterModal} onOpenChange={setShowTagFilterModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -784,7 +796,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedQuestions.map((question) => (
+            {paginatedQuestions.map((question) => (
               <TableRow key={question.id}>
                 <TableCell>
                   <input
@@ -825,6 +837,13 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           </TableBody>
         </Table>
       </div>
+      {sortedQuestions.length > QUESTIONS_PER_PAGE && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
     </div>
   );
 };

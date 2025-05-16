@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { QBank, Question } from "../types/quiz";
+import { QBank, Question } from "@/types/quiz";
 import { Trash2, Edit2, Download, Upload } from "lucide-react";
 import MediaUploader from "@/components/MediaUploader";
 import MediaManager from "@/components/MediaManager";
@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
+import Pagination from "@/components/Pagintion";
 
 interface QBanksProps {
   qbanks: QBank[];
@@ -56,6 +57,13 @@ const QBanks = ({ qbanks }: QBanksProps) => {
   });
   const [selectedQBankForMedia, setSelectedQBankForMedia] = useState<QBank | null>(null);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const QBANKS_PER_PAGE = 10;
+  const totalPages = Math.ceil(qbanks.length / QBANKS_PER_PAGE);
+  const paginatedQBanks = qbanks.slice((currentPage - 1) * QBANKS_PER_PAGE, currentPage * QBANKS_PER_PAGE);
+
+
   const handleMediaUpload = (files: File[]) => {
     setMediaFiles(files);
     toast({
@@ -71,7 +79,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      const rows = text.split('\n').map(row => 
+      const rows = text.split('\n').map(row =>
         row.split(',').map(cell => cell.replace(/^"|"$/g, '').replace(/""/g, '"'))
       );
 
@@ -79,7 +87,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       const questions: Question[] = rows.slice(1).map((row, index) => {
         const options = row.slice(3, 10).filter(opt => opt.trim() !== '');
         const imageFilename = row[10]?.trim();
-        
+
         // Find matching media file
         const mediaFile = mediaFiles.find(file => file.name === imageFilename);
         const mediaUrl = mediaFile ? URL.createObjectURL(mediaFile) : undefined;
@@ -109,11 +117,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       };
 
       qbanks.push(newQBank);
-      
+
       // Explicitly save to localStorage
       saveQBanksToStorage();
       console.log('Imported qbank from CSV and saved:', qbanks.length);
-      
+
       setMediaFiles([]); // Clear media files after import
       toast({
         title: "Success",
@@ -141,11 +149,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     };
 
     qbanks.push(newQBank);
-    
+
     // Explicitly save to localStorage
     saveQBanksToStorage();
     console.log('Created new qbank and saved:', qbanks.length);
-    
+
     setNewQBankName("");
     setNewQBankDescription("");
     setShowNewQBankDialog(false);
@@ -159,11 +167,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     const index = qbanks.findIndex((qbank) => qbank.id === qbankId);
     if (index !== -1) {
       qbanks.splice(index, 1);
-      
+
       // Explicitly save to localStorage
       saveQBanksToStorage();
       console.log('Deleted qbank and saved:', qbanks.length);
-      
+
       setSelectedQBank(null);
       toast({
         title: "Success",
@@ -191,11 +199,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       }
       qbank.name = editingName;
       qbank.description = editingDescription;
-      
+
       // Explicitly save to localStorage
       saveQBanksToStorage();
       console.log('Updated qbank and saved:', qbanks.length);
-      
+
       setEditingQBankId(null);
       toast({
         title: "Success",
@@ -238,11 +246,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       }
 
       selectedQBank.questions.push(question);
-      
+
       // Explicitly save to localStorage
       saveQBanksToStorage();
       console.log('Added question to qbank and saved:', selectedQBank.questions.length);
-      
+
       setNewQuestion({
         question: "",
         options: ["", "", "", ""],
@@ -297,7 +305,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       ])
     ];
 
-    const csvContent = csvRows.map(row => row.map(cell => 
+    const csvContent = csvRows.map(row => row.map(cell =>
       `"${String(cell).replace(/"/g, '""')}"`
     ).join(',')).join('\n');
 
@@ -369,9 +377,9 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       </div>
 
       <div className="grid gap-4">
-        {qbanks.map((qbank) => {
+        {paginatedQBanks.map((qbank) => {
           const metrics = calculateQuestionMetrics(qbank);
-          
+
           return (
             <div
               key={qbank.id}
@@ -430,6 +438,13 @@ const QBanks = ({ qbanks }: QBanksProps) => {
             </div>
           );
         })}
+        {qbanks.length > 5 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </div>
 
       <AlertDialog open={showQBankConfirmDialog} onOpenChange={setShowQBankConfirmDialog}>
@@ -453,8 +468,8 @@ const QBanks = ({ qbanks }: QBanksProps) => {
             <DialogTitle>Manage Media</DialogTitle>
           </DialogHeader>
           {selectedQBankForMedia && (
-            <MediaManager 
-              qbank={selectedQBankForMedia} 
+            <MediaManager
+              qbank={selectedQBankForMedia}
               onMediaUpdate={() => {
                 setShowMediaDialog(false);
                 setSelectedQBankForMedia(null);

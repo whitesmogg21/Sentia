@@ -3,7 +3,7 @@ import { QuizHistory } from "../types/quiz";
 import { qbanks } from "../data/questions";
 import Dashboard from "../components/Dashboard";
 import ScoreCard from "../components/ScoreCard";
-import QuizContent from "@/components/quiz/QuizContent";
+import QuizContent from "../components/quiz/QuizContent";
 import { useQuiz } from "@/hooks/quiz";
 import { toast } from "@/components/ui/use-toast";
 
@@ -56,19 +56,19 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
 
 
   const startQuiz = (
-    qbankId: string, 
-    questionCount: number, 
-    tutorMode: boolean, 
-    timerEnabled: boolean, 
+    qbankId: string,
+    questionCount: number,
+    tutorMode: boolean,
+    timerEnabled: boolean,
     timeLimit: number
   ) => {
     // Check for filtered QBank in localStorage
     const filteredQBankString = localStorage.getItem("filteredQBank");
     const selectedQBankString = localStorage.getItem("selectedQBank");
-    
+
     // Determine which QBank to use
     let selectedQBank;
-    
+
     if (filteredQBankString) {
       // Use the filtered QBank if it exists
       selectedQBank = JSON.parse(filteredQBankString);
@@ -82,7 +82,7 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
       selectedQBank = qbanks.find(qb => qb.id === qbankId);
       console.log(`Using QBank from data with ${selectedQBank?.questions.length || 0} questions`);
     }
-    
+
     if (!selectedQBank) {
       toast({
         title: "No Question Bank Selected",
@@ -91,10 +91,10 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
       });
       return;
     }
-  
+
     console.log(`Starting quiz with bank: ${selectedQBank.name}`);
     console.log(`Questions requested: ${questionCount}`);
-  
+
     // Make sure we have enough questions
     if (selectedQBank.questions.length === 0) {
       toast({
@@ -104,7 +104,7 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
       });
       return;
     }
-  
+
     // Randomize the questions and select the requested number
     let selectedQuestions;
     if (selectedQBank.questions.length > questionCount) {
@@ -114,7 +114,7 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     } else {
       selectedQuestions = [...selectedQBank.questions];
     }
-  
+
     // Start the quiz with the selected questions
     handleStartQuiz(
       selectedQBank.id,
@@ -123,13 +123,13 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
       timerEnabled,
       timeLimit
     );
-    
+
     // Notify parent component
     if (onQuizStart) {
       onQuizStart();
     }
   };
-  
+
   if (!inQuiz) {
     return (
       <Dashboard
@@ -142,9 +142,9 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
 
   if (showScore) {
     return (
-      <ScoreCard 
-        score={score} 
-        total={currentQuestions.length} 
+      <ScoreCard
+        score={score}
+        total={currentQuestions.length}
         questions={currentQuestions}
         attempts={currentQuestions.map((question) => ({
           questionId: question.id,
