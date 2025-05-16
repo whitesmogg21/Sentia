@@ -31,7 +31,7 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
 
   const tagPerformance = useMemo(() => {
     const tagStats: { [key: string]: { percentages: number[]; total: number } } = {};
-    
+
     // Initialize statistics for all tags
     uniqueTags.forEach(tag => {
       tagStats[tag] = { percentages: [], total: 0 };
@@ -40,12 +40,12 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
     // Calculate statistics from quiz history
     quizHistory.forEach(quiz => {
       const quizTagStats: { [key: string]: { correct: number; total: number } } = {};
-      
+
       quiz.questionAttempts.forEach(attempt => {
         const question = qbanks
           .flatMap(qbank => qbank.questions)
           .find(q => q.id === attempt.questionId);
-          
+
         if (question) {
           question.tags.forEach(tag => {
             if (!quizTagStats[tag]) {
@@ -65,6 +65,8 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
           const percentage = (stats.correct / stats.total) * 100;
           tagStats[tag].percentages.push(percentage);
           tagStats[tag].total += stats.total;
+        } else {
+          tagStats[tag].percentages.push(0);
         }
       });
     });
@@ -114,10 +116,10 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
           barGap={4}
           barCategoryGap="12%"
         >
-          <CartesianGrid 
-            strokeDasharray="3 3" 
-            className="stroke-muted" 
-            opacity={0.2} 
+          <CartesianGrid
+            strokeDasharray="3 3"
+            className="stroke-muted"
+            opacity={0.2}
             horizontal={true}
             vertical={false}
           />
@@ -140,7 +142,7 @@ export const TagPerformanceBarChart = ({ qbanks, quizHistory }: TagPerformanceBa
               angle: -90,
               position: "insideLeft",
               fill: "hsl(var(--foreground))",
-              style: { 
+              style: {
                 textAnchor: 'middle',
                 fontSize: '14px',
                 marginLeft: '10px'

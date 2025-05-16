@@ -1,4 +1,4 @@
-
+import React, { Suspense, lazy } from "react";
 import {
   Table,
   TableBody,
@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { QuizHistory } from "../types/quiz";
+import { QuizHistory } from "../../types/quiz";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -33,7 +33,7 @@ const History = ({ quizHistory, onClearHistory }: HistoryProps) => {
   const handleClearConfirm = () => {
     // Reset metrics (but keep flags)
     resetMetrics();
-    
+
     // Clear history
     onClearHistory();
     setShowClearDialog(false);
@@ -47,8 +47,8 @@ const History = ({ quizHistory, onClearHistory }: HistoryProps) => {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <Button 
-          variant="destructive" 
+        <Button
+          variant="destructive"
           onClick={() => setShowClearDialog(true)}
           className="flex items-center gap-2"
         >
@@ -58,26 +58,28 @@ const History = ({ quizHistory, onClearHistory }: HistoryProps) => {
       </div>
       <h1 className="text-2xl font-bold mb-6">Previous Quizzes</h1>
       <div className="bg-card rounded-2xl shadow-lg p-6">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-muted/50">
-              <TableHead className="text-foreground">Date</TableHead>
-              <TableHead className="text-foreground">Question Bank</TableHead>
-              <TableHead className="text-foreground">Score</TableHead>
-              <TableHead className="text-foreground">Percentage</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {quizHistory.map((quiz) => (
-              <TableRow key={quiz.id} className="hover:bg-muted/50">
-                <TableCell className="text-foreground">{formatDate(quiz.date)}</TableCell>
-                <TableCell className="text-foreground">{quiz.qbankId}</TableCell>
-                <TableCell className="text-foreground">{quiz.score}/{quiz.totalQuestions}</TableCell>
-                <TableCell className="text-foreground">{((quiz.score / quiz.totalQuestions) * 100).toFixed(2)}%</TableCell>
+        <Suspense fallback={<div>Loading history table...</div>}>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-muted/50">
+                <TableHead className="text-foreground">Date</TableHead>
+                <TableHead className="text-foreground">Question Bank</TableHead>
+                <TableHead className="text-foreground">Score</TableHead>
+                <TableHead className="text-foreground">Percentage</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {quizHistory.map((quiz) => (
+                <TableRow key={quiz.id} className="hover:bg-muted/50">
+                  <TableCell className="text-foreground">{formatDate(quiz.date)}</TableCell>
+                  <TableCell className="text-foreground">{quiz.qbankId}</TableCell>
+                  <TableCell className="text-foreground">{quiz.score}/{quiz.totalQuestions}</TableCell>
+                  <TableCell className="text-foreground">{quiz.totalQuestions > 0 ? ((quiz.score / quiz.totalQuestions) * 100).toFixed(2) : "0.00"}%</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Suspense>
       </div>
       <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
         <AlertDialogContent>
@@ -89,7 +91,7 @@ const History = ({ quizHistory, onClearHistory }: HistoryProps) => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button 
+            <Button
               onClick={handleClearConfirm}
             >
               Clear History
