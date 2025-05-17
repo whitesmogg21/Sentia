@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import Pagination from "@/components/Pagintion";
+import { Dialog as Modal, DialogContent as ModalContent, DialogHeader as ModalHeader, DialogTitle as ModalTitle } from "@/components/ui/dialog";
 
 interface QBanksProps {
   qbanks: QBank[];
@@ -56,6 +57,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     }
   });
   const [selectedQBankForMedia, setSelectedQBankForMedia] = useState<QBank | null>(null);
+  const [importSummary, setImportSummary] = useState<{ count: number; name: string } | null>(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -117,12 +119,9 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       };
 
       qbanks.push(newQBank);
-
-      // Explicitly save to localStorage
       saveQBanksToStorage();
-      console.log('Imported qbank from CSV and saved:', qbanks.length);
-
-      setMediaFiles([]); // Clear media files after import
+      setMediaFiles([]);
+      setImportSummary({ count: questions.length, name: newQBank.name });
       toast({
         title: "Success",
         description: "QBank imported successfully with media files",
@@ -355,6 +354,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     });
   };
 
+  const handleCloseImportSummary = () => {
+    setImportSummary(null);
+    window.location.reload();
+  };
+
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -510,6 +514,21 @@ const QBanks = ({ qbanks }: QBanksProps) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {importSummary && (
+        <Modal open={true} onOpenChange={handleCloseImportSummary}>
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>Import Complete</ModalTitle>
+            </ModalHeader>
+            <div className="py-4 text-center">
+              <p className="text-lg font-semibold mb-2">{importSummary.count} questions imported</p>
+              <p className="text-gray-600">QBank: <span className="font-bold">{importSummary.name}</span></p>
+              <Button className="mt-6" onClick={handleCloseImportSummary}>OK</Button>
+            </div>
+          </ModalContent>
+        </Modal>
+      )}
     </div>
   );
 };

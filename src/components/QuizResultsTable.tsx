@@ -1,6 +1,9 @@
-
 import { Question } from "@/types/quiz";
 import { cn } from "@/lib/utils";
+import { renderMarkdown } from "@/utils/markdownUtils";
+import { useMediaLibrary } from "@/hooks/useMediaLibrary";
+import ImageModal from "./quiz/ImageModal";
+import React, { useState } from "react";
 
 interface QuizResultsTableProps {
   questions: Question[];
@@ -13,6 +16,16 @@ interface QuizResultsTableProps {
 }
 
 const QuizResultsTable = ({ questions, attempts }: QuizResultsTableProps) => {
+  const { getMediaItem } = useMediaLibrary();
+  const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
+
+  const handleImageClick = (imageName: string) => {
+    const mediaItem = getMediaItem(imageName);
+    if (mediaItem) {
+      setSelectedImage({ url: mediaItem.data, name: mediaItem.name });
+    }
+  };
+
   const getQuestionStatus = (attempt: typeof attempts[0] | undefined) => {
     if (!attempt) return { status: 'Omitted', color: 'text-gray-500 dark:text-gray-400' };
     if (attempt.selectedAnswer === null && attempt.isFlagged) {
@@ -29,14 +42,9 @@ const QuizResultsTable = ({ questions, attempts }: QuizResultsTableProps) => {
 
   const getRowBackground = (attempt: typeof attempts[0] | undefined) => {
     if (!attempt || attempt.selectedAnswer === null) return '';
-    return attempt.isCorrect 
-      ? 'bg-green-50 dark:bg-green-900/20' 
+    return attempt.isCorrect
+      ? 'bg-green-50 dark:bg-green-900/20'
       : 'bg-red-50 dark:bg-red-900/20';
-  };
-
-  const cleanQuestionText = (text: string) => {
-    // Remove image references from the question text
-    return text.split('/').filter(part => !part.match(/\.(png|jpg|jpeg|gif)$/i)).join(' ').trim();
   };
 
   return (
@@ -53,9 +61,9 @@ const QuizResultsTable = ({ questions, attempts }: QuizResultsTableProps) => {
           {questions.map((question, index) => {
             const attempt = attempts.find(a => a.questionId === question.id);
             const status = getQuestionStatus(attempt);
-            
+
             return (
-              <tr 
+              <tr
                 key={question.id}
                 className={cn(
                   "border-t dark:border-gray-700",
@@ -63,7 +71,11 @@ const QuizResultsTable = ({ questions, attempts }: QuizResultsTableProps) => {
                 )}
               >
                 <td className="p-2 dark:text-gray-200">{index + 1}</td>
-                <td className="p-2 dark:text-gray-200">{cleanQuestionText(question.question)}</td>
+                <td className="p-2 dark:text-gray-200">
+                  <div className="prose prose-sm dark:prose-invert">
+                    {renderMarkdown(question.question, handleImageClick)}
+                  </div>
+                </td>
                 <td className={cn("p-2", status.color)}>
                   {status.status}
                 </td>
@@ -72,6 +84,14 @@ const QuizResultsTable = ({ questions, attempts }: QuizResultsTableProps) => {
           })}
         </tbody>
       </table>
+      {selectedImage && (
+        <ImageModal
+          isOpen={true}
+          onClose={() => setSelectedImage(null)}
+          imageUrl={selectedImage.url}
+          altText={selectedImage.name}
+        />
+      )}
     </div>
   );
 };
