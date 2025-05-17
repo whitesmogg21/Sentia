@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,22 +11,22 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
   // Extract image references with /path format first
   const imageReferences: { placeholder: string; imageName: string }[] = [];
   let processedText = text;
-  
+
   // Find all standalone image references like /image.png
   const imageRegex = /\/([^\/\s]+\.(png|jpg|jpeg|gif))/gi;
   let match;
   let placeholderIndex = 0;
-  
+
   while ((match = imageRegex.exec(text)) !== null) {
     const fullMatch = match[0];
     const imageName = match[1];
     const placeholder = `__IMAGE_PLACEHOLDER_${placeholderIndex}__`;
-    
-    imageReferences.push({ 
-      placeholder, 
-      imageName 
+
+    imageReferences.push({
+      placeholder,
+      imageName
     });
-    
+
     // Replace the image reference with a placeholder
     processedText = processedText.replace(fullMatch, placeholder);
     placeholderIndex++;
@@ -35,28 +34,28 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
 
   // Split text by newlines to handle paragraphs
   const paragraphs = processedText.split('\n\n').filter(Boolean);
-  
+
   return paragraphs.map((paragraph, pIndex) => {
     // Process paragraph text with markdown formatting
     let formattedText = paragraph;
-    
+
     // Convert bold: **text** to <strong>text</strong>
     formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
+
     // Convert italic: *text* to <em>text</em>
     formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    
+
     // Convert strikethrough: ~~text~~ to <del>text</del>
     formattedText = formattedText.replace(/~~(.*?)~~/g, '<del>$1</del>');
-    
+
     // Convert inline code: `code` to <code>code</code>
     formattedText = formattedText.replace(/`([^`]+)`/g, '<code>$1</code>');
-    
+
     // Convert blockquotes: > text to <blockquote>text</blockquote>
     if (formattedText.startsWith('> ')) {
       formattedText = `<blockquote>${formattedText.substring(2)}</blockquote>`;
     }
-    
+
     // Convert unordered lists
     if (formattedText.includes('\n- ')) {
       const listItems = formattedText.split('\n- ');
@@ -67,14 +66,14 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
       const listContent = listItems.slice(1).map(item => `<li>${item}</li>`).join('');
       formattedText = `<ul>${listContent}</ul>`;
     }
-    
+
     // Convert ordered lists
     const orderedListRegex = /^\d+\.\s/;
     if (formattedText.includes('\n') && orderedListRegex.test(formattedText.split('\n')[1])) {
       const listItems = formattedText.split('\n');
       let listContent = '';
       let nonListContent = '';
-      
+
       listItems.forEach(item => {
         if (orderedListRegex.test(item)) {
           listContent += `<li>${item.replace(/^\d+\.\s/, '')}</li>`;
@@ -82,7 +81,7 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
           nonListContent += item;
         }
       });
-      
+
       formattedText = `${nonListContent}<ol>${listContent}</ol>`;
     } else if (orderedListRegex.test(formattedText)) {
       const listItems = formattedText.split('\n');
@@ -92,16 +91,16 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
         }
         return item;
       }).join('');
-      
+
       formattedText = `<ol>${listContent}</ol>`;
     }
-    
+
     // Convert links: [title](url) to <a href="url">title</a>
     formattedText = formattedText.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-    
-    // Convert markdown images: ![alt](url) to <img src="url" alt="alt" />
-    formattedText = formattedText.replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" style="max-width: 100%;" />');
-    
+
+    // Convert markdown images: ![alt](url) to <img src="url" alt="alt" loading="lazy" style="max-width: 100%;" />
+    formattedText = formattedText.replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" loading="lazy" style="max-width: 100%;" />');
+
     // Convert headings: # Heading to <h1>Heading</h1>
     if (formattedText.startsWith('# ')) {
       formattedText = `<h1>${formattedText.substring(2)}</h1>`;
@@ -115,7 +114,7 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
     if (formattedText === '---') {
       formattedText = '<hr />';
     }
-    
+
     // Replace image placeholders with buttons
     imageReferences.forEach(ref => {
       if (formattedText.includes(ref.placeholder)) {
@@ -127,9 +126,9 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
         }
       }
     });
-    
+
     // Return paragraph with processed markdown
-    return React.createElement('div', { 
+    return React.createElement('div', {
       key: pIndex,
       dangerouslySetInnerHTML: { __html: formattedText },
       className: "mb-2",
@@ -170,15 +169,15 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
  */
 export const extractImageReferences = (text: string): string[] => {
   if (!text) return [];
-  
+
   const imageRegex = /\/([^\/\s]+\.(png|jpg|jpeg|gif))/gi;
   const matches: string[] = [];
   let match;
-  
+
   while ((match = imageRegex.exec(text)) !== null) {
     matches.push(match[1]);
   }
-  
+
   return matches;
 };
 
@@ -186,7 +185,7 @@ export const extractImageReferences = (text: string): string[] => {
  * Create image buttons from image references
  */
 export const createImageButtons = (
-  imageNames: string[], 
+  imageNames: string[],
   onImageClick: (imageName: string) => void
 ): React.ReactNode[] => {
   return imageNames.map((imageName, index) => {
