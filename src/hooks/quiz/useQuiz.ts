@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Question } from "@/types/quiz";
 import { UseQuizProps, QuizState } from "./types";
@@ -23,16 +22,16 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   });
 
   const handleStartQuiz = (
-    qbankId: string, 
+    qbankId: string,
     questions: Question[], // Complete set of questions
-    isTutorMode: boolean, 
-    withTimer: boolean, 
+    isTutorMode: boolean,
+    withTimer: boolean,
     timeLimit: number
   ) => {
     // Load filtered question IDs from localStorage if present
     let selectedQuestions = [...questions];
     const filteredIdsString = localStorage.getItem("filteredQuestionIds");
-    
+
     if (filteredIdsString) {
       try {
         const filteredIds = JSON.parse(filteredIdsString);
@@ -43,31 +42,38 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
         console.error("Error parsing filtered question IDs:", error);
       }
     }
-  
+
+    // Reset attempts and flags for all selected questions before starting quiz
+    selectedQuestions = selectedQuestions.map(q => ({
+      ...q,
+      attempts: [],
+      isFlagged: false
+    }));
+
     // Randomize the answer options for each question
     const questionsWithRandomizedOptions = selectedQuestions.map(question => {
       // Create a copy of the question to avoid mutating the original
       const questionCopy = { ...question };
-      
+
       // Only randomize if the question has options
       if (questionCopy.options && questionCopy.options.length > 0) {
         // Create pairs of [index, option text] to keep track of original positions
-        const optionPairs = questionCopy.options.map((option, index) => ({ 
-          originalIndex: index, 
-          text: option 
+        const optionPairs = questionCopy.options.map((option, index) => ({
+          originalIndex: index,
+          text: option
         }));
-        
+
         // Shuffle the pairs
         const shuffledPairs = [...optionPairs].sort(() => Math.random() - 0.5);
-        
+
         // Update the options with the shuffled text
         questionCopy.options = shuffledPairs.map(pair => pair.text);
-        
+
         // Update the correct answer index to match the new position
         const correctOptionPair = shuffledPairs.find(
           pair => pair.originalIndex === questionCopy.correctAnswer
         );
-        
+
         if (correctOptionPair) {
           // Find the new index of the correct answer
           questionCopy.correctAnswer = shuffledPairs.findIndex(
@@ -75,10 +81,10 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
           );
         }
       }
-      
+
       return questionCopy;
     });
-  
+
     // Initialize the quiz with the randomized questions
     setState({
       currentQuestionIndex: 0,
@@ -97,7 +103,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
       quizStartTime: new Date().toISOString(),
       questionAttempts: []
     });
-    
+
     // Call the onQuizStart callback if provided
     onQuizStart?.();
   };
@@ -138,7 +144,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   };
 
   const getCurrentQuestion = () => state.currentQuestions[state.currentQuestionIndex];
-  
+
   const handleAnswerTimeout = () => {
     const currentQuestion = getCurrentQuestion();
     if (!currentQuestion) return;
@@ -187,7 +193,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
         showExplanation: false,
         timePerQuestion: prev.timerEnabled ? 0 : prev.timePerQuestion
       }));
-      
+
       if (state.timerEnabled) {
         setTimeout(() => {
           setState(prev => ({ ...prev, timePerQuestion: prev.initialTimeLimit }));
@@ -199,8 +205,8 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   const handleQuit = () => {
     const quizHistory = createQuizHistory(state, state.selectedAnswer);
     onQuizComplete?.(quizHistory);
-    setState(prev => ({ 
-      ...prev, 
+    setState(prev => ({
+      ...prev,
       showScore: true,
       inQuiz: true  // Add this line to ensure we stay in quiz mode
     }));
@@ -214,18 +220,18 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
   // Clear any filtered question IDs from localStorage
   localStorage.removeItem("filteredQuestionIds");
   localStorage.removeItem("filteredQBank");
-  
+
   // Also clear the filter settings
   const defaultFilters = {
     unused: false,
-    used: false, 
+    used: false,
     incorrect: false,
     correct: false,
     flagged: false,
     omitted: false
   };
   localStorage.setItem('questionFilters', JSON.stringify(defaultFilters));
-  
+
   setState({
     currentQuestionIndex: 0,
     score: 0,
@@ -276,7 +282,7 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
           localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
         }
       }
-      
+
       // Update the flag status in our metrics store
       import('@/utils/metricsUtils').then(module => {
         module.updateQuestionFlag(question.id, question.isFlagged);
@@ -309,6 +315,6 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
     handleRestart,
     handleQuizNavigation,
     handleToggleFlag,
-    jumpToQuestion: handleJumpToQuestion 
+    jumpToQuestion: handleJumpToQuestion
   };
 };
