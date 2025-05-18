@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import Pagination from "@/components/Pagintion";
+import { renderMarkdown } from "@/utils/markdownUtils";
 
 interface QuestionLibraryProps {
   qbanks: QBank[];
@@ -42,6 +43,46 @@ type SortConfig = {
   key: 'question' | 'correctAnswerText' | 'tags' | null;
   direction: 'asc' | 'desc';
 };
+
+// Helper for surroundable markdown
+function insertMarkdown(textareaId: string, syntax: string, surround: boolean) {
+  const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
+  if (!textarea) return;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  let value = textarea.value;
+  let newValue, cursorPos;
+  if (surround) {
+    if (start !== end) {
+      // Wrap selected text
+      newValue = value.slice(0, start) + syntax + value.slice(start, end) + syntax + value.slice(end);
+      cursorPos = end + syntax.length * 2;
+    } else {
+      // Insert syntax and place cursor in the middle
+      newValue = value.slice(0, start) + syntax + syntax + value.slice(end);
+      cursorPos = start + syntax.length;
+    }
+  } else {
+    newValue = value.slice(0, start) + syntax + value.slice(end);
+    cursorPos = start + syntax.length;
+  }
+  textarea.value = newValue;
+  textarea.focus();
+  textarea.selectionStart = textarea.selectionEnd = cursorPos;
+  return newValue;
+}
+
+const MarkdownToolbar = ({ textareaId, onChange }: { textareaId: string, onChange: (value: string) => void }) => (
+  <div className="flex gap-2 mb-2">
+    <Button type="button" size="sm" variant="outline" onClick={() => onChange(insertMarkdown(textareaId, '**', true) || '')} title="Bold"><b>B</b></Button>
+    <Button type="button" size="sm" variant="outline" onClick={() => onChange(insertMarkdown(textareaId, '*', true) || '')} title="Italic"><i>I</i></Button>
+    <Button type="button" size="sm" variant="outline" onClick={() => onChange(insertMarkdown(textareaId, '~~', true) || '')} title="Strikethrough"><s>S</s></Button>
+    <Button type="button" size="sm" variant="outline" onClick={() => onChange(insertMarkdown(textareaId, '`', true) || '')} title="Code">&lt;/&gt;</Button>
+    <Button type="button" size="sm" variant="outline" onClick={() => onChange(insertMarkdown(textareaId, '[text](url)', false) || '')} title="Link">🔗</Button>
+    <Button type="button" size="sm" variant="outline" onClick={() => onChange(insertMarkdown(textareaId, '- list item', false) || '')} title="List">• List</Button>
+    <Button type="button" size="sm" variant="outline" onClick={() => onChange(insertMarkdown(textareaId, '# Heading', false) || '')} title="Heading">H</Button>
+  </div>
+);
 
 const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -563,7 +604,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Question Text</Label>
+                  <MarkdownToolbar textareaId="question-textarea" onChange={val => setNewQuestion(prev => ({ ...prev, question: val }))} />
                   <Textarea
+                    id="question-textarea"
                     placeholder="Enter question text"
                     value={newQuestion.question}
                     onChange={(e) => setNewQuestion(prev => ({ ...prev, question: e.target.value }))}
@@ -651,7 +694,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 
                 <div className="space-y-2">
                   <Label>Explanation (Optional)</Label>
+                  <MarkdownToolbar textareaId="explanation-textarea" onChange={val => setNewQuestion(prev => ({ ...prev, explanation: val }))} />
                   <Textarea
+                    id="explanation-textarea"
                     placeholder="Enter explanation"
                     value={newQuestion.explanation}
                     onChange={(e) => setNewQuestion(prev => ({
@@ -812,7 +857,11 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                     className="w-4 h-4"
                   />
                 </TableCell>
-                <TableCell className="font-medium">{question.question}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="prose prose-sm dark:prose-invert">
+                    {renderMarkdown(question.question)}
+                  </div>
+                </TableCell>
                 <TableCell>{question.options[question.correctAnswer]}</TableCell>
                 <TableCell>
                   {question.options

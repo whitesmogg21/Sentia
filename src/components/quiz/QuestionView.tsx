@@ -1,4 +1,3 @@
-
 import { Question } from "@/types/quiz";
 import QuizOption from "../QuizOption";
 import React, { useRef, useState } from 'react';
@@ -62,7 +61,7 @@ const QuestionView = ({
       <div ref={contentRef} className="mb-4">
         {renderMarkdown(question.question, handleImageClick)}
       </div>
-      
+
       <div className="space-y-4">
         {question.options.map((option, index) => (
           <QuizOption

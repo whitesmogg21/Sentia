@@ -57,7 +57,12 @@ const History = ({ quizHistory, onClearHistory }: HistoryProps) => {
         </Button>
       </div>
       <h1 className="text-2xl font-bold mb-6">Previous Quizzes</h1>
-      <div className="bg-card rounded-2xl shadow-lg p-6">
+      {quizHistory.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16">
+          <img src="/no-history-placeholder.png" alt="No history" className="w-48 h-48 mb-4 opacity-70" />
+          <p className="text-lg text-muted-foreground">No quiz history yet. Complete a quiz to see your results here!</p>
+        </div>
+      ) : (
         <Suspense fallback={<div>Loading history table...</div>}>
           <Table>
             <TableHeader>
@@ -80,7 +85,7 @@ const History = ({ quizHistory, onClearHistory }: HistoryProps) => {
             </TableBody>
           </Table>
         </Suspense>
-      </div>
+      )}
       <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>

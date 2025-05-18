@@ -1,8 +1,5 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { Question } from "@/types/quiz";
-import QuestionView from "./QuestionView";
-import ExplanationView from "./ExplanationView";
 import QuizController from "./QuizController";
 import ProgressBar from "../ProgressBar";
 import QuestionsSidebar from "./QuestionsSidebar";
@@ -55,6 +52,9 @@ interface QuizContentProps {
   onJumpToQuestion: (index: number) => void;
 }
 
+const QuestionView = lazy(() => import("./QuestionView"));
+const ExplanationView = lazy(() => import("./ExplanationView"));
+
 const QuizContent = ({
   currentQuestion,
   currentQuestionIndex,
@@ -85,7 +85,7 @@ const QuizContent = ({
     const handleMouseUp = () => {
       const selection = window.getSelection();
       if (!selection || selection.toString().length === 0) return;
-      
+
       try {
         const range = selection.getRangeAt(0);
         const span = document.createElement('span');
@@ -124,7 +124,7 @@ const QuizContent = ({
   };
 
   const handleQuestionClick = (index: number) => {
-    onJumpToQuestion(index); 
+    onJumpToQuestion(index);
   };
 
   const handleQuizComplete = () => {
@@ -211,19 +211,22 @@ const QuizContent = ({
               </div>
             )}
             <div className="grid grid-cols-1 gap-6 mb-20">
-              <QuestionView
-                question={currentQuestion}
-                selectedAnswer={selectedAnswer}
-                isAnswered={isAnswered}
-                isPaused={isPaused}
-                onAnswerClick={handleAnswerClick}
-              />
-
-              {isAnswered && showExplanation && (
-                <ExplanationView 
-                  question={currentQuestion} 
+              <Suspense fallback={<div>Loading question...</div>}>
+                <QuestionView
+                  question={currentQuestion}
                   selectedAnswer={selectedAnswer}
+                  isAnswered={isAnswered}
+                  isPaused={isPaused}
+                  onAnswerClick={handleAnswerClick}
                 />
+              </Suspense>
+
+              {showExplanation && (
+                <div className="mt-6">
+                  <Suspense fallback={<div>Loading explanation...</div>}>
+                    <ExplanationView question={currentQuestion} selectedAnswer={selectedAnswer} />
+                  </Suspense>
+                </div>
               )}
             </div>
           </div>
@@ -239,7 +242,7 @@ const QuizContent = ({
           currentQuestionIndex={currentQuestionIndex}
           answeredQuestions={answeredQuestions}
           onQuestionClick={handleQuestionClick}
-          currentQuestion={currentQuestion} 
+          currentQuestion={currentQuestion}
           // currentQuestions={currentQuestions}
         />
       </div>

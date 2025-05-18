@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,6 +28,7 @@ const ImageModal = ({ isOpen, onClose, imageUrl, altText }: ImageModalProps) => 
           <img
             src={imageUrl}
             alt={altText}
+            loading="lazy"
             style={{
               transform: `scale(${scale})`,
               transition: 'transform 0.2s ease-in-out',

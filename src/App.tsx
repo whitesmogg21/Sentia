@@ -18,13 +18,14 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import QuestionLibrary from "@/components/qbanks/QuestionLibrary";
 import MediaLibrary from "@/components/qbanks/MediaLibrary";
 import { useMetricsInit } from './hooks/use-metrics-init';
+import { initializeMetrics } from "@/utils/metricsUtils";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
   const [inQuiz, setInQuiz] = useState(false);
-  
+
   // Initialize metrics system on app load
   useMetricsInit();
 
@@ -39,7 +40,7 @@ const App = () => {
 
     return () => clearTimeout(timer);
   }, []);
-  
+
   useEffect(() => {
     // Load quiz history from localStorage
     try {
@@ -84,10 +85,11 @@ const App = () => {
           ];
         }
       });
-      
+
       // Save updated qbank to localStorage
       localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
       saveQBanksToStorage(); // Save qbanks to localStorage as well
+      initializeMetrics(); // Recalculate metrics so the logic bar updates
     }
 
     toast({
@@ -112,7 +114,7 @@ const App = () => {
     saveQBanksToStorage(); // Save the reset state
     localStorage.removeItem('selectedQBank');
   };
-  
+
   const handleQuizEnd = () => setInQuiz(false);
 
   const handleClearHistory = () => {
@@ -159,9 +161,9 @@ const App = () => {
                     <Route path="/qbanks" element={<QBanks qbanks={qbanks} />} />
                     <Route path="/qbanks/questions" element={<QuestionLibrary qbanks={qbanks} />} />
                     <Route path="/qbanks/media" element={<MediaLibrary qbanks={qbanks} />} />
-                    <Route 
-                      path="/select-qbank" 
-                      element={<SelectQBank qbanks={qbanks} onSelect={handleQBankSelect} />} 
+                    <Route
+                      path="/select-qbank"
+                      element={<SelectQBank qbanks={qbanks} onSelect={handleQBankSelect} />}
                     />
                     <Route path="*" element={<NotFound />} />
                   </Routes>

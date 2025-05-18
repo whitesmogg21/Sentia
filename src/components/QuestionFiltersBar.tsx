@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { QuestionFilter } from "@/types/quiz";
 import { Check } from "lucide-react";
@@ -15,6 +14,7 @@ type FilterCategory = {
 interface QuestionFiltersBarProps {
   filters: QuestionFilter;
   onToggleFilter: (key: keyof QuestionFilter) => void;
+  questions?: any[]; // Accept a list of questions to calculate metrics for
 }
 
 const FILTER_CATEGORIES: FilterCategory[] = [
@@ -56,16 +56,16 @@ const FILTER_CATEGORIES: FilterCategory[] = [
   }
 ];
 
-const FilterButton = ({ 
-  category, 
-  count, 
-  isActive, 
-  onClick 
-}: { 
-  category: FilterCategory; 
-  count: number; 
-  isActive: boolean; 
-  onClick: () => void; 
+const FilterButton = ({
+  category,
+  count,
+  isActive,
+  onClick
+}: {
+  category: FilterCategory;
+  count: number;
+  isActive: boolean;
+  onClick: () => void;
 }) => {
   useEffect(() => {
     const savedFilters = localStorage.getItem('questionFilters');
@@ -107,22 +107,61 @@ const FilterButton = ({
   );
 };
 
-const QuestionFiltersBar = ({ filters, onToggleFilter }: QuestionFiltersBarProps) => {
-  const [metrics, setMetrics] = useState(calculateMetrics());
-  
-  // Initialize metrics on component mount
+const QuestionFiltersBar = ({ filters, onToggleFilter, questions }: QuestionFiltersBarProps) => {
+  const calculateLocalMetrics = (questions: any[]) => {
+    // Calculate metrics for the provided questions only
+    const counts = {
+      unused: 0,
+      used: 0,
+      correct: 0,
+      incorrect: 0,
+      flagged: 0,
+      omitted: 0
+    };
+    questions.forEach(q => {
+      const hasBeenAttempted = q.attempts && q.attempts.length > 0;
+      const lastAttempt = hasBeenAttempted ? q.attempts[q.attempts.length - 1] : null;
+      if (!hasBeenAttempted) {
+        counts.unused++;
+      } else {
+        counts.used++;
+        if (lastAttempt.selectedAnswer === null) {
+          counts.omitted++;
+        } else if (lastAttempt.isCorrect) {
+          counts.correct++;
+        } else {
+          counts.incorrect++;
+        }
+      }
+      if (q.isFlagged) {
+        counts.flagged++;
+      }
+    });
+    return counts;
+  };
+
+  const [metrics, setMetrics] = useState(() =>
+    questions ? calculateLocalMetrics(questions) : calculateMetrics()
+  );
+
   useEffect(() => {
-    initializeMetrics();
-    setMetrics(calculateMetrics());
-    
+    if (questions) {
+      setMetrics(calculateLocalMetrics(questions));
+    } else {
+      initializeMetrics();
+      setMetrics(calculateMetrics());
+    }
     // Re-calculate metrics when storage changes
     const handleStorageChange = () => {
-      setMetrics(calculateMetrics());
+      if (questions) {
+        setMetrics(calculateLocalMetrics(questions));
+      } else {
+        setMetrics(calculateMetrics());
+      }
     };
-    
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [questions]);
 
   return (
     <div className="flex flex-wrap gap-2">
