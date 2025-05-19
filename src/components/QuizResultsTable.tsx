@@ -4,6 +4,7 @@ import { renderMarkdown } from "@/utils/markdownUtils";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 import ImageModal from "./quiz/ImageModal";
 import React, { useState } from "react";
+import Pagination from "@/components/Pagintion";
 
 interface QuizResultsTableProps {
   questions: Question[];
@@ -18,6 +19,13 @@ interface QuizResultsTableProps {
 const QuizResultsTable = ({ questions, attempts }: QuizResultsTableProps) => {
   const { getMediaItem } = useMediaLibrary();
   const [selectedImage, setSelectedImage] = useState<{ url: string; name: string } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const QUESTIONS_PER_PAGE = 20;
+  const totalPages = Math.ceil(questions.length / QUESTIONS_PER_PAGE);
+  const paginatedQuestions = questions.slice(
+    (currentPage - 1) * QUESTIONS_PER_PAGE,
+    currentPage * QUESTIONS_PER_PAGE
+  );
 
   const handleImageClick = (imageName: string) => {
     const mediaItem = getMediaItem(imageName);
@@ -58,7 +66,7 @@ const QuizResultsTable = ({ questions, attempts }: QuizResultsTableProps) => {
           </tr>
         </thead>
         <tbody>
-          {questions.map((question, index) => {
+          {paginatedQuestions.map((question, index) => {
             const attempt = attempts.find(a => a.questionId === question.id);
             const status = getQuestionStatus(attempt);
 
@@ -70,7 +78,7 @@ const QuizResultsTable = ({ questions, attempts }: QuizResultsTableProps) => {
                   getRowBackground(attempt)
                 )}
               >
-                <td className="p-2 dark:text-gray-200">{index + 1}</td>
+                <td className="p-2 dark:text-gray-200">{(currentPage - 1) * QUESTIONS_PER_PAGE + index + 1}</td>
                 <td className="p-2 dark:text-gray-200">
                   <div className="prose prose-sm dark:prose-invert">
                     {renderMarkdown(question.question, handleImageClick)}
@@ -90,6 +98,13 @@ const QuizResultsTable = ({ questions, attempts }: QuizResultsTableProps) => {
           onClose={() => setSelectedImage(null)}
           imageUrl={selectedImage.url}
           altText={selectedImage.name}
+        />
+      )}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
         />
       )}
     </div>

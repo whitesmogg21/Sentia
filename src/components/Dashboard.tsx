@@ -14,15 +14,16 @@ import { useNavigate } from "react-router-dom";
 import { QuestionFilter } from "@/types/quiz";
 import { useQuiz } from "@/hooks/quiz";
 import { useFullscreen } from "@/hooks/use-fullscreen";
+import { TagPerformanceChart } from "./TagPerformanceChart";
 
 interface DashboardProps {
   qbanks: QBank[];
   quizHistory: QuizHistory[];
   onStartQuiz: (
-    qbankId: string, 
-    questionCount: number, 
-    tutorMode: boolean, 
-    timerEnabled: boolean, 
+    qbankId: string,
+    questionCount: number,
+    tutorMode: boolean,
+    timerEnabled: boolean,
     timeLimit: number,
     filteredQuestionIds?: number[] // Add this parameter
   ) => void;
@@ -64,21 +65,21 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       const foundQBank = qbanks.find(qb => qb.id === qbankData.id);
       if (foundQBank) {
         setSelectedQBank(foundQBank);
-        
+
         // Check if we have any filtered question IDs
         const filteredIds = localStorage.getItem('filteredQuestionIds');
         if (filteredIds) {
           const parsedIds = JSON.parse(filteredIds);
           console.log(`Found ${parsedIds.length} filtered question IDs`);
-          
+
           // Determine which filters are active based on the IDs
           const questionMetrics = parsedIds.map(id => {
             const question = foundQBank.questions.find(q => q.id === id);
             if (!question) return null;
-            
+
             const hasBeenAttempted = question.attempts && question.attempts.length > 0;
             const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
-            
+
             return {
               id,
               unused: !hasBeenAttempted,
@@ -89,7 +90,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
               omitted: lastAttempt?.selectedAnswer === null
             };
           }).filter(Boolean);
-          
+
           // Check which filters should be active
           const activeFilters: QuestionFilter = {
             unused: false,
@@ -99,7 +100,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             flagged: false,
             omitted: false
           };
-          
+
           // If all filtered questions share a property, that filter should be active
           if (questionMetrics.length > 0) {
             if (questionMetrics.every(q => q.unused)) activeFilters.unused = true;
@@ -109,7 +110,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             if (questionMetrics.every(q => q.flagged)) activeFilters.flagged = true;
             if (questionMetrics.every(q => q.omitted)) activeFilters.omitted = true;
           }
-          
+
           setFilters(activeFilters);
         }
       }
@@ -122,11 +123,11 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     const incorrectQuestionIds = new Set<number>();
     const omittedQuestionIds = new Set<number>();
     const flaggedQuestionIds = new Set<number>();
-    
+
     quizHistory.forEach(quiz => {
       quiz.questionAttempts.forEach(attempt => {
         seenQuestionIds.add(attempt.questionId);
-        
+
         if (attempt.selectedAnswer === null) {
           incorrectQuestionIds.add(attempt.questionId);
           omittedQuestionIds.add(attempt.questionId);
@@ -146,7 +147,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       });
     });
 
-    const totalQuestions = qbanks.reduce((acc, qbank) => 
+    const totalQuestions = qbanks.reduce((acc, qbank) =>
       acc + qbank.questions.length, 0);
 
     const unusedCount = totalQuestions - seenQuestionIds.size;
@@ -165,7 +166,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     return calculateOverallAccuracy();
   }, [calculateOverallAccuracy, quizHistory]);
 
-  const chartData = useMemo(() => 
+  const chartData = useMemo(() =>
     quizHistory.map((quiz, index) => ({
       attemptNumber: index + 1,
       score: (quiz.score / quiz.totalQuestions) * 100,
@@ -174,14 +175,14 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 
     const filteredQuestions = useMemo(() => {
       if (!selectedQBank) return [];
-        
+
       return selectedQBank.questions.filter(question => {
         // If no filters are active, return all questions
         if (!Object.values(filters).some(v => v)) return true;
-          
+
         const hasBeenAttempted = question.attempts && question.attempts.length > 0;
         const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
-          
+
         return (
           (filters.unused && !hasBeenAttempted) ||
           (filters.used && hasBeenAttempted) ||
@@ -192,7 +193,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         );
       });
     }, [selectedQBank, filters]);
-  
+
     const handleStartQuiz = () => {
       if (selectedQBank && questionCount > 0) {
         // Make sure we have filtered questions
@@ -204,19 +205,19 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           });
           return;
         }
-        
+
         // Log for debugging
         console.log(`Starting quiz with ${filteredQuestions.length} filtered questions`);
         console.log("Active filters:", Object.entries(filters)
           .filter(([_, isActive]) => isActive)
           .map(([key]) => key));
-        
+
         // Pass only the filtered question IDs to the quiz
         onStartQuiz(
-          selectedQBank.id, 
-          Math.min(questionCount, filteredQuestions.length), 
-          tutorMode, 
-          timerEnabled, 
+          selectedQBank.id,
+          Math.min(questionCount, filteredQuestions.length),
+          tutorMode,
+          timerEnabled,
           timeLimit,
           filteredQuestions.map(q => q.id)
         );
@@ -240,11 +241,11 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   };
 
   const totalAttempts = useMemo(() => quizHistory.reduce((acc, quiz) => acc + quiz.questionAttempts.length, 0), [quizHistory]);
-  const correctAttempts = useMemo(() => quizHistory.reduce((acc, quiz) => 
+  const correctAttempts = useMemo(() => quizHistory.reduce((acc, quiz) =>
     acc + quiz.questionAttempts.filter(a => a.isCorrect).length, 0), [quizHistory]);
-  
+
   const totalQuestions = useMemo(() => qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0), [qbanks]);
-  const questionsAttempted = useMemo(() => new Set(quizHistory.flatMap(quiz => 
+  const questionsAttempted = useMemo(() => new Set(quizHistory.flatMap(quiz =>
     quiz.questionAttempts.map(a => a.questionId)
   )).size, [quizHistory]);
 
@@ -268,7 +269,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 
   const tagPerformance = useMemo(() => {
     const tagStats: { [key: string]: { correct: number; total: number } } = {};
-    
+
     const uniqueTags = new Set<string>();
     qbanks.forEach(qbank => {
       qbank.questions.forEach(question => {
@@ -285,7 +286,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         const question = qbanks
           .flatMap(qbank => qbank.questions)
           .find(q => q.id === attempt.questionId);
-          
+
         if (question) {
           question.tags.forEach(tag => {
             tagStats[tag].total += 1;
@@ -310,12 +311,12 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   const overallAccuracyCalc = useMemo(() => totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0, [correctAttempts, totalAttempts]);
   const completionRate = useMemo(() => totalQuestions > 0 ? (questionsAttempted / totalQuestions) * 100 : 0, [questionsAttempted, totalQuestions]);
 
-  
+
   useEffect(() => {
     if (selectedQBank) {
       // Default to 40 questions or all available filtered questions if less than 40
       const defaultCount = Math.min(40, filteredQuestions.length);
-      
+
       // Only update if the current count is invalid (0, greater than available, or not set)
       if (questionCount <= 0 || questionCount > filteredQuestions.length) {
         setQuestionCount(defaultCount);
@@ -356,7 +357,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           </Button>
         </div>
       </div>
-      
+
       <div className="grid md:grid-cols-2 gap-6 mt-8">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -471,7 +472,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           </div>
         </motion.div>
       </div>
-      
+
       <div className="mt-6 p-4 bg-card border rounded-lg shadow-sm">
         <h2 className="text-xl font-bold mb-4">Your Performance Summary</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -488,6 +489,11 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             <p className="text-2xl font-bold">{quizHistory.length}</p>
           </Card>
         </div>
+      </div>
+
+      {/* Tag Performance Radar Chart */}
+      <div className="my-8">
+        <TagPerformanceChart qbanks={qbanks} quizHistory={quizHistory} />
       </div>
     </div>
   );
