@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import {
   RadarChart,
@@ -20,7 +19,7 @@ interface TagPerformanceChartProps {
 export const TagPerformanceChart = ({ qbanks, quizHistory }: TagPerformanceChartProps) => {
   const tagPerformance = useMemo(() => {
     const tagStats: { [key: string]: { correct: number; total: number } } = {};
-    
+
     // First collect all unique tags from qbanks
     const uniqueTags = new Set<string>();
     qbanks.forEach(qbank => {
@@ -40,7 +39,7 @@ export const TagPerformanceChart = ({ qbanks, quizHistory }: TagPerformanceChart
         const question = qbanks
           .flatMap(qbank => qbank.questions)
           .find(q => q.id === attempt.questionId);
-          
+
         if (question) {
           question.tags.forEach(tag => {
             tagStats[tag].total += 1;
@@ -74,27 +73,27 @@ export const TagPerformanceChart = ({ qbanks, quizHistory }: TagPerformanceChart
   return (
     <Card className="p-4 flex flex-col items-center h-full aspect-square">
       <h3 className="text-sm font-medium mb-2">Tag Performance</h3>
-      <div className="w-full h-[calc(100%-2rem)] min-h-[100px]">
+      <div className="w-full h-32">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart
             data={tagPerformance}
             margin={{ top: 5, right: 5, bottom: 5, left: 5 }}
           >
-            <PolarGrid 
+            <PolarGrid
               stroke="hsl(var(--muted-foreground))"
               strokeOpacity={0.2}
             />
             <PolarAngleAxis
               dataKey="tag"
-              tick={{ 
+              tick={{
                 fill: "hsl(var(--foreground))",
-                fontSize: 10
+                fontSize: 14,
               }}
             />
             <PolarRadiusAxis
               angle={90}
               domain={[0, 100]}
-              tick={{ 
+              tick={{
                 fill: "hsl(var(--foreground))",
                 fontSize: 10
               }}

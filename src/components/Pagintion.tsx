@@ -9,29 +9,45 @@ interface PaginationProps {
 const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
   if (totalPages <= 1) return null;
 
+  // Helper to generate page numbers with ellipsis
   const getPageNumbers = () => {
-    const pages = [];
-    const delta = 2; // Number of neighbors to show on each side
-    const range = [];
-    let l;
+    const pages: (number | string)[] = [];
+    const siblingCount = 1; // Number of pages to show on each side of current
+    const totalNumbers = siblingCount * 2 + 3; // current, siblings, first, last
+    const totalBlocks = totalNumbers + 2; // including ellipsis
 
-    for (let i = 1; i <= totalPages; i++) {
-      if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
-        range.push(i);
+    if (totalPages <= totalBlocks) {
+      // Show all pages if not enough to truncate
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
       }
+      return pages;
     }
 
-    for (let i of range) {
-      if (l) {
-        if (i - l === 2) {
-          pages.push(l + 1);
-        } else if (i - l > 2) {
-          pages.push('...');
-        }
-      }
+    const leftSibling = Math.max(currentPage - siblingCount, 2);
+    const rightSibling = Math.min(currentPage + siblingCount, totalPages - 1);
+
+    // Always show first page
+    pages.push(1);
+
+    // Show left ellipsis if needed
+    if (leftSibling > 2) {
+      pages.push('...');
+    }
+
+    // Show middle pages
+    for (let i = leftSibling; i <= rightSibling; i++) {
       pages.push(i);
-      l = i;
     }
+
+    // Show right ellipsis if needed
+    if (rightSibling < totalPages - 1) {
+      pages.push('...');
+    }
+
+    // Always show last page
+    pages.push(totalPages);
+
     return pages;
   };
 
@@ -54,7 +70,7 @@ const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPage
       </button>
       {getPageNumbers().map((page, idx) =>
         page === '...'
-          ? <span key={idx} className="px-2">...</span>
+          ? <span key={`ellipsis-${idx}`} className="px-2">...</span>
           : <button
               key={page as number}
               className={`px-3 py-1 rounded border ${currentPage === page ? 'bg-primary text-white' : 'bg-white'}`}
