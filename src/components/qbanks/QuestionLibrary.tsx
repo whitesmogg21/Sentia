@@ -438,6 +438,15 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     setShowDeleteDialog(true);
   };
 
+  // Helper to remove qbanks (tags) with no questions
+  function removeEmptyQBanks() {
+    for (let i = qbanks.length - 1; i >= 0; i--) {
+      if (qbanks[i].questions.length === 0) {
+        qbanks.splice(i, 1);
+      }
+    }
+  }
+
   const confirmDeleteSelected = () => {
     if (selectedQuestions.length === 0) return;
 
@@ -446,6 +455,8 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     qbanks.forEach(qbank => {
       qbank.questions = qbank.questions.filter(q => !questionIds.includes(q.id));
     });
+
+    removeEmptyQBanks(); // Remove tags/qbanks with no questions
 
     saveQBanksToStorage();
 
@@ -467,6 +478,8 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         qbank.questions.splice(index, 1);
       }
     });
+
+    removeEmptyQBanks(); // Remove tags/qbanks with no questions
 
     saveQBanksToStorage();
 
