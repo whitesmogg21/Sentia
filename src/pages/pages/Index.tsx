@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { QuizHistory } from "@/types/quiz";
 import { qbanks } from "@/data/questions";
@@ -54,7 +55,6 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     setShowQuitDialog(false);
   };
 
-
   const startQuiz = (
     qbankId: string,
     questionCount: number,
@@ -64,16 +64,46 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
   ) => {
     // Check for filtered QBank in localStorage
     const filteredQBankString = localStorage.getItem("filteredQBank");
-    const selectedQBankString = localStorage.getItem("selectedQBank");
 
-    // Determine which QBank to use
+    // If we have a filtered qbank, use that directly
+    if (filteredQBankString) {
+      const filteredQBank = JSON.parse(filteredQBankString);
+      console.log(`Using filtered QBank with ${filteredQBank.questions.length} questions`);
+      
+      // Ensure we don't ask for more questions than are available
+      const actualQuestionCount = Math.min(questionCount, filteredQBank.questions.length);
+      
+      // Randomize questions if we're selecting a subset
+      let selectedQuestions;
+      if (filteredQBank.questions.length > actualQuestionCount) {
+        selectedQuestions = [...filteredQBank.questions]
+          .sort(() => Math.random() - 0.5)
+          .slice(0, actualQuestionCount);
+      } else {
+        selectedQuestions = [...filteredQBank.questions];
+      }
+      
+      // Start the quiz with the filtered questions
+      handleStartQuiz(
+        qbankId,
+        selectedQuestions,
+        tutorMode,
+        timerEnabled,
+        timeLimit
+      );
+      
+      // Notify parent component
+      if (onQuizStart) {
+        onQuizStart();
+      }
+      return;
+    }
+    
+    // Fall back to regular QBank selection if no filtered QBank
+    const selectedQBankString = localStorage.getItem("selectedQBank");
     let selectedQBank;
 
-    if (filteredQBankString) {
-      // Use the filtered QBank if it exists
-      selectedQBank = JSON.parse(filteredQBankString);
-      console.log(`Using filtered QBank with ${selectedQBank.questions.length} questions`);
-    } else if (selectedQBankString) {
+    if (selectedQBankString) {
       // Use the regular selected QBank
       selectedQBank = JSON.parse(selectedQBankString);
       console.log(`Using regular QBank with ${selectedQBank.questions.length} questions`);
