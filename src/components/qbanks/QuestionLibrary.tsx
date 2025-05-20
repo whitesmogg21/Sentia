@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -349,9 +350,21 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           .filter(row => row && row.length >= 2)
           .map((row: any) => {
             const [question, correctAnswer, otherChoices, category, explanation] = row;
-            const tags = category?.toString().trim()
-              ? [category.toString().toLowerCase().trim()]
-              : ['general'];
+            
+            // Modified tag handling to support semicolon-separated tags
+            let tags: string[] = ['general'];
+            if (category?.toString().trim()) {
+              // Split by semicolons, convert to lowercase, trim whitespace, and filter out empty tags
+              tags = category.toString()
+                .split(';')
+                .map(tag => tag.toLowerCase().trim())
+                .filter(Boolean);
+              
+              // If after filtering we have no valid tags, use 'general'
+              if (tags.length === 0) {
+                tags = ['general'];
+              }
+            }
 
             const questionText = question.toString().trim();
             const explanationText = explanation?.toString().trim() || undefined;
@@ -380,6 +393,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
               attempts: []
             };
 
+            // Add the question to all relevant qbanks based on tags
             tags.forEach(tag => {
               let qbank = qbanks.find(qb => qb.id === tag);
               if (!qbank) {
