@@ -15,7 +15,6 @@ import { QuestionFilter } from "@/types/quiz";
 import { useQuiz } from "@/hooks/quiz";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { TagPerformanceChart } from "./TagPerformanceChart";
-import { getFilteredQuestions } from "@/utils/metricsUtils";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -25,7 +24,8 @@ interface DashboardProps {
     questionCount: number,
     tutorMode: boolean,
     timerEnabled: boolean,
-    timeLimit: number
+    timeLimit: number,
+    filteredQuestionIds?: number[] // Add this parameter
   ) => void;
 }
 
@@ -117,21 +117,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     }
   }, [qbanks]);
 
-  const filteredQuestions = useMemo(() => {
-    if (!selectedQBank) return [];
-
-    // Get active filters as an array
-    const activeFilters = Object.entries(filters)
-      .filter(([_, isActive]) => isActive)
-      .map(([key]) => key);
-
-    // If no filters are active, return all questions
-    if (activeFilters.length === 0) return selectedQBank.questions;
-
-    // Use the getFilteredQuestions utility to get filtered questions
-    return getFilteredQuestions(selectedQBank.questions, activeFilters);
-  }, [selectedQBank, filters]);
-
   const metrics = useMemo(() => {
     const seenQuestionIds = new Set<number>();
     const correctQuestionIds = new Set<number>();
@@ -188,47 +173,56 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       date: quiz.date,
     })), [quizHistory]);
 
-  const handleStartQuiz = () => {
-    if (selectedQBank && questionCount > 0) {
-      // Make sure we have filtered questions
-      if (filteredQuestions.length === 0) {
-        toast({
-          title: "No Questions Available",
-          description: "There are no questions available with the current filters.",
-          variant: "destructive"
-        });
-        return;
+    const filteredQuestions = useMemo(() => {
+      if (!selectedQBank) return [];
+
+      return selectedQBank.questions.filter(question => {
+        // If no filters are active, return all questions
+        if (!Object.values(filters).some(v => v)) return true;
+
+        const hasBeenAttempted = question.attempts && question.attempts.length > 0;
+        const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
+
+        return (
+          (filters.unused && !hasBeenAttempted) ||
+          (filters.used && hasBeenAttempted) ||
+          (filters.correct && lastAttempt?.isCorrect) ||
+          (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
+          (filters.flagged && question.isFlagged) ||
+          (filters.omitted && lastAttempt?.selectedAnswer === null)
+        );
+      });
+    }, [selectedQBank, filters]);
+
+    const handleStartQuiz = () => {
+      if (selectedQBank && questionCount > 0) {
+        // Make sure we have filtered questions
+        if (filteredQuestions.length === 0) {
+          toast({
+            title: "No Questions Available",
+            description: "There are no questions available with the current filters.",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        // Log for debugging
+        console.log(`Starting quiz with ${filteredQuestions.length} filtered questions`);
+        console.log("Active filters:", Object.entries(filters)
+          .filter(([_, isActive]) => isActive)
+          .map(([key]) => key));
+
+        // Pass only the filtered question IDs to the quiz
+        onStartQuiz(
+          selectedQBank.id,
+          Math.min(questionCount, filteredQuestions.length),
+          tutorMode,
+          timerEnabled,
+          timeLimit,
+          filteredQuestions.map(q => q.id)
+        );
       }
-
-      // Log for debugging
-      console.log(`Starting quiz with ${filteredQuestions.length} filtered questions`);
-      console.log("Active filters:", Object.entries(filters)
-        .filter(([_, isActive]) => isActive)
-        .map(([key]) => key));
-
-      // Create a filtered QBank with only the questions that match the filters
-      const filteredQBank = {
-        ...selectedQBank,
-        questions: filteredQuestions,
-        isFiltered: true
-      };
-      
-      // Store the filtered QBank in localStorage
-      localStorage.setItem("filteredQBank", JSON.stringify(filteredQBank));
-      
-      // Store the filtered question IDs
-      localStorage.setItem("filteredQuestionIds", JSON.stringify(filteredQuestions.map(q => q.id)));
-
-      // Start the quiz with the filtered questions
-      onStartQuiz(
-        selectedQBank.id,
-        Math.min(questionCount, filteredQuestions.length),
-        tutorMode,
-        timerEnabled,
-        timeLimit
-      );
-    }
-  };
+    };
 
   const toggleFilter = (key: keyof QuestionFilter) => {
     setFilters(prev => ({
@@ -402,6 +396,23 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         >
           <h2 className="text-xl font-bold">Quiz Configuration</h2>
           <div className="space-y-4">
+          {/* <div>
+            <Label className="block text-sm font-medium mb-2">
+              Number of Questions (max: {filteredQuestions.length})
+            </Label>
+            <Input
+              type="number"
+              min={1}
+              max={filteredQuestions.length || 1}
+              value={questionCount > filteredQuestions.length ? filteredQuestions.length : questionCount}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                const validValue = Math.min(Math.max(1, value), filteredQuestions.length);
+                setQuestionCount(validValue);
+              }}
+              className="w-48"
+            />
+          </div> */}
           <div>
             <Label className="block text-sm font-medium mb-2">
               Number of Questions ({filteredQuestions.length} available)
@@ -467,11 +478,11 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
-            <p className="text-2xl font-bold">{calculateOverallAccuracy().toFixed(1)}%</p>
+            <p className="text-2xl font-bold">{overallAccuracyCalc.toFixed(1)}%</p>
           </Card>
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Questions Attempted</h3>
-            <p className="text-2xl font-bold">{metrics.used} / {metrics.used + metrics.unused}</p>
+            <p className="text-2xl font-bold">{questionsAttempted} / {totalQuestions}</p>
           </Card>
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Total Quizzes Taken</h3>

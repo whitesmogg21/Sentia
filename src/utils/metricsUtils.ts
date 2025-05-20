@@ -107,9 +107,6 @@ export const updateQuestionMetrics = (
   
   metrics[questionId] = entry;
   saveMetricsStore(metrics);
-  
-  // Dispatch a storage event for metrics update
-  window.dispatchEvent(new Event('metrics-update'));
 };
 
 // Update metrics after a quiz attempt
@@ -141,9 +138,6 @@ export const updateQuestionFlag = (questionId: number, isFlagged: boolean): void
   }
   
   saveMetricsStore(metrics);
-  
-  // Dispatch a storage event for metrics update
-  window.dispatchEvent(new Event('metrics-update'));
 };
 
 // Reset all metrics to unused (but keep flags)
@@ -159,12 +153,9 @@ export const resetMetrics = (): void => {
   });
   
   saveMetricsStore(metrics);
-  
-  // Dispatch a storage event for metrics update
-  window.dispatchEvent(new Event('metrics-update'));
 };
 
-// Calculate metrics counts - Fix to not double count
+// Calculate metrics counts
 export const calculateMetrics = () => {
   const metrics = getMetricsStore();
   
@@ -177,17 +168,12 @@ export const calculateMetrics = () => {
     flagged: 0
   };
   
-  // Count questions in each category - Make them mutually exclusive
+  // Count questions in each category
   Object.values(metrics).forEach(entry => {
-    // Each question is only in one status category
     counts[entry.status]++;
-    
-    // Used count is the sum of correct, incorrect, and omitted (not unused)
     if (entry.status !== 'unused') {
       counts.used++;
     }
-    
-    // Flagged is independent of other statuses
     if (entry.isFlagged) {
       counts.flagged++;
     }
@@ -248,11 +234,10 @@ export function syncFiltersWithLocalStorage(): QuestionFilter {
     omitted: false,
   };
   
-  // Check if we have filtered QBank stored
+  // Check if we have a filtered QBank stored
   const filteredQBankString = localStorage.getItem("filteredQBank");
   if (!filteredQBankString) {
-    const savedFilters = localStorage.getItem('questionFilters');
-    return savedFilters ? JSON.parse(savedFilters) : defaultFilters;
+    return defaultFilters;
   }
   
   try {
