@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { QuestionFilter } from "@/types/quiz";
 import { Check } from "lucide-react";
@@ -71,10 +72,9 @@ const FilterButton = ({
     const savedFilters = localStorage.getItem('questionFilters');
     if (savedFilters) {
       const filters = JSON.parse(savedFilters);
-      if (filters[category.key] !== undefined) {
-        if (filters[category.key] !== isActive) {
-          onClick();
-        }
+      if (filters[category.key] !== undefined && filters[category.key] !== isActive) {
+        // Only trigger onClick if there's a genuine mismatch
+        onClick();
       }
     }
   }, []);
@@ -83,8 +83,12 @@ const FilterButton = ({
     // This will update localStorage when filters change
     const savedFilters = localStorage.getItem('questionFilters');
     const filters = savedFilters ? JSON.parse(savedFilters) : {};
-    filters[category.key] = isActive;
-    localStorage.setItem('questionFilters', JSON.stringify(filters));
+    
+    // Only update if the value changed
+    if (filters[category.key] !== isActive) {
+      filters[category.key] = isActive;
+      localStorage.setItem('questionFilters', JSON.stringify(filters));
+    }
   }, [isActive, category.key]);
 
   return (
@@ -95,7 +99,8 @@ const FilterButton = ({
         category.bgColor,
         category.color,
         isActive && "ring-2 ring-offset-2",
-        "hover:opacity-90"
+        "hover:opacity-90",
+        count === 0 && "opacity-50"
       )}
     >
       <Check className={cn("w-4 h-4", isActive ? "opacity-100" : "opacity-0")} />
@@ -118,9 +123,12 @@ const QuestionFiltersBar = ({ filters, onToggleFilter, questions }: QuestionFilt
       flagged: 0,
       omitted: 0
     };
+    
     questions.forEach(q => {
       const hasBeenAttempted = q.attempts && q.attempts.length > 0;
       const lastAttempt = hasBeenAttempted ? q.attempts[q.attempts.length - 1] : null;
+      
+      // Determine the status based on attempts
       if (!hasBeenAttempted) {
         counts.unused++;
       } else {
@@ -133,10 +141,13 @@ const QuestionFiltersBar = ({ filters, onToggleFilter, questions }: QuestionFilt
           counts.incorrect++;
         }
       }
+      
+      // Flagged is independent of other statuses
       if (q.isFlagged) {
         counts.flagged++;
       }
     });
+    
     return counts;
   };
 
@@ -145,22 +156,36 @@ const QuestionFiltersBar = ({ filters, onToggleFilter, questions }: QuestionFilt
   );
 
   useEffect(() => {
-    if (questions) {
-      setMetrics(calculateLocalMetrics(questions));
-    } else {
-      initializeMetrics();
-      setMetrics(calculateMetrics());
-    }
-    // Re-calculate metrics when storage changes
-    const handleStorageChange = () => {
+    const updateMetrics = () => {
       if (questions) {
         setMetrics(calculateLocalMetrics(questions));
       } else {
         setMetrics(calculateMetrics());
       }
     };
+    
+    // Initialize metrics and set up update listeners
+    initializeMetrics();
+    updateMetrics();
+    
+    // Listen for changes from other components
+    const handleStorageChange = () => updateMetrics();
+    const handleMetricsUpdate = () => updateMetrics();
+    
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('metrics-update', handleMetricsUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('metrics-update', handleMetricsUpdate);
+    };
+  }, [questions]);
+  
+  // Update metrics when questions prop changes
+  useEffect(() => {
+    if (questions) {
+      setMetrics(calculateLocalMetrics(questions));
+    }
   }, [questions]);
 
   return (
