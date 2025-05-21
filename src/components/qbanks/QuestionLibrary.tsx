@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -21,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import MediaSelector from "./MediaSelector";
-import { updateQuestionMetrics, initializeMetrics } from "@/utils/metricsUtils";
+import { updateQuestionMetrics, initializeMetrics, removeQuestionMetrics } from "@/utils/metricsUtils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -350,7 +349,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           .filter(row => row && row.length >= 2)
           .map((row: any) => {
             const [question, correctAnswer, otherChoices, category, explanation] = row;
-            
+
             // Modified tag handling to support semicolon-separated tags
             let tags: string[] = ['general'];
             if (category?.toString().trim()) {
@@ -359,7 +358,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                 .split(';')
                 .map(tag => tag.toLowerCase().trim())
                 .filter(Boolean);
-              
+
               // If after filtering we have no valid tags, use 'general'
               if (tags.length === 0) {
                 tags = ['general'];
@@ -470,6 +469,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       qbank.questions = qbank.questions.filter(q => !questionIds.includes(q.id));
     });
 
+    // Remove metrics for deleted questions
+    questionIds.forEach(id => removeQuestionMetrics(id));
+
     removeEmptyQBanks(); // Remove tags/qbanks with no questions
 
     saveQBanksToStorage();
@@ -492,6 +494,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         qbank.questions.splice(index, 1);
       }
     });
+
+    // Remove metrics for deleted question
+    removeQuestionMetrics(questionId);
 
     removeEmptyQBanks(); // Remove tags/qbanks with no questions
 

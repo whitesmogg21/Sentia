@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { QuestionFilter } from "@/types/quiz";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { calculateMetrics, initializeMetrics } from "@/utils/metricsUtils";
+import { calculateMetrics, initializeMetrics, isQuestionFlagged } from "@/utils/metricsUtils";
 
 type FilterCategory = {
   label: string;
@@ -133,7 +133,8 @@ const QuestionFiltersBar = ({ filters, onToggleFilter, questions }: QuestionFilt
           counts.incorrect++;
         }
       }
-      if (q.isFlagged) {
+      // Use metrics store for flagged state
+      if (isQuestionFlagged(q.id)) {
         counts.flagged++;
       }
     });

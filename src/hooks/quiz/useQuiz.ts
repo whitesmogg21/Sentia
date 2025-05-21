@@ -43,11 +43,10 @@ export const useQuiz = ({ onQuizComplete, onQuizStart, onQuizEnd }: UseQuizProps
       }
     }
 
-    // Reset attempts and flags for all selected questions before starting quiz
+    // Reset attempts for all selected questions before starting quiz
     selectedQuestions = selectedQuestions.map(q => ({
       ...q,
-      attempts: [],
-      isFlagged: false
+      attempts: []
     }));
 
     // Randomize the answer options for each question

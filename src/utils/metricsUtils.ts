@@ -7,7 +7,7 @@ const METRICS_STORAGE_KEY = 'questionMetricsStore';
 export const initializeMetrics = (): void => {
   const existingMetrics = getMetricsStore();
   let updated = false;
-  
+
   // Initialize all questions
   qbanks.forEach(qbank => {
     qbank.questions.forEach(question => {
@@ -18,7 +18,7 @@ export const initializeMetrics = (): void => {
           // This question has been attempted but metrics were lost - reconstruct from attempts
           const lastAttempt = question.attempts[question.attempts.length - 1];
           let status: QuestionCategory = 'unused';
-          
+
           if (lastAttempt.selectedAnswer === null) {
             status = 'omitted';
           } else if (lastAttempt.isCorrect) {
@@ -26,7 +26,7 @@ export const initializeMetrics = (): void => {
           } else {
             status = 'incorrect';
           }
-          
+
           existingMetrics[question.id] = {
             status,
             lastAttemptDate: lastAttempt.date,
@@ -41,15 +41,12 @@ export const initializeMetrics = (): void => {
         }
         updated = true;
       } else {
-        // Question exists in metrics, but check if isFlagged status matches
-        if (existingMetrics[question.id].isFlagged !== Boolean(question.isFlagged)) {
-          existingMetrics[question.id].isFlagged = Boolean(question.isFlagged);
-          updated = true;
-        }
+        // Question exists in metrics, do not sync isFlagged from qbanks
+        // This prevents overwriting user flag actions
       }
     });
   });
-  
+
   // Clean up metrics for deleted questions
   const allQuestionIds = new Set<number>();
   qbanks.forEach(qbank => {
@@ -57,7 +54,7 @@ export const initializeMetrics = (): void => {
       allQuestionIds.add(question.id);
     });
   });
-  
+
   Object.keys(existingMetrics).forEach(idStr => {
     const id = parseInt(idStr);
     if (!allQuestionIds.has(id)) {
@@ -65,7 +62,7 @@ export const initializeMetrics = (): void => {
       updated = true;
     }
   });
-  
+
   if (updated) {
     saveMetricsStore(existingMetrics);
   }
@@ -89,22 +86,22 @@ export const updateQuestionMetrics = (
   isFlagged?: boolean
 ): void => {
   const metrics = getMetricsStore();
-  
+
   // Get existing entry or create a new one
   const entry = metrics[questionId] || {
     status: 'unused',
     isFlagged: false
   };
-  
+
   // Update status
   entry.status = status;
   entry.lastAttemptDate = new Date().toISOString();
-  
+
   // Only update flag status if explicitly provided
   if (isFlagged !== undefined) {
     entry.isFlagged = isFlagged;
   }
-  
+
   metrics[questionId] = entry;
   saveMetricsStore(metrics);
 };
@@ -112,7 +109,7 @@ export const updateQuestionMetrics = (
 // Update metrics after a quiz attempt
 export const updateMetricsFromAttempt = (attempt: QuestionAttempt): void => {
   let status: QuestionCategory;
-  
+
   if (attempt.selectedAnswer === null) {
     status = 'omitted';
   } else if (attempt.isCorrect) {
@@ -120,14 +117,14 @@ export const updateMetricsFromAttempt = (attempt: QuestionAttempt): void => {
   } else {
     status = 'incorrect';
   }
-  
+
   updateQuestionMetrics(attempt.questionId, status, attempt.isFlagged);
 };
 
 // Update flag status for a question
 export const updateQuestionFlag = (questionId: number, isFlagged: boolean): void => {
   const metrics = getMetricsStore();
-  
+
   if (!metrics[questionId]) {
     metrics[questionId] = {
       status: 'unused',
@@ -136,14 +133,14 @@ export const updateQuestionFlag = (questionId: number, isFlagged: boolean): void
   } else {
     metrics[questionId].isFlagged = isFlagged;
   }
-  
+
   saveMetricsStore(metrics);
 };
 
 // Reset all metrics to unused (but keep flags)
 export const resetMetrics = (): void => {
   const metrics = getMetricsStore();
-  
+
   Object.keys(metrics).forEach(questionId => {
     const flagged = metrics[questionId].isFlagged;
     metrics[questionId] = {
@@ -151,14 +148,14 @@ export const resetMetrics = (): void => {
       isFlagged: flagged
     };
   });
-  
+
   saveMetricsStore(metrics);
 };
 
 // Calculate metrics counts
 export const calculateMetrics = () => {
   const metrics = getMetricsStore();
-  
+
   const counts = {
     unused: 0,
     used: 0,
@@ -167,7 +164,7 @@ export const calculateMetrics = () => {
     omitted: 0,
     flagged: 0
   };
-  
+
   // Count questions in each category
   Object.values(metrics).forEach(entry => {
     counts[entry.status]++;
@@ -178,7 +175,7 @@ export const calculateMetrics = () => {
       counts.flagged++;
     }
   });
-  
+
   return counts;
 };
 
@@ -186,17 +183,17 @@ export const calculateMetrics = () => {
 export const getFilteredQuestions = (questions: Question[], activeFilters: string[]): Question[] => {
   // If no filters are active, return all questions
   if (activeFilters.length === 0) return questions;
-  
+
   const metrics = getMetricsStore();
-  
+
   return questions.filter(question => {
     // If no metrics for this question yet, it's unused
     const questionMetrics = metrics[question.id] || { status: 'unused', isFlagged: false };
-    
+
     // Also check question attempts directly in case metrics are out of sync
     const hasBeenAttempted = question.attempts && question.attempts.length > 0;
     const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
-    
+
     // Check if this question matches any of the active filters
     return activeFilters.some(filter => {
       switch (filter) {
@@ -205,13 +202,13 @@ export const getFilteredQuestions = (questions: Question[], activeFilters: strin
         case 'used':
           return questionMetrics.status !== 'unused' || hasBeenAttempted;
         case 'correct':
-          return questionMetrics.status === 'correct' || 
+          return questionMetrics.status === 'correct' ||
                  (lastAttempt && lastAttempt.isCorrect);
         case 'incorrect':
-          return questionMetrics.status === 'incorrect' || 
+          return questionMetrics.status === 'incorrect' ||
                  (lastAttempt && !lastAttempt.isCorrect && lastAttempt.selectedAnswer !== null);
         case 'omitted':
-          return questionMetrics.status === 'omitted' || 
+          return questionMetrics.status === 'omitted' ||
                  (lastAttempt && lastAttempt.selectedAnswer === null);
         case 'flagged':
           return questionMetrics.isFlagged || question.isFlagged;
@@ -233,33 +230,33 @@ export function syncFiltersWithLocalStorage(): QuestionFilter {
     flagged: false,
     omitted: false,
   };
-  
+
   // Check if we have a filtered QBank stored
   const filteredQBankString = localStorage.getItem("filteredQBank");
   if (!filteredQBankString) {
     return defaultFilters;
   }
-  
+
   try {
     // Get the filtered QBank and the active filters from localStorage
     const savedFilters = localStorage.getItem('questionFilters');
     if (savedFilters) {
       return JSON.parse(savedFilters);
     }
-    
-    // If no saved filters but we have a filtered QBank, 
+
+    // If no saved filters but we have a filtered QBank,
     // we need to determine which filters were active
     const filteredQBank = JSON.parse(filteredQBankString);
     const metrics = getMetricsStore();
-    
+
     // Create a map to track if we've found questions for each filter
     const foundFilters: QuestionFilter = { ...defaultFilters };
-    
+
     // Check each question in the filtered QBank to determine which filters are active
     filteredQBank.questions.forEach((question: Question) => {
       const questionId = question.id;
       const metric = metrics[questionId] || { status: 'unused', isFlagged: false };
-      
+
       // Set filters based on question status
       switch (metric.status) {
         case 'unused':
@@ -278,15 +275,30 @@ export function syncFiltersWithLocalStorage(): QuestionFilter {
           foundFilters.used = true;
           break;
       }
-      
+
       if (question.isFlagged || metric.isFlagged) {
         foundFilters.flagged = true;
       }
     });
-    
+
     return foundFilters;
   } catch (error) {
     console.error("Error syncing filters with localStorage:", error);
     return defaultFilters;
   }
+};
+
+// Remove metrics for a deleted question
+export const removeQuestionMetrics = (questionId: number): void => {
+  const metrics = getMetricsStore();
+  if (metrics[questionId]) {
+    delete metrics[questionId];
+    saveMetricsStore(metrics);
+  }
+};
+
+// Helper to get flag state from metrics store
+export const isQuestionFlagged = (questionId: number): boolean => {
+  const metrics = getMetricsStore();
+  return metrics[questionId]?.isFlagged ?? false;
 };
