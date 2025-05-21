@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import MediaSelector from "./MediaSelector";
-import { updateQuestionMetrics, initializeMetrics } from "@/utils/metricsUtils";
+import { updateQuestionMetrics, initializeMetrics, removeQuestionMetrics } from "@/utils/metricsUtils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +34,7 @@ import {
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import Pagination from "@/components/Pagintion";
 import { renderMarkdown } from "@/utils/markdownUtils";
+import { CSSTransition } from 'react-transition-group';
 
 interface QuestionLibraryProps {
   qbanks: QBank[];
@@ -113,11 +113,12 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
   const [selectedFilterTags, setSelectedFilterTags] = useState<string[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<Question[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(0);
 
   // Use local state for qbanks
 
 
-  const filteredQuestions = qbanks.flatMap(qbank =>
+  const filteredQuestions = useMemo(() => qbanks.flatMap(qbank =>
     qbank.questions.filter(q => {
       if (selectedFilterTags.length > 0 && !q.tags.some(tag => selectedFilterTags.includes(tag))) {
         return false;
@@ -135,9 +136,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
 
       return true;
     })
-  );
+  ), [qbanks, selectedFilterTags, searchQuery, forceUpdate]);
 
-  const sortedQuestions = [...filteredQuestions].sort((a, b) => {
+  const sortedQuestions = useMemo(() => [...filteredQuestions].sort((a, b) => {
     if (!sortConfig.key) return 0;
 
     if (sortConfig.key === 'tags') {
@@ -161,23 +162,23 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         : bValue.localeCompare(aValue);
     }
     return 0;
-  });
+  }), [filteredQuestions, sortConfig, forceUpdate]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const QUESTIONS_PER_PAGE = 10;
   const totalPages = Math.ceil(sortedQuestions.length / QUESTIONS_PER_PAGE);
-  const paginatedQuestions = sortedQuestions.slice(
+  const paginatedQuestions = useMemo(() => sortedQuestions.slice(
     (currentPage - 1) * QUESTIONS_PER_PAGE,
     currentPage * QUESTIONS_PER_PAGE
-  );
+  ), [sortedQuestions, currentPage, forceUpdate]);
 
   useEffect(() => {
     initializeMetrics();
   }, []);
 
-  const existingTags = Array.from(new Set(
+  const existingTags = useMemo(() => Array.from(new Set(
     qbanks.flatMap(qbank => qbank.questions.flatMap(q => q.tags || []))
-  ));
+  )), [qbanks, forceUpdate]);
 
   const handleAddTag = (tag: string) => {
     const normalizedTag = tag.toLowerCase().trim();
@@ -271,6 +272,8 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       title: "Success",
       description: `Question added to ${selectedTags.length} question bank(s)`,
     });
+
+    setForceUpdate(f => f + 1);
   };
 
   const handleOptionChange = (index: number, value: string) => {
@@ -329,6 +332,8 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       title: "Success",
       description: "Question updated successfully",
     });
+
+    setForceUpdate(f => f + 1);
   };
 
   const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -350,7 +355,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           .filter(row => row && row.length >= 2)
           .map((row: any) => {
             const [question, correctAnswer, otherChoices, category, explanation] = row;
-            
+
             // Modified tag handling to support semicolon-separated tags
             let tags: string[] = ['general'];
             if (category?.toString().trim()) {
@@ -359,7 +364,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                 .split(';')
                 .map(tag => tag.toLowerCase().trim())
                 .filter(Boolean);
-              
+
               // If after filtering we have no valid tags, use 'general'
               if (tags.length === 0) {
                 tags = ['general'];
@@ -418,6 +423,8 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
           title: "Success",
           description: `${questions.length} questions imported successfully`,
         });
+
+        setForceUpdate(f => f + 1);
       } catch (error) {
         console.error('Excel import error:', error);
         toast({
@@ -470,6 +477,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       qbank.questions = qbank.questions.filter(q => !questionIds.includes(q.id));
     });
 
+    // Remove metrics for deleted questions
+    questionIds.forEach(id => removeQuestionMetrics(id));
+
     removeEmptyQBanks(); // Remove tags/qbanks with no questions
 
     saveQBanksToStorage();
@@ -483,6 +493,8 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       title: "Success",
       description: `${questionIds.length} questions deleted successfully`,
     });
+
+    setForceUpdate(f => f + 1);
   };
 
   const handleDeleteQuestion = (questionId: number) => {
@@ -492,6 +504,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
         qbank.questions.splice(index, 1);
       }
     });
+
+    // Remove metrics for deleted question
+    removeQuestionMetrics(questionId);
 
     removeEmptyQBanks(); // Remove tags/qbanks with no questions
 
@@ -503,6 +518,8 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
       title: "Success",
       description: "Question deleted successfully",
     });
+
+    setForceUpdate(f => f + 1);
   };
 
   const handleExport = async () => {
@@ -842,8 +859,9 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
                   size="icon"
                   onClick={handleSelectAllVisible}
                   className="h-4 w-4"
+                  disabled={sortedQuestions.length === 0}
                 >
-                  {selectedQuestions.length === sortedQuestions.length ? (
+                  {selectedQuestions.length === sortedQuestions.length && sortedQuestions.length > 0 ? (
                     <Check className="h-4 w-4" />
                   ) : (
                     <div className="h-4 w-4 rounded border border-gray-400" />
@@ -868,48 +886,56 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedQuestions.map((question) => (
-              <TableRow key={question.id}>
-                <TableCell>
-                  <input
-                    type="checkbox"
-                    checked={selectedQuestions.some(q => q.id === question.id)}
-                    onChange={() => {
-                      setSelectedQuestions(prev =>
-                        prev.some(q => q.id === question.id)
-                          ? prev.filter(q => q.id !== question.id)
-                          : [...prev, question]
-                      );
-                    }}
-                    className="w-4 h-4"
-                  />
-                </TableCell>
-                <TableCell className="font-medium">
-                  <div className="prose prose-sm dark:prose-invert">
-                    {renderMarkdown(question.question)}
-                  </div>
-                </TableCell>
-                <TableCell>{question.options[question.correctAnswer]}</TableCell>
-                <TableCell>
-                  {question.options
-                    .filter((_, index) => index !== question.correctAnswer)
-                    .join('; ')}
-                </TableCell>
-                <TableCell>{question.tags.join('; ')}</TableCell>
-                <TableCell>{question.explanation || '-'}</TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(question)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {paginatedQuestions.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="py-12 text-center text-gray-400 animate-fade-in transition-opacity duration-500">
+                  <span className="inline-block text-lg">No questions found</span>
+                </td>
+              </tr>
+            ) : (
+              paginatedQuestions.map((question) => (
+                <TableRow key={question.id}>
+                  <TableCell>
+                    <input
+                      type="checkbox"
+                      checked={selectedQuestions.some(q => q.id === question.id)}
+                      onChange={() => {
+                        setSelectedQuestions(prev =>
+                          prev.some(q => q.id === question.id)
+                            ? prev.filter(q => q.id !== question.id)
+                            : [...prev, question]
+                        );
+                      }}
+                      className="w-4 h-4"
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    <div className="prose prose-sm dark:prose-invert">
+                      {renderMarkdown(question.question)}
+                    </div>
+                  </TableCell>
+                  <TableCell>{question.options[question.correctAnswer]}</TableCell>
+                  <TableCell>
+                    {question.options
+                      .filter((_, index) => index !== question.correctAnswer)
+                      .join('; ')}
+                  </TableCell>
+                  <TableCell>{question.tags.join('; ')}</TableCell>
+                  <TableCell>{question.explanation || '-'}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(question)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
