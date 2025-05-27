@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import Pagination from "@/components/Pagintion";
 import { Dialog as Modal, DialogContent as ModalContent, DialogHeader as ModalHeader, DialogTitle as ModalTitle } from "@/components/ui/dialog";
+import { calculateMetrics } from "@/utils/metricsUtils";
 
 interface QBanksProps {
   qbanks: QBank[];
@@ -314,37 +315,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     link.click();
   };
 
-  const calculateQuestionMetrics = (qbank: QBank) => {
-    const metrics = {
-      unused: 0,
-      used: 0,
-      correct: 0,
-      incorrect: 0,
-      omitted: 0,
-      flagged: 0
-    };
-
-    qbank.questions.forEach(question => {
-      if (!question.attempts || question.attempts.length === 0) {
-        metrics.unused++;
-      } else {
-        metrics.used++;
-        const lastAttempt = question.attempts[question.attempts.length - 1];
-        if (lastAttempt.selectedAnswer === null) {
-          metrics.omitted++;
-        } else if (lastAttempt.isCorrect) {
-          metrics.correct++;
-        } else {
-          metrics.incorrect++;
-        }
-      }
-      if (question.isFlagged) {
-        metrics.flagged++;
-      }
-    });
-
-    return metrics;
-  };
+  const metrics = calculateMetrics();
 
   const updateMedia = () => {
     toast({
@@ -381,7 +352,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
 
       <div className="grid gap-4">
         {paginatedQBanks.map((qbank) => {
-          const metrics = calculateQuestionMetrics(qbank);
+          const metrics = calculateMetrics();
 
           return (
             <div

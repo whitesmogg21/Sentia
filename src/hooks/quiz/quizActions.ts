@@ -1,9 +1,9 @@
-
 import { Question, QuizHistory, QuestionAttempt } from "@/types/quiz";
 import { QuizState } from "./types";
 import { qbanks } from "@/data/questions";
 import { toast } from "@/components/ui/use-toast";
 import { updateMetricsFromAttempt, updateQuestionFlag } from "@/utils/metricsUtils";
+import { saveQBanksToStorage } from "@/data/questions";
 
 export const initializeQuiz = (
   qbankId: string,
@@ -68,7 +68,7 @@ export const createQuizHistory = (
     questionAttempts: state.currentQuestions.map((q, index) => {
       const selectedAnswer = index === state.currentQuestionIndex ? optionIndex : q.attempts?.[0]?.selectedAnswer ?? null;
       const isCorrect = index === state.currentQuestionIndex ? optionIndex === q.correctAnswer : q.attempts?.[0]?.isCorrect ?? false;
-      
+
       return {
         questionId: q.id,
         selectedAnswer,
@@ -79,12 +79,12 @@ export const createQuizHistory = (
       };
     })
   };
-  
+
   // Update metrics for all attempts in this quiz
   history.questionAttempts.forEach(attempt => {
     updateMetricsFromAttempt(attempt);
   });
-  
+
   return history;
 };
 
@@ -111,9 +111,12 @@ export const handleQuestionAttempt = (
     ...(question.attempts || []),
     attempt
   ];
-  
+
   // Update metrics for this attempt
   updateMetricsFromAttempt(attempt);
+
+  // Persist updated attempts to localStorage
+  saveQBanksToStorage();
 
   return newQuestions;
 };
