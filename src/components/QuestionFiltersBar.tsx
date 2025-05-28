@@ -108,61 +108,18 @@ const FilterButton = ({
 };
 
 const QuestionFiltersBar = ({ filters, onToggleFilter, questions }: QuestionFiltersBarProps) => {
-  const calculateLocalMetrics = (questions: any[]) => {
-    // Calculate metrics for the provided questions only
-    const counts = {
-      unused: 0,
-      used: 0,
-      correct: 0,
-      incorrect: 0,
-      flagged: 0,
-      omitted: 0
-    };
-    questions.forEach(q => {
-      const hasBeenAttempted = q.attempts && q.attempts.length > 0;
-      const lastAttempt = hasBeenAttempted ? q.attempts[q.attempts.length - 1] : null;
-      if (!hasBeenAttempted) {
-        counts.unused++;
-      } else {
-        counts.used++;
-        if (lastAttempt.selectedAnswer === null) {
-          counts.omitted++;
-        } else if (lastAttempt.isCorrect) {
-          counts.correct++;
-        } else {
-          counts.incorrect++;
-        }
-      }
-      // Use metrics store for flagged state
-      if (isQuestionFlagged(q.id)) {
-        counts.flagged++;
-      }
-    });
-    return counts;
-  };
-
-  const [metrics, setMetrics] = useState(() =>
-    questions ? calculateLocalMetrics(questions) : calculateMetrics()
-  );
+  const [metrics, setMetrics] = useState(() => calculateMetrics());
 
   useEffect(() => {
-    if (questions) {
-      setMetrics(calculateLocalMetrics(questions));
-    } else {
-      initializeMetrics();
-      setMetrics(calculateMetrics());
-    }
+    initializeMetrics();
+    setMetrics(calculateMetrics());
     // Re-calculate metrics when storage changes
     const handleStorageChange = () => {
-      if (questions) {
-        setMetrics(calculateLocalMetrics(questions));
-      } else {
-        setMetrics(calculateMetrics());
-      }
+      setMetrics(calculateMetrics());
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [questions]);
+  }, []);
 
   return (
     <div className="flex flex-wrap gap-2">

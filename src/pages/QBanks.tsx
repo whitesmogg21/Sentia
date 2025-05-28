@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
+import { calculateMetrics } from "@/utils/metricsUtils";
 
 interface QBanksProps {
   qbanks: QBank[];
@@ -71,7 +72,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const text = e.target?.result as string;
-      const rows = text.split('\n').map(row => 
+      const rows = text.split('\n').map(row =>
         row.split(',').map(cell => cell.replace(/^"|"$/g, '').replace(/""/g, '"'))
       );
 
@@ -79,7 +80,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       const questions: Question[] = rows.slice(1).map((row, index) => {
         const options = row.slice(3, 10).filter(opt => opt.trim() !== '');
         const imageFilename = row[10]?.trim();
-        
+
         // Find matching media file
         const mediaFile = mediaFiles.find(file => file.name === imageFilename);
         const mediaUrl = mediaFile ? URL.createObjectURL(mediaFile) : undefined;
@@ -109,11 +110,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       };
 
       qbanks.push(newQBank);
-      
+
       // Explicitly save to localStorage
       saveQBanksToStorage();
       console.log('Imported qbank from CSV and saved:', qbanks.length);
-      
+
       setMediaFiles([]); // Clear media files after import
       toast({
         title: "Success",
@@ -141,11 +142,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     };
 
     qbanks.push(newQBank);
-    
+
     // Explicitly save to localStorage
     saveQBanksToStorage();
     console.log('Created new qbank and saved:', qbanks.length);
-    
+
     setNewQBankName("");
     setNewQBankDescription("");
     setShowNewQBankDialog(false);
@@ -159,11 +160,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     const index = qbanks.findIndex((qbank) => qbank.id === qbankId);
     if (index !== -1) {
       qbanks.splice(index, 1);
-      
+
       // Explicitly save to localStorage
       saveQBanksToStorage();
       console.log('Deleted qbank and saved:', qbanks.length);
-      
+
       setSelectedQBank(null);
       toast({
         title: "Success",
@@ -191,11 +192,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       }
       qbank.name = editingName;
       qbank.description = editingDescription;
-      
+
       // Explicitly save to localStorage
       saveQBanksToStorage();
       console.log('Updated qbank and saved:', qbanks.length);
-      
+
       setEditingQBankId(null);
       toast({
         title: "Success",
@@ -238,11 +239,11 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       }
 
       selectedQBank.questions.push(question);
-      
+
       // Explicitly save to localStorage
       saveQBanksToStorage();
       console.log('Added question to qbank and saved:', selectedQBank.questions.length);
-      
+
       setNewQuestion({
         question: "",
         options: ["", "", "", ""],
@@ -297,7 +298,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
       ])
     ];
 
-    const csvContent = csvRows.map(row => row.map(cell => 
+    const csvContent = csvRows.map(row => row.map(cell =>
       `"${String(cell).replace(/"/g, '""')}"`
     ).join(',')).join('\n');
 
@@ -308,37 +309,7 @@ const QBanks = ({ qbanks }: QBanksProps) => {
     link.click();
   };
 
-  const calculateQuestionMetrics = (qbank: QBank) => {
-    const metrics = {
-      unused: 0,
-      used: 0,
-      correct: 0,
-      incorrect: 0,
-      omitted: 0,
-      flagged: 0
-    };
-
-    qbank.questions.forEach(question => {
-      if (!question.attempts || question.attempts.length === 0) {
-        metrics.unused++;
-      } else {
-        metrics.used++;
-        const lastAttempt = question.attempts[question.attempts.length - 1];
-        if (lastAttempt.selectedAnswer === null) {
-          metrics.omitted++;
-        } else if (lastAttempt.isCorrect) {
-          metrics.correct++;
-        } else {
-          metrics.incorrect++;
-        }
-      }
-      if (question.isFlagged) {
-        metrics.flagged++;
-      }
-    });
-
-    return metrics;
-  };
+  const metrics = calculateMetrics();
 
   const updateMedia = () => {
     toast({
@@ -370,8 +341,8 @@ const QBanks = ({ qbanks }: QBanksProps) => {
 
       <div className="grid gap-4">
         {qbanks.map((qbank) => {
-          const metrics = calculateQuestionMetrics(qbank);
-          
+          const metrics = calculateMetrics();
+
           return (
             <div
               key={qbank.id}
@@ -453,8 +424,8 @@ const QBanks = ({ qbanks }: QBanksProps) => {
             <DialogTitle>Manage Media</DialogTitle>
           </DialogHeader>
           {selectedQBankForMedia && (
-            <MediaManager 
-              qbank={selectedQBankForMedia} 
+            <MediaManager
+              qbank={selectedQBankForMedia}
               onMediaUpdate={() => {
                 setShowMediaDialog(false);
                 setSelectedQBankForMedia(null);
