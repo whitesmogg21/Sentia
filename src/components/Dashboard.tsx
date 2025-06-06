@@ -48,6 +48,20 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   const { calculateOverallAccuracy } = useQuiz({});
   const { isFullscreen, toggleFullscreen } = useFullscreen();
 
+  useEffect(() => {
+    const storedQBank = localStorage.getItem('selectedQBank');
+    if (storedQBank) {
+      const qbankData = JSON.parse(storedQBank);
+      const foundQBank = qbanks.find(qb => qb.id === qbankData.id);
+      if (foundQBank) {
+        // setSelectedQBank(foundQBank);
+        setSelectedQBank(qbankData);
+      }
+    }
+  }, [qbanks]);
+  
+
+
   // useEffect(() => {
   //   const storedQBank = localStorage.getItem('selectedQBank');
   //   if (storedQBank) {
@@ -55,67 +69,57 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   //     const foundQBank = qbanks.find(qb => qb.id === qbankData.id);
   //     if (foundQBank) {
   //       setSelectedQBank(foundQBank);
+
+  //       // Check if we have any filtered question IDs
+  //       const filteredIds = localStorage.getItem('filteredQuestionIds');
+  //       if (filteredIds) {
+  //         const parsedIds = JSON.parse(filteredIds);
+  //         console.log(`Found ${parsedIds.length} filtered question IDs`);
+
+  //         // Determine which filters are active based on the IDs
+  //         const questionMetrics = parsedIds.map(id => {
+  //           const question = foundQBank.questions.find(q => q.id === id);
+  //           if (!question) return null;
+
+  //           const hasBeenAttempted = question.attempts && question.attempts.length > 0;
+  //           const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
+
+  //           return {
+  //             id,
+  //             unused: !hasBeenAttempted,
+  //             used: hasBeenAttempted,
+  //             correct: lastAttempt?.isCorrect,
+  //             incorrect: lastAttempt && !lastAttempt.isCorrect,
+  //             flagged: question.isFlagged,
+  //             omitted: lastAttempt?.selectedAnswer === null
+  //           };
+  //         }).filter(Boolean);
+
+  //         // Check which filters should be active
+  //         const activeFilters: QuestionFilter = {
+  //           unused: false,
+  //           used: false,
+  //           correct: false,
+  //           incorrect: false,
+  //           flagged: false,
+  //           omitted: false
+  //         };
+
+  //         // If all filtered questions share a property, that filter should be active
+  //         if (questionMetrics.length > 0) {
+  //           if (questionMetrics.every(q => q.unused)) activeFilters.unused = true;
+  //           if (questionMetrics.every(q => q.used)) activeFilters.used = true;
+  //           if (questionMetrics.every(q => q.correct)) activeFilters.correct = true;
+  //           if (questionMetrics.every(q => q.incorrect)) activeFilters.incorrect = true;
+  //           if (questionMetrics.every(q => q.flagged)) activeFilters.flagged = true;
+  //           if (questionMetrics.every(q => q.omitted)) activeFilters.omitted = true;
+  //         }
+
+  //         setFilters(activeFilters);
+  //       }
   //     }
   //   }
   // }, [qbanks]);
-  useEffect(() => {
-    const storedQBank = localStorage.getItem('selectedQBank');
-    if (storedQBank) {
-      const qbankData = JSON.parse(storedQBank);
-      const foundQBank = qbanks.find(qb => qb.id === qbankData.id);
-      if (foundQBank) {
-        setSelectedQBank(foundQBank);
-
-        // Check if we have any filtered question IDs
-        const filteredIds = localStorage.getItem('filteredQuestionIds');
-        if (filteredIds) {
-          const parsedIds = JSON.parse(filteredIds);
-          console.log(`Found ${parsedIds.length} filtered question IDs`);
-
-          // Determine which filters are active based on the IDs
-          const questionMetrics = parsedIds.map(id => {
-            const question = foundQBank.questions.find(q => q.id === id);
-            if (!question) return null;
-
-            const hasBeenAttempted = question.attempts && question.attempts.length > 0;
-            const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
-
-            return {
-              id,
-              unused: !hasBeenAttempted,
-              used: hasBeenAttempted,
-              correct: lastAttempt?.isCorrect,
-              incorrect: lastAttempt && !lastAttempt.isCorrect,
-              flagged: question.isFlagged,
-              omitted: lastAttempt?.selectedAnswer === null
-            };
-          }).filter(Boolean);
-
-          // Check which filters should be active
-          const activeFilters: QuestionFilter = {
-            unused: false,
-            used: false,
-            correct: false,
-            incorrect: false,
-            flagged: false,
-            omitted: false
-          };
-
-          // If all filtered questions share a property, that filter should be active
-          if (questionMetrics.length > 0) {
-            if (questionMetrics.every(q => q.unused)) activeFilters.unused = true;
-            if (questionMetrics.every(q => q.used)) activeFilters.used = true;
-            if (questionMetrics.every(q => q.correct)) activeFilters.correct = true;
-            if (questionMetrics.every(q => q.incorrect)) activeFilters.incorrect = true;
-            if (questionMetrics.every(q => q.flagged)) activeFilters.flagged = true;
-            if (questionMetrics.every(q => q.omitted)) activeFilters.omitted = true;
-          }
-
-          setFilters(activeFilters);
-        }
-      }
-    }
-  }, [qbanks]);
 
   const metrics = useMemo(() => {
     const seenQuestionIds = new Set<number>();
@@ -173,27 +177,29 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       date: quiz.date,
     })), [quizHistory]);
 
-    const filteredQuestions = useMemo(() => {
-      if (!selectedQBank) return [];
+    // const filteredQuestions = useMemo(() => {
+    //   if (!selectedQBank) return [];
 
-      return selectedQBank.questions.filter(question => {
-        // If no filters are active, return all questions
-        if (!Object.values(filters).some(v => v)) return true;
+    //   return selectedQBank.questions.filter(question => {
+    //     // If no filters are active, return all questions
+    //     if (!Object.values(filters).some(v => v)) return true;
 
-        const hasBeenAttempted = question.attempts && question.attempts.length > 0;
-        const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
+    //     const hasBeenAttempted = question.attempts && question.attempts.length > 0;
+    //     const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
 
-        return (
-          (filters.unused && !hasBeenAttempted) ||
-          (filters.used && hasBeenAttempted) ||
-          (filters.correct && lastAttempt?.isCorrect) ||
-          (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
-          (filters.flagged && question.isFlagged) ||
-          (filters.omitted && lastAttempt?.selectedAnswer === null)
-        );
-      });
-    }, [selectedQBank, filters]);
+    //     return (
+    //       (filters.unused && !hasBeenAttempted) ||
+    //       (filters.used && hasBeenAttempted) ||
+    //       (filters.correct && lastAttempt?.isCorrect) ||
+    //       (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
+    //       (filters.flagged && question.isFlagged) ||
+    //       (filters.omitted && lastAttempt?.selectedAnswer === null)
+    //     );
+    //   });
+    // }, [selectedQBank, filters]);
 
+    const filteredQuestions = selectedQBank?.questions || [];
+    console.log(filteredQuestions.length)
     const handleStartQuiz = () => {
       if (selectedQBank && questionCount > 0) {
         // Make sure we have filtered questions
@@ -323,6 +329,8 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       }
     }
   }, [selectedQBank, filteredQuestions.length]);
+
+  // console.log(selectedQBank)
 
   return (
     <div className="container mx-auto p-6 space-y-6">

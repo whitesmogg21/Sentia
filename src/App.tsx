@@ -87,14 +87,17 @@ const App = () => {
       });
 
       // Save updated qbank to localStorage
-      localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
-      saveQBanksToStorage(); // Save qbanks to localStorage as well
+      // localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
+      // saveQBanksToStorage(); // Save qbanks to localStorage as well
       initializeMetrics(); // Recalculate metrics so the logic bar updates
     }
+    // console.log(history);
 
     toast({
       title: "Quiz completed!",
+      // description: `You scored ${history.questionAttempts.filter(q=>q.isCorrect).length || 0} out of ${history.totalQuestions}`,
       description: `You scored ${history.score} out of ${history.totalQuestions}`,
+
     });
   };
 
