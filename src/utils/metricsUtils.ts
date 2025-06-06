@@ -189,6 +189,7 @@ export const getFilteredQuestions = (questions: Question[], activeFilters: strin
   return questions.filter(question => {
     // If no metrics for this question yet, it's unused
     const questionMetrics = metrics[question.id] || { status: 'unused', isFlagged: false };
+    // console.log(metrics[question.id])
 
     // Also check question attempts directly in case metrics are out of sync
     const hasBeenAttempted = question.attempts && question.attempts.length > 0;
@@ -198,7 +199,7 @@ export const getFilteredQuestions = (questions: Question[], activeFilters: strin
     return activeFilters.some(filter => {
       switch (filter) {
         case 'unused':
-          return questionMetrics.status === 'unused' || !hasBeenAttempted;
+          return questionMetrics.status === 'unused' ;
         case 'used':
           return questionMetrics.status !== 'unused' || hasBeenAttempted;
         case 'correct':

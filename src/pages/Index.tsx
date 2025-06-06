@@ -39,6 +39,32 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     jumpToQuestion
   } = useQuiz({ onQuizComplete, onQuizStart, onQuizEnd });
 
+  // const quizHook = useQuiz({ onQuizComplete, onQuizStart, onQuizEnd });
+  // console.log(quizHook)
+  //   const {
+  //   currentQuestionIndex,
+  //   score,
+  //   showScore,
+  //   selectedAnswer,
+  //   isAnswered,
+  //   inQuiz,
+  //   currentQuestions,
+  //   showExplanation,
+  //   isPaused,
+  //   timerEnabled,
+  //   timePerQuestion,
+  //   isFlagged,
+  //   handleStartQuiz,
+  //   handleAnswerTimeout,
+  //   handleAnswerClick,
+  //   handleQuit,
+  //   handlePause,
+  //   handleRestart,
+  //   handleQuizNavigation,
+  //   handleToggleFlag,
+  //   jumpToQuestion
+  // } = quizHook;
+
   const [showQuitDialog, setShowQuitDialog] = useState(false);
 
   const handleQuitClick = () => {

@@ -53,12 +53,13 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
         const filteredQuestions = getFilteredQuestions(qbank.questions, activeFilters);
 
         // Log filtered questions count
-        console.log(`Found ${filteredQuestions.length} matching questions in ${qbank.name}`);
+        // console.log(`Found ${filteredQuestions.length} matching questions in ${qbank.name}`);
 
         // If there are no matches, return null
         if (filteredQuestions.length === 0) return null;
 
         // Return a modified qbank with only the filtered questions
+        // console.log(filteredQuestions.length)
         return {
           ...qbank,
           questions: filteredQuestions,
@@ -71,6 +72,8 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
   const handleQBankClick = (qbank: QBank) => {
     setSelectedQBank(qbank);
   };
+
+  // console.log(selectedQBank);
 
   // const handleConfirmSelection = () => {
   //   if (selectedQBank) {
@@ -142,7 +145,8 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
         }
 
         // Always send the original QBank to the parent component
-        onSelect(originalQBank);
+        // onSelect(originalQBank);
+        onSelect(selectedQBank);
 
         navigate("/");
       }
