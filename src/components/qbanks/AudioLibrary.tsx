@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -19,7 +19,7 @@ const AudioLibrary = () => {
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useState(() => {
+  useEffect(() => {
     // Load audio files from localStorage on component mount
     try {
       const savedAudio = localStorage.getItem('audioLibrary');
@@ -30,7 +30,7 @@ const AudioLibrary = () => {
     } catch (err) {
       console.error("Error loading audio library:", err);
     }
-  });
+  }, []);
 
   const saveToStorage = (audioItems: AudioItem[]) => {
     try {
@@ -50,17 +50,20 @@ const AudioLibrary = () => {
     if (!files) return;
 
     const newAudioFiles: AudioItem[] = [];
+    const audioFilesList = Array.from(files).filter(f => f.type.startsWith('audio/'));
 
-    Array.from(files).forEach((file) => {
-      if (!file.type.startsWith('audio/')) {
-        toast({
-          title: "Invalid File",
-          description: `${file.name} is not an audio file`,
-          variant: "destructive",
-        });
-        return;
-      }
+    if (audioFilesList.length === 0) {
+      toast({
+        title: "Invalid File",
+        description: "Please select audio files",
+        variant: "destructive",
+      });
+      return;
+    }
 
+    let processedCount = 0;
+
+    audioFilesList.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
@@ -70,8 +73,9 @@ const AudioLibrary = () => {
         };
 
         newAudioFiles.push(audioItem);
+        processedCount++;
 
-        if (newAudioFiles.length === Array.from(files).filter(f => f.type.startsWith('audio/')).length) {
+        if (processedCount === audioFilesList.length) {
           const updatedFiles = [...audioFiles, ...newAudioFiles];
           setAudioFiles(updatedFiles);
           saveToStorage(updatedFiles);
