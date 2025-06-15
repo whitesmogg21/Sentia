@@ -63,8 +63,15 @@ const App = () => {
   }, [quizHistory]);
 
   const handleQuizComplete = (history: QuizHistory) => {
+    // Ensure start and end times are set if not already present
+    const historyWithTimes = {
+      ...history,
+      startTime: history.startTime || new Date().toISOString(),
+      endTime: history.endTime || new Date().toISOString()
+    };
+
     // Update quiz history
-    setQuizHistory((prev) => [...prev, history]);
+    setQuizHistory((prev) => [...prev, historyWithTimes]);
 
     // Update the qbank with the new attempts
     const selectedQBank = qbanks.find(qb => qb.id === history.qbankId);

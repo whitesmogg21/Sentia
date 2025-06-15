@@ -1,4 +1,3 @@
-
 export interface Question {
   id: number;
   question: string;
@@ -36,6 +35,8 @@ export interface QuizState {
 export interface QuizHistory {
   id: string;
   date: string;
+  startTime: string;
+  endTime: string;
   score: number;
   totalQuestions: number;
   qbankId: string;

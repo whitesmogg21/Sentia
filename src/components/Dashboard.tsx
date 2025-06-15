@@ -15,6 +15,7 @@ import { QuestionFilter } from "@/types/quiz";
 import { useQuiz } from "@/hooks/quiz";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { TagPerformanceChart } from "./TagPerformanceChart";
+import { calculateAverageTimePerQuestion, formatTime } from "@/utils/timeUtils";
 
 interface DashboardProps {
   qbanks: QBank[];
@@ -200,35 +201,41 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
 
     const filteredQuestions = selectedQBank?.questions || [];
     console.log(filteredQuestions.length)
-    const handleStartQuiz = () => {
-      if (selectedQBank && questionCount > 0) {
-        // Make sure we have filtered questions
-        if (filteredQuestions.length === 0) {
-          toast({
-            title: "No Questions Available",
-            description: "There are no questions available with the current filters.",
-            variant: "destructive"
-          });
-          return;
-        }
 
-        // Log for debugging
-        console.log(`Starting quiz with ${filteredQuestions.length} filtered questions`);
-        console.log("Active filters:", Object.entries(filters)
-          .filter(([_, isActive]) => isActive)
-          .map(([key]) => key));
+  // Add average time per question calculation
+  const averageTimePerQuestion = useMemo(() => {
+    return calculateAverageTimePerQuestion(quizHistory);
+  }, [quizHistory]);
 
-        // Pass only the filtered question IDs to the quiz
-        onStartQuiz(
-          selectedQBank.id,
-          Math.min(questionCount, filteredQuestions.length),
-          tutorMode,
-          timerEnabled,
-          timeLimit,
-          filteredQuestions.map(q => q.id)
-        );
+  const handleStartQuiz = () => {
+    if (selectedQBank && questionCount > 0) {
+      // Make sure we have filtered questions
+      if (filteredQuestions.length === 0) {
+        toast({
+          title: "No Questions Available",
+          description: "There are no questions available with the current filters.",
+          variant: "destructive"
+        });
+        return;
       }
-    };
+
+      // Log for debugging
+      console.log(`Starting quiz with ${filteredQuestions.length} filtered questions`);
+      console.log("Active filters:", Object.entries(filters)
+        .filter(([_, isActive]) => isActive)
+        .map(([key]) => key));
+
+      // Pass only the filtered question IDs to the quiz
+      onStartQuiz(
+        selectedQBank.id,
+        Math.min(questionCount, filteredQuestions.length),
+        tutorMode,
+        timerEnabled,
+        timeLimit,
+        filteredQuestions.map(q => q.id)
+      );
+    }
+  };
 
   const toggleFilter = (key: keyof QuestionFilter) => {
     setFilters(prev => ({
@@ -330,8 +337,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     }
   }, [selectedQBank, filteredQuestions.length]);
 
-  // console.log(selectedQBank)
-
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center mb-2">
@@ -404,23 +409,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         >
           <h2 className="text-xl font-bold">Quiz Configuration</h2>
           <div className="space-y-4">
-          {/* <div>
-            <Label className="block text-sm font-medium mb-2">
-              Number of Questions (max: {filteredQuestions.length})
-            </Label>
-            <Input
-              type="number"
-              min={1}
-              max={filteredQuestions.length || 1}
-              value={questionCount > filteredQuestions.length ? filteredQuestions.length : questionCount}
-              onChange={(e) => {
-                const value = Number(e.target.value);
-                const validValue = Math.min(Math.max(1, value), filteredQuestions.length);
-                setQuestionCount(validValue);
-              }}
-              className="w-48"
-            />
-          </div> */}
           <div>
             <Label className="block text-sm font-medium mb-2">
               Number of Questions ({filteredQuestions.length} available)
@@ -481,9 +469,10 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         </motion.div>
       </div>
 
+      {/* Updated performance summary with 4 cards including average time */}
       <div className="mt-6 p-4 bg-card border rounded-lg shadow-sm">
         <h2 className="text-xl font-bold mb-4">Your Performance Summary</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
             <p className="text-2xl font-bold">{overallAccuracyCalc.toFixed(1)}%</p>
@@ -496,10 +485,13 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             <h3 className="text-sm font-medium mb-2">Total Quizzes Taken</h3>
             <p className="text-2xl font-bold">{quizHistory.length}</p>
           </Card>
+          <Card className="p-4">
+            <h3 className="text-sm font-medium mb-2">Avg Time Per Question</h3>
+            <p className="text-2xl font-bold">{formatTime(averageTimePerQuestion)}</p>
+          </Card>
         </div>
       </div>
 
-      {/* Tag Performance Radar Chart */}
       <div className="my-8">
         <TagPerformanceChart qbanks={qbanks} quizHistory={quizHistory} />
       </div>
