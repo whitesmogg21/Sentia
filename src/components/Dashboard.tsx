@@ -15,6 +15,7 @@ import { QuestionFilter } from "@/types/quiz";
 import { useQuiz } from "@/hooks/quiz";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { TagPerformanceChart } from "./TagPerformanceChart";
+import { ScoreOverTimeChart } from "./ScoreOverTimeChart";
 import { calculateAverageTimePerQuestion, formatTime } from "@/utils/timeUtils";
 
 interface DashboardProps {
@@ -61,66 +62,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     }
   }, [qbanks]);
   
-
-
-  // useEffect(() => {
-  //   const storedQBank = localStorage.getItem('selectedQBank');
-  //   if (storedQBank) {
-  //     const qbankData = JSON.parse(storedQBank);
-  //     const foundQBank = qbanks.find(qb => qb.id === qbankData.id);
-  //     if (foundQBank) {
-  //       setSelectedQBank(foundQBank);
-
-  //       // Check if we have any filtered question IDs
-  //       const filteredIds = localStorage.getItem('filteredQuestionIds');
-  //       if (filteredIds) {
-  //         const parsedIds = JSON.parse(filteredIds);
-  //         console.log(`Found ${parsedIds.length} filtered question IDs`);
-
-  //         // Determine which filters are active based on the IDs
-  //         const questionMetrics = parsedIds.map(id => {
-  //           const question = foundQBank.questions.find(q => q.id === id);
-  //           if (!question) return null;
-
-  //           const hasBeenAttempted = question.attempts && question.attempts.length > 0;
-  //           const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
-
-  //           return {
-  //             id,
-  //             unused: !hasBeenAttempted,
-  //             used: hasBeenAttempted,
-  //             correct: lastAttempt?.isCorrect,
-  //             incorrect: lastAttempt && !lastAttempt.isCorrect,
-  //             flagged: question.isFlagged,
-  //             omitted: lastAttempt?.selectedAnswer === null
-  //           };
-  //         }).filter(Boolean);
-
-  //         // Check which filters should be active
-  //         const activeFilters: QuestionFilter = {
-  //           unused: false,
-  //           used: false,
-  //           correct: false,
-  //           incorrect: false,
-  //           flagged: false,
-  //           omitted: false
-  //         };
-
-  //         // If all filtered questions share a property, that filter should be active
-  //         if (questionMetrics.length > 0) {
-  //           if (questionMetrics.every(q => q.unused)) activeFilters.unused = true;
-  //           if (questionMetrics.every(q => q.used)) activeFilters.used = true;
-  //           if (questionMetrics.every(q => q.correct)) activeFilters.correct = true;
-  //           if (questionMetrics.every(q => q.incorrect)) activeFilters.incorrect = true;
-  //           if (questionMetrics.every(q => q.flagged)) activeFilters.flagged = true;
-  //           if (questionMetrics.every(q => q.omitted)) activeFilters.omitted = true;
-  //         }
-
-  //         setFilters(activeFilters);
-  //       }
-  //     }
-  //   }
-  // }, [qbanks]);
 
   const metrics = useMemo(() => {
     const seenQuestionIds = new Set<number>();
@@ -178,29 +119,8 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       date: quiz.date,
     })), [quizHistory]);
 
-    // const filteredQuestions = useMemo(() => {
-    //   if (!selectedQBank) return [];
-
-    //   return selectedQBank.questions.filter(question => {
-    //     // If no filters are active, return all questions
-    //     if (!Object.values(filters).some(v => v)) return true;
-
-    //     const hasBeenAttempted = question.attempts && question.attempts.length > 0;
-    //     const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
-
-    //     return (
-    //       (filters.unused && !hasBeenAttempted) ||
-    //       (filters.used && hasBeenAttempted) ||
-    //       (filters.correct && lastAttempt?.isCorrect) ||
-    //       (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
-    //       (filters.flagged && question.isFlagged) ||
-    //       (filters.omitted && lastAttempt?.selectedAnswer === null)
-    //     );
-    //   });
-    // }, [selectedQBank, filters]);
-
-    const filteredQuestions = selectedQBank?.questions || [];
-    console.log(filteredQuestions.length)
+  const filteredQuestions = selectedQBank?.questions || [];
+  console.log(filteredQuestions.length)
 
   // Add average time per question calculation
   const averageTimePerQuestion = useMemo(() => {
@@ -469,6 +389,16 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         </motion.div>
       </div>
 
+      {/* Charts section with both Tag Performance and Score Over Time */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div className="h-80">
+          <TagPerformanceChart qbanks={qbanks} quizHistory={quizHistory} />
+        </div>
+        <div className="h-80">
+          <ScoreOverTimeChart quizHistory={quizHistory} />
+        </div>
+      </div>
+
       {/* Updated performance summary with 4 cards including average time */}
       <div className="mt-6 p-4 bg-card border rounded-lg shadow-sm">
         <h2 className="text-xl font-bold mb-4">Your Performance Summary</h2>
@@ -490,10 +420,6 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             <p className="text-2xl font-bold">{formatTime(averageTimePerQuestion)}</p>
           </Card>
         </div>
-      </div>
-
-      <div className="my-8">
-        <TagPerformanceChart qbanks={qbanks} quizHistory={quizHistory} />
       </div>
     </div>
   );
