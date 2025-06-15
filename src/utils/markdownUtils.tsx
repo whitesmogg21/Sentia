@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,23 +9,43 @@ import { Button } from '@/components/ui/button';
 export const renderMarkdown = (text: string, onImageClick?: (imageName: string) => void): React.ReactNode[] => {
   if (!text) return [null];
 
-  // Extract image references with /path format first
-  const imageReferences: { placeholder: string; imageName: string }[] = [];
+  // Extract both types of image references
+  const imageReferences: { placeholder: string; imageName: string; type: 'button' | 'inline' }[] = [];
   let processedText = text;
-
-  // Find all standalone image references like /image.png
-  const imageRegex = /\/([^\/\s]+\.(png|jpg|jpeg|gif))/gi;
-  let match;
   let placeholderIndex = 0;
 
-  while ((match = imageRegex.exec(text)) !== null) {
+  // Find inline images first (//image.png)
+  const inlineImageRegex = /\/\/([^\/\s]+\.(png|jpg|jpeg|gif))/gi;
+  let match;
+
+  while ((match = inlineImageRegex.exec(text)) !== null) {
     const fullMatch = match[0];
     const imageName = match[1];
-    const placeholder = `__IMAGE_PLACEHOLDER_${placeholderIndex}__`;
+    const placeholder = `__INLINE_IMAGE_PLACEHOLDER_${placeholderIndex}__`;
 
     imageReferences.push({
       placeholder,
-      imageName
+      imageName,
+      type: 'inline'
+    });
+
+    // Replace the image reference with a placeholder
+    processedText = processedText.replace(fullMatch, placeholder);
+    placeholderIndex++;
+  }
+
+  // Find clickable image buttons (/image.png) - but not those that are part of //
+  const buttonImageRegex = /(?<!\/)\/([^\/\s]+\.(png|jpg|jpeg|gif))/gi;
+
+  while ((match = buttonImageRegex.exec(processedText)) !== null) {
+    const fullMatch = match[0];
+    const imageName = match[1];
+    const placeholder = `__BUTTON_IMAGE_PLACEHOLDER_${placeholderIndex}__`;
+
+    imageReferences.push({
+      placeholder,
+      imageName,
+      type: 'button'
     });
 
     // Replace the image reference with a placeholder
@@ -115,10 +136,15 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
       formattedText = '<hr />';
     }
 
-    // Replace image placeholders with buttons
+    // Replace image placeholders
     imageReferences.forEach(ref => {
       if (formattedText.includes(ref.placeholder)) {
-        if (onImageClick) {
+        if (ref.type === 'inline') {
+          // For inline images, we'll need to handle them differently
+          // We'll create a special marker that we'll process after dangerouslySetInnerHTML
+          const inlineImageHtml = `<div class="inline-image-container" data-image-name="${ref.imageName}"></div>`;
+          formattedText = formattedText.replace(ref.placeholder, inlineImageHtml);
+        } else if (ref.type === 'button' && onImageClick) {
           const buttonHtml = `<button class="inline-flex items-center justify-center p-1 mx-1 bg-muted hover:bg-muted/80 rounded-md" data-image-name="${ref.imageName}" aria-label="View image ${ref.imageName}"><span class="sr-only">View image</span><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></button>`;
           formattedText = formattedText.replace(ref.placeholder, buttonHtml);
         } else {
@@ -128,7 +154,7 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
     });
 
     // Return paragraph with processed markdown
-    return React.createElement('div', {
+    const element = React.createElement('div', {
       key: pIndex,
       dangerouslySetInnerHTML: { __html: formattedText },
       className: "mb-2",
@@ -161,7 +187,73 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
         }
       }
     });
+
+    // After creating the element, we need to handle inline images
+    // We'll use useEffect in a wrapper component to replace the placeholders
+    return React.createElement(InlineImageWrapper, {
+      key: pIndex,
+      element: element,
+      imageReferences: imageReferences.filter(ref => ref.type === 'inline'),
+      onImageClick
+    });
   });
+};
+
+// Wrapper component to handle inline image rendering
+const InlineImageWrapper = ({ element, imageReferences, onImageClick }: {
+  element: React.ReactElement;
+  imageReferences: { placeholder: string; imageName: string; type: 'inline' }[];
+  onImageClick?: (imageName: string) => void;
+}) => {
+  const [mediaMap, setMediaMap] = React.useState<Record<string, string>>({});
+
+  React.useEffect(() => {
+    // Load media from localStorage
+    try {
+      const savedMedia = localStorage.getItem('mediaLibrary');
+      if (savedMedia) {
+        const mediaItems = JSON.parse(savedMedia) as { name: string; data: string }[];
+        const map: Record<string, string> = {};
+        mediaItems.forEach(item => {
+          map[item.name] = item.data;
+        });
+        setMediaMap(map);
+      }
+    } catch (err) {
+      console.error("Error loading media library:", err);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (Object.keys(mediaMap).length === 0) return;
+
+    // Find and replace inline image containers with actual images
+    const containers = document.querySelectorAll('.inline-image-container');
+    containers.forEach(container => {
+      const imageName = container.getAttribute('data-image-name');
+      if (imageName && mediaMap[imageName]) {
+        const img = document.createElement('img');
+        img.src = mediaMap[imageName];
+        img.alt = imageName;
+        img.loading = 'lazy';
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.style.display = 'block';
+        img.style.margin = '8px 0';
+        img.className = 'rounded-md border';
+        
+        // Add click handler for modal if provided
+        if (onImageClick) {
+          img.style.cursor = 'pointer';
+          img.onclick = () => onImageClick(imageName);
+        }
+        
+        container.replaceWith(img);
+      }
+    });
+  }, [mediaMap, onImageClick]);
+
+  return element;
 };
 
 /**
@@ -170,7 +262,7 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
 export const extractImageReferences = (text: string): string[] => {
   if (!text) return [];
 
-  const imageRegex = /\/([^\/\s]+\.(png|jpg|jpeg|gif))/gi;
+  const imageRegex = /\/\/?([^\/\s]+\.(png|jpg|jpeg|gif))/gi;
   const matches: string[] = [];
   let match;
 
