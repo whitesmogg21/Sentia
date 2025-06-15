@@ -190,7 +190,7 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
 
     // After creating the element, we need to handle inline images
     // Filter to only pass inline image references to the wrapper
-    const inlineImageRefs = imageReferences.filter(ref => ref.type === 'inline');
+    const inlineImageRefs = imageReferences.filter(ref => ref.type === 'inline') as Array<{ placeholder: string; imageName: string; type: 'inline' }>;
     
     return React.createElement(InlineImageWrapper, {
       key: pIndex,
@@ -204,7 +204,7 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
 // Wrapper component to handle inline image rendering
 const InlineImageWrapper = ({ element, imageReferences, onImageClick }: {
   element: React.ReactElement;
-  imageReferences: { placeholder: string; imageName: string; type: 'inline' }[];
+  imageReferences: Array<{ placeholder: string; imageName: string; type: 'inline' }>;
   onImageClick?: (imageName: string) => void;
 }) => {
   const [mediaMap, setMediaMap] = React.useState<Record<string, string>>({});
