@@ -1,42 +1,44 @@
+
 import { useEffect, useState, useCallback } from 'react';
 
 interface TimerProps {
   timeLimit: number;
   isPaused: boolean;
   onTimeUp: () => void;
+  resetKey: number; // New prop to trigger timer reset
 }
 
-const Timer = ({ timeLimit, isPaused, onTimeUp }: TimerProps) => {
+const Timer = ({ timeLimit, isPaused, onTimeUp, resetKey }: TimerProps) => {
   const [timeLeft, setTimeLeft] = useState(timeLimit);
 
-  // Reset timer when timeLimit changes or component mounts
+  // Reset timer when resetKey changes (cleaner than timeLimit dependency)
   useEffect(() => {
     setTimeLeft(timeLimit);
-  }, [timeLimit]);
+  }, [resetKey, timeLimit]);
 
-  // Handle countdown
+  // Optimized countdown - removed timeLeft from dependencies to prevent interval recreation
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    if (isPaused || timeLeft <= 0) return;
 
-    if (!isPaused && timeLeft > 0) {
-      timer = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            onTimeUp();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          onTimeUp();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isPaused, onTimeUp]); // Removed timeLeft from dependencies
+
+  // Handle time up when timeLeft reaches 0
+  useEffect(() => {
+    if (timeLeft === 0) {
+      onTimeUp();
     }
-
-    return () => {
-      if (timer) {
-        clearInterval(timer);
-      }
-    };
-  }, [isPaused, timeLeft, onTimeUp]);
+  }, [timeLeft, onTimeUp]);
 
   return (
     <div className="flex items-center gap-2 text-lg font-medium text-foreground dark:text-gray-200">
