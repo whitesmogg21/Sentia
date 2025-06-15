@@ -189,11 +189,13 @@ export const renderMarkdown = (text: string, onImageClick?: (imageName: string) 
     });
 
     // After creating the element, we need to handle inline images
-    // We'll use useEffect in a wrapper component to replace the placeholders
+    // Filter to only pass inline image references to the wrapper
+    const inlineImageRefs = imageReferences.filter(ref => ref.type === 'inline');
+    
     return React.createElement(InlineImageWrapper, {
       key: pIndex,
       element: element,
-      imageReferences: imageReferences.filter(ref => ref.type === 'inline'),
+      imageReferences: inlineImageRefs,
       onImageClick
     });
   });
