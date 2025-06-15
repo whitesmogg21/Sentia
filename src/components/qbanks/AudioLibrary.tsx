@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Upload, Trash2, Play, Pause, RotateCcw } from "lucide-react";
+import { Upload, Trash2, Play, Pause, RotateCcw, Edit2, Check, X } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
 interface AudioItem {
@@ -16,6 +16,8 @@ const AudioLibrary = () => {
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const [pausedAudio, setPausedAudio] = useState<string | null>(null);
   const [completedAudio, setCompletedAudio] = useState<Set<string>>(new Set());
+  const [editingAudio, setEditingAudio] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string>("");
   const audioRefs = useRef<{ [key: string]: HTMLAudioElement }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -110,6 +112,17 @@ const AudioLibrary = () => {
         setPausedAudio(null);
         setCompletedAudio(prev => new Set([...prev, audioName]));
       });
+
+      audioRefs.current[audioName].addEventListener('error', (e) => {
+        console.error("Audio playback error:", e);
+        toast({
+          title: "Playback Error",
+          description: "Unable to play audio file",
+          variant: "destructive",
+        });
+        setPlayingAudio(null);
+        setPausedAudio(null);
+      });
     }
 
     const audio = audioRefs.current[audioName];
@@ -121,13 +134,27 @@ const AudioLibrary = () => {
       setPausedAudio(audioName);
     } else if (pausedAudio === audioName) {
       // Resume paused audio
-      audio.play();
+      audio.play().catch(err => {
+        console.error("Error resuming audio:", err);
+        toast({
+          title: "Playback Error",
+          description: "Unable to resume audio playback",
+          variant: "destructive",
+        });
+      });
       setPlayingAudio(audioName);
       setPausedAudio(null);
     } else {
       // Start new audio or replay
       audio.currentTime = 0;
-      audio.play();
+      audio.play().catch(err => {
+        console.error("Error playing audio:", err);
+        toast({
+          title: "Playback Error",
+          description: "Unable to play audio file",
+          variant: "destructive",
+        });
+      });
       setPlayingAudio(audioName);
       setPausedAudio(null);
       setCompletedAudio(prev => {
@@ -146,6 +173,69 @@ const AudioLibrary = () => {
     } else {
       return <Play className="h-4 w-4" />;
     }
+  };
+
+  const handleStartEdit = (audioName: string) => {
+    setEditingAudio(audioName);
+    setEditingName(audioName);
+  };
+
+  const handleSaveEdit = (oldName: string) => {
+    if (!editingName.trim()) {
+      toast({
+        title: "Error",
+        description: "Audio name cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (editingName !== oldName && audioFiles.some(file => file.name === editingName)) {
+      toast({
+        title: "Error",
+        description: "An audio file with this name already exists",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updatedFiles = audioFiles.map(file => 
+      file.name === oldName ? { ...file, name: editingName } : file
+    );
+    
+    setAudioFiles(updatedFiles);
+    saveToStorage(updatedFiles);
+
+    // Update audio refs if name changed
+    if (editingName !== oldName && audioRefs.current[oldName]) {
+      audioRefs.current[editingName] = audioRefs.current[oldName];
+      delete audioRefs.current[oldName];
+    }
+
+    // Update state references
+    if (playingAudio === oldName) setPlayingAudio(editingName);
+    if (pausedAudio === oldName) setPausedAudio(editingName);
+    if (completedAudio.has(oldName)) {
+      setCompletedAudio(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(oldName);
+        newSet.add(editingName);
+        return newSet;
+      });
+    }
+
+    setEditingAudio(null);
+    setEditingName("");
+
+    toast({
+      title: "Success",
+      description: "Audio name updated",
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAudio(null);
+    setEditingName("");
   };
 
   const handleDelete = (audioName: string) => {
@@ -206,7 +296,7 @@ const AudioLibrary = () => {
           audioFiles.map((audioFile) => (
             <Card key={audioFile.name} className="p-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-4 flex-1">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -215,21 +305,69 @@ const AudioLibrary = () => {
                   >
                     {getAudioIcon(audioFile.name)}
                   </Button>
-                  <div>
-                    <h3 className="font-medium">{audioFile.name}</h3>
-                    <p className="text-sm text-gray-500">
-                      Reference: /{audioFile.name}
-                    </p>
+                  <div className="flex-1">
+                    {editingAudio === audioFile.name ? (
+                      <div className="flex items-center space-x-2">
+                        <Input
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          className="flex-1"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              handleSaveEdit(audioFile.name);
+                            } else if (e.key === 'Escape') {
+                              handleCancelEdit();
+                            }
+                          }}
+                          autoFocus
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleSaveEdit(audioFile.name)}
+                          className="text-green-600 hover:text-green-700"
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={handleCancelEdit}
+                          className="text-gray-500 hover:text-gray-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="font-medium">{audioFile.name}</h3>
+                        <p className="text-sm text-gray-500">
+                          Reference: /{audioFile.name}
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDelete(audioFile.name)}
-                  className="text-destructive hover:text-destructive/90"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {editingAudio !== audioFile.name && (
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleStartEdit(audioFile.name)}
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(audioFile.name)}
+                      className="text-destructive hover:text-destructive/90"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </Card>
           ))
