@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { useTheme } from "@/components/ThemeProvider";
 import FormulaTable from "./FormulaTable";
+import QuestionView from "./QuestionView";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,7 +53,6 @@ interface QuizContentProps {
   onJumpToQuestion: (index: number) => void;
 }
 
-const QuestionView = lazy(() => import("./QuestionView"));
 const ExplanationView = lazy(() => import("./ExplanationView"));
 
 const QuizContent = ({
@@ -211,15 +211,13 @@ const QuizContent = ({
               </div>
             )}
             <div className="grid grid-cols-1 gap-6 mb-20">
-              <Suspense fallback={<div>Loading question...</div>}>
-                <QuestionView
-                  question={currentQuestion}
-                  selectedAnswer={selectedAnswer}
-                  isAnswered={isAnswered}
-                  isPaused={isPaused}
-                  onAnswerClick={handleAnswerClick}
-                />
-              </Suspense>
+              <QuestionView
+                question={currentQuestion}
+                selectedAnswer={selectedAnswer}
+                isAnswered={isAnswered}
+                isPaused={isPaused}
+                onAnswerClick={handleAnswerClick}
+              />
 
               {showExplanation && (
                 <div className="mt-6">
