@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,6 +18,7 @@ import { toast } from "@/components/ui/use-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import QuestionLibrary from "@/components/qbanks/QuestionLibrary";
 import MediaLibrary from "@/components/qbanks/MediaLibrary";
+import AudioLibrary from "@/components/qbanks/AudioLibrary";
 import { useMetricsInit } from './hooks/use-metrics-init';
 import { initializeMetrics } from "@/utils/metricsUtils";
 
@@ -171,6 +173,7 @@ const App = () => {
                     <Route path="/qbanks" element={<QBanks qbanks={qbanks} />} />
                     <Route path="/qbanks/questions" element={<QuestionLibrary qbanks={qbanks} />} />
                     <Route path="/qbanks/media" element={<MediaLibrary qbanks={qbanks} />} />
+                    <Route path="/qbanks/audio" element={<AudioLibrary />} />
                     <Route
                       path="/select-qbank"
                       element={<SelectQBank qbanks={qbanks} onSelect={handleQBankSelect} />}
