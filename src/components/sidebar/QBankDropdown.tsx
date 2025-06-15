@@ -1,4 +1,5 @@
-import { ChevronDown, Database, Image } from "lucide-react";
+
+import { ChevronDown, Database, Image, Volume2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -32,10 +33,17 @@ const QBankDropdown = () => {
             <Image className="w-4 h-4 mr-2" />
             Media Library
           </Link>
+          <Link
+            to="/qbanks/audio"
+            className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            <Volume2 className="w-4 h-4 mr-2" />
+            Audio Library
+          </Link>
         </div>
       )}
     </div>
   );
 };
 
-export default QBankDropdown; 
+export default QBankDropdown;
