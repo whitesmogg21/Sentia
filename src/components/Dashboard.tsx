@@ -389,17 +389,7 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         </motion.div>
       </div>
 
-      {/* Charts section with both Tag Performance and Score Over Time */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <div className="h-80">
-          <TagPerformanceChart qbanks={qbanks} quizHistory={quizHistory} />
-        </div>
-        <div className="h-80">
-          <ScoreOverTimeChart quizHistory={quizHistory} />
-        </div>
-      </div>
-
-      {/* Updated performance summary with 4 cards including average time */}
+      {/* Performance summary moved above charts */}
       <div className="mt-6 p-4 bg-card border rounded-lg shadow-sm">
         <h2 className="text-xl font-bold mb-4">Your Performance Summary</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -419,6 +409,16 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
             <h3 className="text-sm font-medium mb-2">Avg Time Per Question</h3>
             <p className="text-2xl font-bold">{formatTime(averageTimePerQuestion)}</p>
           </Card>
+        </div>
+      </div>
+
+      {/* Charts section with both Tag Performance and Score Over Time */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div className="h-80">
+          <TagPerformanceChart qbanks={qbanks} quizHistory={quizHistory} />
+        </div>
+        <div className="h-80">
+          <ScoreOverTimeChart quizHistory={quizHistory} />
         </div>
       </div>
     </div>
