@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ImageIcon, Play, Pause, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -297,7 +296,7 @@ const MediaWrapper = ({ element, inlineImageReferences, audioReferences, onImage
     audioButtons.forEach(button => {
       const audioName = button.getAttribute('data-audio-name');
       if (audioName && audioMap[audioName]) {
-        button.onclick = (e) => {
+        (button as HTMLButtonElement).onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
           handleAudioPlay(audioName);
