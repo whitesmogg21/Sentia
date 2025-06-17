@@ -1,5 +1,5 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { Question } from "@/types/quiz";
+import React, { useState, useEffect, Suspense, lazy, useMemo } from 'react';
+import { Question, QuestionAttempt } from "@/types/quiz";
 import QuizController from "./QuizController";
 import ProgressBar from "../ProgressBar";
 import QuestionsSidebar from "./QuestionsSidebar";
@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { useTheme } from "@/components/ThemeProvider";
 import FormulaTable from "./FormulaTable";
-import QuestionView from "./QuestionView";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +41,8 @@ interface QuizContentProps {
   isPaused: boolean;
   showExplanation: boolean;
   timerEnabled: boolean;
+  sessionTimeLimit: number;
+  sessionTimerToggle?: boolean;
   timePerQuestion: number;
   isFlagged: boolean;
   onAnswerClick: (index: number) => void;
@@ -51,8 +52,15 @@ interface QuizContentProps {
   onTimeUp: () => void;
   onToggleFlag: () => void;
   onJumpToQuestion: (index: number) => void;
+  questionsWithAttempts?: {
+    question: Question;
+    attempt: QuestionAttempt;
+  }[];  
+  tutorMode: boolean;
+  currentQuestions?: Question[];
 }
 
+const QuestionView = lazy(() => import("./QuestionView"));
 const ExplanationView = lazy(() => import("./ExplanationView"));
 
 const QuizContent = ({
@@ -64,6 +72,8 @@ const QuizContent = ({
   isPaused,
   showExplanation,
   timerEnabled,
+  sessionTimeLimit,
+  sessionTimerToggle,
   timePerQuestion,
   isFlagged,
   onAnswerClick,
@@ -72,7 +82,10 @@ const QuizContent = ({
   onQuit,
   onTimeUp,
   onToggleFlag,
-  onJumpToQuestion
+  onJumpToQuestion,
+  questionsWithAttempts,
+  tutorMode,
+  currentQuestions
 }: QuizContentProps) => {
   const [showQuitDialog, setShowQuitDialog] = React.useState(false);
   const [answeredQuestions, setAnsweredQuestions] = React.useState<Array<{ questionIndex: number; isCorrect: boolean }>>([]);
@@ -80,6 +93,30 @@ const QuizContent = ({
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const { theme, setTheme } = useTheme();
   const [selectedColor, setSelectedColor] = useState(highlightColors[0]);
+
+  console.log({
+    currentQuestion,
+    currentQuestionIndex,
+    totalQuestions,
+    selectedAnswer,
+    isAnswered,
+    isPaused,
+    showExplanation,
+    timerEnabled,
+    sessionTimeLimit,
+    sessionTimerToggle,
+    timePerQuestion,
+    isFlagged,
+    onAnswerClick,
+    onNavigate,
+    onPause,
+    onQuit,
+    onTimeUp,
+    onToggleFlag,
+    onJumpToQuestion,
+    questionsWithAttempts,
+    tutorMode
+  })
 
   useEffect(() => {
     const handleMouseUp = () => {
@@ -123,6 +160,19 @@ const QuizContent = ({
     }
   };
 
+
+const performanceData = useEffect(() => {
+  // return
+   setAnsweredQuestions(questionsWithAttempts?.map((entry, index) => {
+    return {
+      questionIndex: index,
+      isCorrect: entry.attempt?.selectedAnswer === entry.question.correctAnswer
+    };
+  }) || []);
+}, [questionsWithAttempts]);
+
+
+
   const handleQuestionClick = (index: number) => {
     onJumpToQuestion(index);
   };
@@ -131,6 +181,13 @@ const QuizContent = ({
     setShowQuitDialog(false);
     onQuit();
   };
+
+  // const flaggedQuestions = useMemo(() => {
+  //   return currentQuestions.reduce((acc, question, index) => ({
+  //     ...acc,
+  //     [index]: question.isFlagged || false
+  //   }), {});
+  // }, [currentQuestions]);
 
   return (
     <div className="bg-background dark:bg-background min-h-screen">
@@ -211,13 +268,15 @@ const QuizContent = ({
               </div>
             )}
             <div className="grid grid-cols-1 gap-6 mb-20">
-              <QuestionView
-                question={currentQuestion}
-                selectedAnswer={selectedAnswer}
-                isAnswered={isAnswered}
-                isPaused={isPaused}
-                onAnswerClick={handleAnswerClick}
-              />
+              <Suspense fallback={<div>Loading question...</div>}>
+                <QuestionView
+                  question={currentQuestion}
+                  selectedAnswer={selectedAnswer}
+                  isAnswered={isAnswered}
+                  isPaused={isPaused}
+                  onAnswerClick={handleAnswerClick}
+                />
+              </Suspense>
 
               {showExplanation && (
                 <div className="mt-6">
@@ -238,9 +297,10 @@ const QuizContent = ({
         <QuestionsSidebar
           totalQuestions={totalQuestions}
           currentQuestionIndex={currentQuestionIndex}
-          answeredQuestions={answeredQuestions}
-          onQuestionClick={handleQuestionClick}
-          currentQuestion={currentQuestion}
+          answeredQuestions={tutorMode? answeredQuestions: []}
+          onQuestionClick={timerEnabled ? ()=>{} : handleQuestionClick}
+          // currentQuestion={currentQuestion}
+          currentQuestions={currentQuestions}
           // currentQuestions={currentQuestions}
         />
       </div>
@@ -271,11 +331,14 @@ const QuizContent = ({
           isPaused={isPaused}
           isFlagged={isFlagged}
           timerEnabled={timerEnabled}
+          sessionTimeLimit={sessionTimeLimit}
+          sessionTimerToggle={sessionTimerToggle}
           timeLimit={timePerQuestion}
           onTimeUp={onTimeUp}
           onNavigate={onNavigate}
           onPause={onPause}
           onQuit={() => setShowQuitDialog(true)}
+          onForceQuit= {onQuit}
           onToggleFlag={onToggleFlag}
           // onJumpToQuestion={jumpToQuestion}
         />

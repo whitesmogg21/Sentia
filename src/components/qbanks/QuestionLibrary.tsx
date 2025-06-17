@@ -336,6 +336,28 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     setForceUpdate(f => f + 1);
   };
 
+
+  const checkForDuplicates = (questionText: string, tags: string[]): { isDuplicate: boolean, existingQBanks: string[] } => {
+    const normalizedQuestion = questionText.trim().toLowerCase();
+    const existingQBanks: string[] = [];
+    
+    // Check across all qbanks
+    const isDuplicate = qbanks.some(qbank => {
+      const hasDuplicate = qbank.questions.some(
+        q => q.question.trim().toLowerCase() === normalizedQuestion
+      );
+      if (hasDuplicate) return true;
+      
+      // Track which tags already have qbanks
+      if (tags.includes(qbank.id)) {
+        existingQBanks.push(qbank.id);
+      }
+      return false;
+    });
+  
+    return { isDuplicate, existingQBanks };
+  };
+  
   const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -446,6 +468,7 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     reader.readAsArrayBuffer(file);
     event.target.value = '';
   };
+
 
   const handleSelectAllVisible = () => {
     if (selectedQuestions.length === sortedQuestions.length) {

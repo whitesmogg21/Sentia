@@ -1,8 +1,6 @@
-
 import { motion } from "framer-motion";
 import { Question, QuizHistory } from "@/types/quiz";
-import React from "react";
-import QuizResultsTable from "./QuizResultsTable";
+import React, { Suspense, lazy } from "react";
 
 interface ScoreCardProps {
   score: number;
@@ -16,6 +14,8 @@ interface ScoreCardProps {
   }[];
   onEnd: () => void;
 }
+
+const QuizResultsTable = lazy(() => import("./QuizResultsTable"));
 
 const ScoreCard = ({ score, total, questions, attempts, onEnd }: ScoreCardProps) => {
   const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
@@ -47,7 +47,9 @@ const ScoreCard = ({ score, total, questions, attempts, onEnd }: ScoreCardProps)
           Return to Dashboard
         </button>
       </div>
-      <QuizResultsTable questions={questions} attempts={attempts} />
+      <Suspense fallback={<div>Loading results...</div>}>
+        <QuizResultsTable questions={questions} attempts={attempts} />
+      </Suspense>
     </motion.div>
   );
 };

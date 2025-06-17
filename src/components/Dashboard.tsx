@@ -15,9 +15,8 @@ import { QuestionFilter } from "@/types/quiz";
 import { useQuiz } from "@/hooks/quiz";
 import { useFullscreen } from "@/hooks/use-fullscreen";
 import { TagPerformanceChart } from "./TagPerformanceChart";
-import { ScoreOverTimeChart } from "./ScoreOverTimeChart";
 import { calculateAverageTimePerQuestion, formatTime } from "@/utils/timeUtils";
-
+import { ScoreOverTimeChart } from "./ScoreOverTimeChart";
 interface DashboardProps {
   qbanks: QBank[];
   quizHistory: QuizHistory[];
@@ -29,15 +28,31 @@ interface DashboardProps {
     timeLimit: number,
     filteredQuestionIds?: number[] // Add this parameter
   ) => void;
+  timeLimitMin: number;
+  setTimeLimitMin: (timeLimitMin: number) => void;
+  sessionTimerToggle: boolean;
+  setSessionTimerToggle: (boolean )=> void;
 }
 
-const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
+const Dashboard = ({
+  qbanks,
+  quizHistory,
+  onStartQuiz,
+  timeLimitMin,
+  setTimeLimitMin,
+  sessionTimerToggle,
+  setSessionTimerToggle
+}: DashboardProps) => {
   const navigate = useNavigate();
   const [selectedQBank, setSelectedQBank] = useState<QBank | null>(null);
   const [questionCount, setQuestionCount] = useState<number>(40);
   const [tutorMode, setTutorMode] = useState(false);
+  // const [strictMode, setStrictMode] = useState(false);
   const [timerEnabled, setTimerEnabled] = useState(false);
-  const [timeLimit, setTimeLimit] = useState(60);
+  const [timeLimit, setTimeLimit] = useState(10);
+  // const [timeLimitMin, setTimeLimitMin] = useState(60);
+  const [majorTimerToggle, setMajorTimerToggle] = useState(false);
+  // const [sessionTimerToggle, setSessionTimerToggle] = useState(false);
   const [filters, setFilters] = useState<QuestionFilter>({
     unused: false,
     used: false,
@@ -51,17 +66,75 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
   const { isFullscreen, toggleFullscreen } = useFullscreen();
 
   useEffect(() => {
-    const storedQBank = localStorage.getItem('selectedQBank');
+    const storedQBank = localStorage.getItem("selectedQBank");
     if (storedQBank) {
       const qbankData = JSON.parse(storedQBank);
-      const foundQBank = qbanks.find(qb => qb.id === qbankData.id);
+      const foundQBank = qbanks.find((qb) => qb.id === qbankData.id);
       if (foundQBank) {
         // setSelectedQBank(foundQBank);
         setSelectedQBank(qbankData);
       }
     }
   }, [qbanks]);
-  
+
+  // useEffect(() => {
+  //   const storedQBank = localStorage.getItem('selectedQBank');
+  //   if (storedQBank) {
+  //     const qbankData = JSON.parse(storedQBank);
+  //     const foundQBank = qbanks.find(qb => qb.id === qbankData.id);
+  //     if (foundQBank) {
+  //       setSelectedQBank(foundQBank);
+
+  //       // Check if we have any filtered question IDs
+  //       const filteredIds = localStorage.getItem('filteredQuestionIds');
+  //       if (filteredIds) {
+  //         const parsedIds = JSON.parse(filteredIds);
+  //         console.log(`Found ${parsedIds.length} filtered question IDs`);
+
+  //         // Determine which filters are active based on the IDs
+  //         const questionMetrics = parsedIds.map(id => {
+  //           const question = foundQBank.questions.find(q => q.id === id);
+  //           if (!question) return null;
+
+  //           const hasBeenAttempted = question.attempts && question.attempts.length > 0;
+  //           const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
+
+  //           return {
+  //             id,
+  //             unused: !hasBeenAttempted,
+  //             used: hasBeenAttempted,
+  //             correct: lastAttempt?.isCorrect,
+  //             incorrect: lastAttempt && !lastAttempt.isCorrect,
+  //             flagged: question.isFlagged,
+  //             omitted: lastAttempt?.selectedAnswer === null
+  //           };
+  //         }).filter(Boolean);
+
+  //         // Check which filters should be active
+  //         const activeFilters: QuestionFilter = {
+  //           unused: false,
+  //           used: false,
+  //           correct: false,
+  //           incorrect: false,
+  //           flagged: false,
+  //           omitted: false
+  //         };
+
+  //         // If all filtered questions share a property, that filter should be active
+  //         if (questionMetrics.length > 0) {
+  //           if (questionMetrics.every(q => q.unused)) activeFilters.unused = true;
+  //           if (questionMetrics.every(q => q.used)) activeFilters.used = true;
+  //           if (questionMetrics.every(q => q.correct)) activeFilters.correct = true;
+  //           if (questionMetrics.every(q => q.incorrect)) activeFilters.incorrect = true;
+  //           if (questionMetrics.every(q => q.flagged)) activeFilters.flagged = true;
+  //           if (questionMetrics.every(q => q.omitted)) activeFilters.omitted = true;
+  //         }
+
+  //         setFilters(activeFilters);
+  //       }
+  //     }
+  //   }
+  // }, [qbanks]);
 
   const metrics = useMemo(() => {
     const seenQuestionIds = new Set<number>();
@@ -70,8 +143,8 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     const omittedQuestionIds = new Set<number>();
     const flaggedQuestionIds = new Set<number>();
 
-    quizHistory.forEach(quiz => {
-      quiz.questionAttempts.forEach(attempt => {
+    quizHistory.forEach((quiz) => {
+      quiz.questionAttempts.forEach((attempt) => {
         seenQuestionIds.add(attempt.questionId);
 
         if (attempt.selectedAnswer === null) {
@@ -85,16 +158,18 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       });
     });
 
-    qbanks.forEach(qbank => {
-      qbank.questions.forEach(question => {
+    qbanks.forEach((qbank) => {
+      qbank.questions.forEach((question) => {
         if (question.isFlagged) {
           flaggedQuestionIds.add(question.id);
         }
       });
     });
 
-    const totalQuestions = qbanks.reduce((acc, qbank) =>
-      acc + qbank.questions.length, 0);
+    const totalQuestions = qbanks.reduce(
+      (acc, qbank) => acc + qbank.questions.length,
+      0
+    );
 
     const unusedCount = totalQuestions - seenQuestionIds.size;
 
@@ -112,17 +187,41 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     return calculateOverallAccuracy();
   }, [calculateOverallAccuracy, quizHistory]);
 
-  const chartData = useMemo(() =>
-    quizHistory.map((quiz, index) => ({
-      attemptNumber: index + 1,
-      score: (quiz.score / quiz.totalQuestions) * 100,
-      date: quiz.date,
-    })), [quizHistory]);
+  const chartData = useMemo(
+    () =>
+      quizHistory.map((quiz, index) => ({
+        attemptNumber: index + 1,
+        score: (quiz.score / quiz.totalQuestions) * 100,
+        date: quiz.date,
+      })),
+    [quizHistory]
+  );
+
+  // const filteredQuestions = useMemo(() => {
+  //   if (!selectedQBank) return [];
+
+  //   return selectedQBank.questions.filter(question => {
+  //     // If no filters are active, return all questions
+  //     if (!Object.values(filters).some(v => v)) return true;
+
+  //     const hasBeenAttempted = question.attempts && question.attempts.length > 0;
+  //     const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
+
+  //     return (
+  //       (filters.unused && !hasBeenAttempted) ||
+  //       (filters.used && hasBeenAttempted) ||
+  //       (filters.correct && lastAttempt?.isCorrect) ||
+  //       (filters.incorrect && lastAttempt && !lastAttempt.isCorrect) ||
+  //       (filters.flagged && question.isFlagged) ||
+  //       (filters.omitted && lastAttempt?.selectedAnswer === null)
+  //     );
+  //   });
+  // }, [selectedQBank, filters]);
 
   const filteredQuestions = selectedQBank?.questions || [];
-  console.log(filteredQuestions.length)
+  console.log(filteredQuestions.length);
 
-  // Add average time per question calculation
+    // Add average time per question calculation
   const averageTimePerQuestion = useMemo(() => {
     return calculateAverageTimePerQuestion(quizHistory);
   }, [quizHistory]);
@@ -133,17 +232,23 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       if (filteredQuestions.length === 0) {
         toast({
           title: "No Questions Available",
-          description: "There are no questions available with the current filters.",
-          variant: "destructive"
+          description:
+            "There are no questions available with the current filters.",
+          variant: "destructive",
         });
         return;
       }
 
       // Log for debugging
-      console.log(`Starting quiz with ${filteredQuestions.length} filtered questions`);
-      console.log("Active filters:", Object.entries(filters)
-        .filter(([_, isActive]) => isActive)
-        .map(([key]) => key));
+      console.log(
+        `Starting quiz with ${filteredQuestions.length} filtered questions`
+      );
+      console.log(
+        "Active filters:",
+        Object.entries(filters)
+          .filter(([_, isActive]) => isActive)
+          .map(([key]) => key)
+      );
 
       // Pass only the filtered question IDs to the quiz
       onStartQuiz(
@@ -152,45 +257,68 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         tutorMode,
         timerEnabled,
         timeLimit,
-        filteredQuestions.map(q => q.id)
+        filteredQuestions.map((q) => q.id)
       );
     }
   };
 
   const toggleFilter = (key: keyof QuestionFilter) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: !prev[key],
     }));
   };
 
   const handleQBankSelection = () => {
-    navigate('/select-qbank');
+    navigate("/select-qbank");
   };
 
   const handleUnlockQBank = () => {
     setSelectedQBank(null);
-    localStorage.removeItem('selectedQBank');
+    localStorage.removeItem("selectedQBank");
   };
 
-  const totalAttempts = useMemo(() => quizHistory.reduce((acc, quiz) => acc + quiz.questionAttempts.length, 0), [quizHistory]);
-  const correctAttempts = useMemo(() => quizHistory.reduce((acc, quiz) =>
-    acc + quiz.questionAttempts.filter(a => a.isCorrect).length, 0), [quizHistory]);
+  const totalAttempts = useMemo(
+    () =>
+      quizHistory.reduce((acc, quiz) => acc + quiz.questionAttempts.length, 0),
+    [quizHistory]
+  );
+  const correctAttempts = useMemo(
+    () =>
+      quizHistory.reduce(
+        (acc, quiz) =>
+          acc + quiz.questionAttempts.filter((a) => a.isCorrect).length,
+        0
+      ),
+    [quizHistory]
+  );
 
-  const totalQuestions = useMemo(() => qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0), [qbanks]);
-  const questionsAttempted = useMemo(() => new Set(quizHistory.flatMap(quiz =>
-    quiz.questionAttempts.map(a => a.questionId)
-  )).size, [quizHistory]);
+  const totalQuestions = useMemo(
+    () => qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0),
+    [qbanks]
+  );
+  const questionsAttempted = useMemo(
+    () =>
+      new Set(
+        quizHistory.flatMap((quiz) =>
+          quiz.questionAttempts.map((a) => a.questionId)
+        )
+      ).size,
+    [quizHistory]
+  );
 
   const tagStats = useMemo(() => {
     const stats: { [key: string]: { correct: number; total: number } } = {};
-    quizHistory.forEach(quiz => {
-      quiz.questionAttempts.forEach(attempt => {
-        const question = qbanks.find(qbank => qbank.questions.find(q => q.id === attempt.questionId))
-          ?.questions.find(q => q.id === attempt.questionId);
+    quizHistory.forEach((quiz) => {
+      quiz.questionAttempts.forEach((attempt) => {
+        const question = qbanks
+          .find((qbank) =>
+            qbank.questions.find((q) => q.id === attempt.questionId)
+          )
+          ?.questions.find((q) => q.id === attempt.questionId);
         const tags = question?.tags || [];
 
-        tags.forEach(tag => {
+        tags.forEach((tag) => {
           if (!stats[tag]) stats[tag] = { correct: 0, total: 0 };
           stats[tag].total += 1;
           if (attempt.isCorrect) stats[tag].correct += 1;
@@ -204,24 +332,24 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
     const tagStats: { [key: string]: { correct: number; total: number } } = {};
 
     const uniqueTags = new Set<string>();
-    qbanks.forEach(qbank => {
-      qbank.questions.forEach(question => {
-        question.tags.forEach(tag => uniqueTags.add(tag));
+    qbanks.forEach((qbank) => {
+      qbank.questions.forEach((question) => {
+        question.tags.forEach((tag) => uniqueTags.add(tag));
       });
     });
 
-    uniqueTags.forEach(tag => {
+    uniqueTags.forEach((tag) => {
       tagStats[tag] = { correct: 0, total: 0 };
     });
 
-    quizHistory.forEach(quiz => {
-      quiz.questionAttempts.forEach(attempt => {
+    quizHistory.forEach((quiz) => {
+      quiz.questionAttempts.forEach((attempt) => {
         const question = qbanks
-          .flatMap(qbank => qbank.questions)
-          .find(q => q.id === attempt.questionId);
+          .flatMap((qbank) => qbank.questions)
+          .find((q) => q.id === attempt.questionId);
 
         if (question) {
-          question.tags.forEach(tag => {
+          question.tags.forEach((tag) => {
             tagStats[tag].total += 1;
             if (attempt.isCorrect) {
               tagStats[tag].correct += 1;
@@ -241,9 +369,15 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       }));
   }, [qbanks, quizHistory]);
 
-  const overallAccuracyCalc = useMemo(() => totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0, [correctAttempts, totalAttempts]);
-  const completionRate = useMemo(() => totalQuestions > 0 ? (questionsAttempted / totalQuestions) * 100 : 0, [questionsAttempted, totalQuestions]);
-
+  const overallAccuracyCalc = useMemo(
+    () => (totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0),
+    [correctAttempts, totalAttempts]
+  );
+  const completionRate = useMemo(
+    () =>
+      totalQuestions > 0 ? (questionsAttempted / totalQuestions) * 100 : 0,
+    [questionsAttempted, totalQuestions]
+  );
 
   useEffect(() => {
     if (selectedQBank) {
@@ -256,6 +390,8 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
       }
     }
   }, [selectedQBank, filteredQuestions.length]);
+
+  // console.log(selectedQBank)
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -301,7 +437,9 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
           <div className="grid gap-4">
             <Card
               className={`p-4 cursor-pointer transition-colors ${
-                selectedQBank ? "border-primary border-2" : "hover:border-primary/50"
+                selectedQBank
+                  ? "border-primary border-2"
+                  : "hover:border-primary/50"
               }`}
               onClick={selectedQBank ? handleUnlockQBank : handleQBankSelection}
               onDoubleClick={selectedQBank ? handleUnlockQBank : undefined}
@@ -329,9 +467,9 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         >
           <h2 className="text-xl font-bold">Quiz Configuration</h2>
           <div className="space-y-4">
-          <div>
+            {/* <div>
             <Label className="block text-sm font-medium mb-2">
-              Number of Questions ({filteredQuestions.length} available)
+              Number of Questions (max: {filteredQuestions.length})
             </Label>
             <Input
               type="number"
@@ -344,9 +482,41 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
                 setQuestionCount(validValue);
               }}
               className="w-48"
-              disabled={filteredQuestions.length === 0}
             />
-          </div>
+          </div> */}
+            <div>
+              <Label className="block text-sm font-medium mb-2">
+                Number of Questions ({filteredQuestions.length} available)
+              </Label>
+              <Input
+                type="number"
+                min={1}
+                max={filteredQuestions.length || 1}
+                value={
+                  questionCount > filteredQuestions.length
+                    ? filteredQuestions.length
+                    : questionCount
+                }
+                onChange={(e) => {
+                  const value = Number(e.target.value);
+                  const validValue = Math.min(
+                    Math.max(1, value),
+                    filteredQuestions.length
+                  );
+                  setQuestionCount(validValue);
+                }}
+                className="w-48"
+                disabled={filteredQuestions.length === 0}
+              />
+            </div>
+            {/* <div className="flex items-center space-x-2">
+              <Switch
+                id="strict-mode"
+                checked={strictMode}
+                onCheckedChange={setStrictMode}
+              />
+              <Label htmlFor="tutor-mode">Enable Strict Mode</Label>
+            </div> */}
             <div className="flex items-center space-x-2">
               <Switch
                 id="tutor-mode"
@@ -356,15 +526,15 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
               <Label htmlFor="tutor-mode">Enable Tutor Mode</Label>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center space-x-2">
+              {/* <div className="flex items-center space-x-2">
                 <Switch
                   id="timer-mode"
-                  checked={timerEnabled}
-                  onCheckedChange={setTimerEnabled}
+                  checked={majorTimerToggle}
+                  onCheckedChange={setMajorTimerToggle}
                 />
                 <Label htmlFor="timer-mode">Enable Timer</Label>
-              </div>
-              {timerEnabled && (
+              </div> */}
+              {/* {timerEnabled && (
                 <div className="space-y-2">
                   <Label>Time per Question (seconds): {timeLimit}</Label>
                   <Slider
@@ -376,7 +546,70 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
                     className="w-full"
                   />
                 </div>
-              )}
+              )} */}
+              {/* {majorTimerToggle && ( */}
+                <>
+                  {/* Session Timer Toggle */}
+                  <div className="space-y-2 pb-2">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="session-timer"
+                        checked={sessionTimerToggle}
+                        onCheckedChange={setSessionTimerToggle}
+                      />
+                      <Label htmlFor="session-timer">
+                        Enable Session Timer
+                      </Label>
+                    </div>
+                    <div
+                      className={`${
+                        sessionTimerToggle
+                          ? ""
+                          : "opacity-50 pointer-events-none"
+                      } space-y-2`}
+                    >
+                      <Label>Time per Session (minutes): {timeLimitMin}</Label>
+                      <Slider
+                        value={[timeLimitMin]}
+                        onValueChange={(value) => setTimeLimitMin(value[0])}
+                        min={5}
+                        max={300}
+                        step={5}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Per-Question Timer Toggle */}
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="per-question-timer"
+                        checked={timerEnabled}
+                        onCheckedChange={setTimerEnabled}
+                      />
+                      <Label htmlFor="per-question-timer">
+                        Enable Per-Question Timer
+                      </Label>
+                    </div>
+                    <div
+                      className={`${
+                        timerEnabled ? "" : "opacity-50 pointer-events-none"
+                      } space-y-2`}
+                    >
+                      <Label>Time per Question (seconds): {timeLimit}</Label>
+                      <Slider
+                        value={[timeLimit]}
+                        onValueChange={(value) => setTimeLimit(value[0])}
+                        min={10}
+                        max={300}
+                        step={10}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                </>
+              {/* )} */}
             </div>
             <Button
               onClick={handleStartQuiz}
@@ -389,31 +622,34 @@ const Dashboard = ({ qbanks, quizHistory, onStartQuiz }: DashboardProps) => {
         </motion.div>
       </div>
 
-      {/* Performance summary moved above charts */}
       <div className="mt-6 p-4 bg-card border rounded-lg shadow-sm">
         <h2 className="text-xl font-bold mb-4">Your Performance Summary</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
-            <p className="text-2xl font-bold">{overallAccuracyCalc.toFixed(1)}%</p>
+            <p className="text-2xl font-bold">
+              {overallAccuracyCalc.toFixed(1)}%
+            </p>
           </Card>
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Questions Attempted</h3>
-            <p className="text-2xl font-bold">{questionsAttempted} / {totalQuestions}</p>
+            <p className="text-2xl font-bold">
+              {questionsAttempted} / {totalQuestions}
+            </p>
           </Card>
           <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Total Quizzes Taken</h3>
             <p className="text-2xl font-bold">{quizHistory.length}</p>
           </Card>
-          <Card className="p-4">
+                    <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Avg Time Per Question</h3>
             <p className="text-2xl font-bold">{formatTime(averageTimePerQuestion)}</p>
           </Card>
         </div>
       </div>
 
-      {/* Charts section with both Tag Performance and Score Over Time */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      {/* Tag Performance Radar Chart */}
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <div className="h-80">
           <TagPerformanceChart qbanks={qbanks} quizHistory={quizHistory} />
         </div>
