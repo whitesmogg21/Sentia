@@ -1,6 +1,6 @@
 import { Question } from "@/types/quiz";
 import QuizOption from "../QuizOption";
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { renderMarkdown } from "@/utils/markdownUtils";
 import { useMediaLibrary } from "@/hooks/useMediaLibrary";
 import ImageModal from "./ImageModal";
@@ -56,10 +56,54 @@ const QuestionView = ({
     return strikethroughs[questionKey]?.[optionIndex] || false;
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't handle key presses if answered or paused
+      if (isAnswered || isPaused) return;
+
+      // Check for number keys 1-9 and 0 (for 10th option)
+      if (e.key >= '1' && e.key <= '9') {
+        const optionIndex = parseInt(e.key) - 1;
+        // Only proceed if the option exists
+        if (optionIndex < question.options.length) {
+          onAnswerClick(optionIndex);
+        }
+      } else if (e.key === '0') {
+        // Handle 0 as the 10th option (index 9)
+        const optionIndex = 9;
+        if (optionIndex < question.options.length) {
+          onAnswerClick(optionIndex);
+        }
+      } else if (e.key.toLowerCase() === 'm' && selectedImage) {
+        // Handle M key to open modal if there's a selected image
+        setSelectedImage({ ...selectedImage }); // This will keep the modal open
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isAnswered, isPaused, question.options.length, onAnswerClick, selectedImage]);
+
+  // Check if there are any images in the question or options
+  const hasImages = () => {
+    // Check question text for images
+    if (question.question.includes('![')) return true;
+    
+    // Check options for images
+    return question.options.some(option => option.includes('!['));
+  };
+
   return (
     <div className="dark:text-gray-100">
       <div ref={contentRef} className="mb-4">
         {renderMarkdown(question.question, handleImageClick)}
+        {hasImages() && (
+          <div className="text-xs mt-2 opacity-70">
+            Press M to view images
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -69,6 +113,7 @@ const QuestionView = ({
             option={
               <div className="prose prose-sm dark:prose-invert">
                 {renderMarkdown(option, handleImageClick)}
+
               </div>
             }
             selected={selectedAnswer === index}

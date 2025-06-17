@@ -195,24 +195,29 @@ export const getFilteredQuestions = (questions: Question[], activeFilters: strin
     const hasBeenAttempted = question.attempts && question.attempts.length > 0;
     const lastAttempt = hasBeenAttempted ? question.attempts[question.attempts.length - 1] : null;
 
+    //***IMPORTANT*** */ The attempt based OR filtration is commented out cuz attempt array of questions is not being populated
+
     // Check if this question matches any of the active filters
     return activeFilters.some(filter => {
       switch (filter) {
         case 'unused':
-          return questionMetrics.status === 'unused' ;
+          return questionMetrics.status === 'unused' 
+          // || !hasBeenAttempted;
         case 'used':
-          return questionMetrics.status !== 'unused' || hasBeenAttempted;
+          return questionMetrics.status !== 'unused' 
+          // || hasBeenAttempted;
         case 'correct':
-          return questionMetrics.status === 'correct' ||
-                 (lastAttempt && lastAttempt.isCorrect);
+          return questionMetrics.status === 'correct' 
+          // || (lastAttempt && lastAttempt.isCorrect);
         case 'incorrect':
-          return questionMetrics.status === 'incorrect' ||
-                 (lastAttempt && !lastAttempt.isCorrect && lastAttempt.selectedAnswer !== null);
+          return questionMetrics.status === 'incorrect' 
+          // || (lastAttempt && !lastAttempt.isCorrect && lastAttempt.selectedAnswer !== null);
         case 'omitted':
-          return questionMetrics.status === 'omitted' ||
-                 (lastAttempt && lastAttempt.selectedAnswer === null);
+          return questionMetrics.status === 'omitted' 
+          // || (lastAttempt && lastAttempt.selectedAnswer === null);
         case 'flagged':
-          return questionMetrics.isFlagged || question.isFlagged;
+          return questionMetrics.isFlagged 
+          // || question.isFlagged;
         default:
           return false;
       }

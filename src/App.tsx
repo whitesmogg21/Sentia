@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,9 +17,10 @@ import { toast } from "@/components/ui/use-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import QuestionLibrary from "@/components/qbanks/QuestionLibrary";
 import MediaLibrary from "@/components/qbanks/MediaLibrary";
-import AudioLibrary from "@/components/qbanks/AudioLibrary";
 import { useMetricsInit } from './hooks/use-metrics-init';
 import { initializeMetrics } from "@/utils/metricsUtils";
+import SessionDetail from "./pages/SessionDetail";
+import AudioLibrary from "@/components/qbanks/AudioLibrary";
 
 const queryClient = new QueryClient();
 
@@ -64,16 +64,28 @@ const App = () => {
     }
   }, [quizHistory]);
 
-  const handleQuizComplete = (history: QuizHistory) => {
-    // Ensure start and end times are set if not already present
-    const historyWithTimes = {
-      ...history,
-      startTime: history.startTime || new Date().toISOString(),
-      endTime: history.endTime || new Date().toISOString()
+  const handleQuizComplete = (historyWithShuffling: QuizHistory) => {
+    // pushing to history with correct index as stored in questionLibrary 
+    const history = {
+      ...historyWithShuffling,
+      startTime: historyWithShuffling.startTime || new Date().toISOString(),
+      endTime: historyWithShuffling.endTime || new Date().toISOString(),
+      questionAttempts: historyWithShuffling.questionAttempts.map(q => {
+        const selectedOptionText = q.options?.[q.selectedAnswer];
+        const originalIndex = selectedOptionText != null
+          ? q.originalOptions.findIndex(opt => opt === selectedOptionText)
+          : null;
+    
+        return {
+          ...q,
+          selectedAnswer: originalIndex
+        };
+      })
     };
-
+    
+    console.log(history);
     // Update quiz history
-    setQuizHistory((prev) => [...prev, historyWithTimes]);
+    setQuizHistory((prev) => [...prev, history]);
 
     // Update the qbank with the new attempts
     const selectedQBank = qbanks.find(qb => qb.id === history.qbankId);
@@ -81,11 +93,15 @@ const App = () => {
       history.questionAttempts.forEach(attempt => {
         const question = selectedQBank.questions.find(q => q.id === attempt.questionId);
         if (question) {
+          console.log(attempt.selectedAnswer);
+          // console.log(attempt.originalOptions.indexOf(attempt.options[attempt.selectedAnswer]));
+          
           question.attempts = [
             ...(question.attempts || []),
             {
               questionId: attempt.questionId,
               selectedAnswer: attempt.selectedAnswer,
+              // selectedAnswer: question.options.indexOf(attempt.options[attempt.selectedAnswer]),
               isCorrect: attempt.isCorrect,
               date: new Date().toISOString(),
               isFlagged: attempt.isFlagged,
@@ -97,7 +113,7 @@ const App = () => {
 
       // Save updated qbank to localStorage
       // localStorage.setItem('selectedQBank', JSON.stringify(selectedQBank));
-      // saveQBanksToStorage(); // Save qbanks to localStorage as well
+      saveQBanksToStorage(); // Save qbanks to localStorage as well
       initializeMetrics(); // Recalculate metrics so the logic bar updates
     }
     // console.log(history);
@@ -170,14 +186,16 @@ const App = () => {
                       path="/history"
                       element={<History quizHistory={quizHistory} onClearHistory={handleClearHistory} />}
                     />
+                    <Route path="/session-history" element={<SessionDetail                           onQuizStart={()=>setInQuiz(true)}
+                          onQuizEnd={()=>setInQuiz(false)}/>} />
                     <Route path="/qbanks" element={<QBanks qbanks={qbanks} />} />
                     <Route path="/qbanks/questions" element={<QuestionLibrary qbanks={qbanks} />} />
                     <Route path="/qbanks/media" element={<MediaLibrary qbanks={qbanks} />} />
-                    <Route path="/qbanks/audio" element={<AudioLibrary />} />
                     <Route
                       path="/select-qbank"
                       element={<SelectQBank qbanks={qbanks} onSelect={handleQBankSelect} />}
                     />
+                    <Route path="/qbanks/audio" element={<AudioLibrary />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>

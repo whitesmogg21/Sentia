@@ -1,4 +1,3 @@
-
 import { Question, QuizHistory, QuestionAttempt } from "@/types/quiz";
 import { QuizState } from "./types";
 import { qbanks } from "@/data/questions";
@@ -61,8 +60,7 @@ export const createQuizHistory = (
   state: QuizState,
   optionIndex: number | null
 ): QuizHistory => {
-  const now = new Date().toISOString();
-  
+    const now = new Date().toISOString();
   const history = {
     id: Date.now().toString(),
     date: now,
@@ -78,6 +76,8 @@ export const createQuizHistory = (
       return {
         questionId: q.id,
         selectedAnswer,
+        options: q.options,
+        originalOptions: q.originalOptions,
         isCorrect,
         isFlagged: Boolean(q.isFlagged),
         tags: q.tags,

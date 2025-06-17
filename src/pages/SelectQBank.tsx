@@ -1,12 +1,18 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { QBank, QuestionFilter } from "@/types/quiz";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
-import QuestionFiltersBar from "@/components/QuestionFiltersBar";
-import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { getFilteredQuestions, initializeMetrics } from "@/utils/metricsUtils";
+import { getFilteredQuestions, initializeMetrics, syncFiltersWithLocalStorage } from "@/utils/metricsUtils";
+import QuestionFiltersBar from "@/components/QuestionFiltersBar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SelectQBankProps {
   qbanks: QBank[];
@@ -16,6 +22,7 @@ interface SelectQBankProps {
 const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
   const navigate = useNavigate();
   const [selectedQBank, setSelectedQBank] = useState<QBank | null>(null);
+  const [dropdownQbank, setDropdownQbank] = useState('');
   const [filters, setFilters] = useState<QuestionFilter>({
     unused: false,
     used: false,
@@ -27,157 +34,122 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
 
   useEffect(() => {
     initializeMetrics();
+    const syncedFilters = syncFiltersWithLocalStorage();
+    setFilters(syncedFilters);
+  }, []);
 
-    // Import the sync function and use it to set filters
-    import('@/utils/metricsUtils').then(module => {
-      const syncedFilters = module.syncFiltersWithLocalStorage();
-      setFilters(syncedFilters);
+  const handleToggleFilter = useCallback((key: keyof QuestionFilter) => {
+    setFilters(prev => {
+      const updated = { ...prev, [key]: !prev[key] };
+      const isAnyFilterActive = Object.values(updated).some(v => v);
+      return isAnyFilterActive
+        ? updated
+        : {
+            unused: false,
+            used: false,
+            incorrect: false,
+            correct: false,
+            flagged: false,
+            omitted: false,
+          };
     });
   }, []);
 
-  // Filter QBanks based on selected filters
-  const filteredQBanks = useMemo(() => {
-    if (!Object.values(filters).some(v => v)) return qbanks; // Show all if no filter is active
+  const filterObjectsById = (objects: QBank[], id: string): QBank[] => {
+    if (!id || id === "all") return objects;
+    const match = objects.find(obj => obj.id === id);
+    return match ? [match] : [];
+  };
 
-    // Create an array of active filter keys
+  const filteredQBanks = useMemo(() => {
     const activeFilters = Object.entries(filters)
       .filter(([_, isActive]) => isActive)
       .map(([key]) => key);
 
-    // Log what we're filtering by for debugging
-    console.log("Filtering by:", activeFilters);
+    const baseQbanks = filterObjectsById(qbanks, dropdownQbank);
 
-    return qbanks
+    if (!activeFilters.length) return baseQbanks;
+
+    return baseQbanks
       .map(qbank => {
-        // Get filtered questions for this qbank
         const filteredQuestions = getFilteredQuestions(qbank.questions, activeFilters);
+        if (!filteredQuestions.length) return null;
 
-        // Log filtered questions count
-        // console.log(`Found ${filteredQuestions.length} matching questions in ${qbank.name}`);
-
-        // If there are no matches, return null
-        if (filteredQuestions.length === 0) return null;
-
-        // Return a modified qbank with only the filtered questions
-        // console.log(filteredQuestions.length)
         return {
           ...qbank,
           questions: filteredQuestions,
-          filteredCount: filteredQuestions.length  // Add this to display count
+          filteredCount: filteredQuestions.length,
         };
       })
-      .filter(Boolean) as QBank[]; // Remove null entries
-  }, [qbanks, filters]);
+      .filter(Boolean) as QBank[];
+  }, [qbanks, filters, dropdownQbank]);
 
-  const handleQBankClick = (qbank: QBank) => {
-    setSelectedQBank(qbank);
-  };
-
-  // console.log(selectedQBank);
-
-  // const handleConfirmSelection = () => {
-  //   if (selectedQBank) {
-  //     // Since we're filtering questions, we need to preserve the filtered questions
-  //     // when selecting a QBank with active filters
-  //     const activeFilters = Object.entries(filters)
-  //       .filter(([_, isActive]) => isActive)
-  //       .map(([key]) => key);
-
-  //     // Get the original qbank with all questions
-  //     const originalQBank = qbanks.find(q => q.id === selectedQBank.id);
-
-  //     if (originalQBank) {
-  //       // If filters are active, add the filtered question IDs to localStorage
-  //       if (activeFilters.length > 0) {
-  //         const filteredIds = selectedQBank.questions.map(q => q.id);
-  //         localStorage.setItem("filteredQuestionIds", JSON.stringify(filteredIds));
-  //         console.log(`Saved ${filteredIds.length} filtered question IDs`);
-  //       } else {
-  //         // Clear any previously filtered IDs
-  //         localStorage.removeItem("filteredQuestionIds");
-  //       }
-
-  //       // Save the original QBank with all questions
-  //       onSelect(originalQBank);
-  //       localStorage.setItem("selectedQBank", JSON.stringify(originalQBank));
-
-  //       navigate("/");
-  //     }
-  //   }
-  // };
+  const handleQBankClick = (qbank: QBank) => setSelectedQBank(qbank);
 
   const handleConfirmSelection = () => {
-    if (selectedQBank) {
-      // Since we're filtering questions, we need to preserve the filtered questions
-      // when selecting a QBank with active filters
-      const activeFilters = Object.entries(filters)
-        .filter(([_, isActive]) => isActive)
-        .map(([key]) => key);
+    if (!selectedQBank) return;
 
-      // Get the original qbank with all questions
-      const originalQBank = qbanks.find(q => q.id === selectedQBank.id);
+    const activeFilters = Object.entries(filters)
+      .filter(([_, isActive]) => isActive)
+      .map(([key]) => key);
 
-      if (originalQBank) {
-        // If filters are active, add the filtered question IDs to localStorage
-        if (activeFilters.length > 0) {
-          const filteredIds = selectedQBank.questions.map(q => q.id);
-          localStorage.setItem("filteredQuestionIds", JSON.stringify(filteredIds));
-          console.log(`Saved ${filteredIds.length} filtered question IDs`);
+    const originalQBank = qbanks.find(q => q.id === selectedQBank.id);
 
-          // Also create a modified qbank that only contains the filtered questions
-          // but preserve the original ID and metadata
-          const filteredQBank = {
-            ...originalQBank,
-            questions: selectedQBank.questions,
-            isFiltered: true // Add a flag to indicate this is a filtered qbank
-          };
+    if (!originalQBank) return;
 
-          // Save both the original and filtered qbank
-          localStorage.setItem("selectedQBank", JSON.stringify(originalQBank));
-          localStorage.setItem("filteredQBank", JSON.stringify(filteredQBank));
-        } else {
-          // Clear any previously filtered IDs
-          localStorage.removeItem("filteredQuestionIds");
-          localStorage.removeItem("filteredQBank");
+    if (activeFilters.length > 0) {
+      const filteredIds = selectedQBank.questions.map(q => q.id);
+      localStorage.setItem("filteredQuestionIds", JSON.stringify(filteredIds));
 
-          // Save the original QBank with all questions
-          localStorage.setItem("selectedQBank", JSON.stringify(originalQBank));
-        }
+      const filteredQBank = {
+        ...originalQBank,
+        questions: selectedQBank.questions,
+        isFiltered: true,
+      };
 
-        // Always send the original QBank to the parent component
-        // onSelect(originalQBank);
-        onSelect(selectedQBank);
-
-        navigate("/");
-      }
+      localStorage.setItem("selectedQBank", JSON.stringify(originalQBank));
+      localStorage.setItem("filteredQBank", JSON.stringify(filteredQBank));
+    } else {
+      localStorage.removeItem("filteredQuestionIds");
+      localStorage.removeItem("filteredQBank");
+      localStorage.setItem("selectedQBank", JSON.stringify(originalQBank));
     }
+
+    onSelect(selectedQBank);
+    navigate("/");
   };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">Select Questions</h1>
-      <QuestionFiltersBar
-        filters={filters}
-        onToggleFilter={(key) =>
-          setFilters(prev => {
-            const newFilters = { ...prev, [key]: !prev[key] };
-            return Object.values(newFilters).some(v => v)
-              ? newFilters
-              : {
-                  unused: true,
-                  used: false,
-                  incorrect: false,
-                  correct: false,
-                  flagged: false,
-                  omitted: false,
-                };
-          })
-        }
-        questions={
-          selectedQBank
-            ? selectedQBank.questions
-            : filteredQBanks.flatMap(qb => qb.questions)
-        }
-      />
+
+      <div className="flex justify-between">
+        <QuestionFiltersBar
+          filters={filters}
+          onToggleFilter={handleToggleFilter}
+          questions={
+            selectedQBank
+              ? selectedQBank.questions
+              : 
+              filteredQBanks.flatMap(qb => qb.questions)
+          }
+        />
+
+        {/* <Select value={dropdownQbank} onValueChange={setDropdownQbank}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select Q-Bank" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All</SelectItem>
+            {qbanks.map(qbank => (
+              <SelectItem key={qbank.id} value={qbank.id}>
+                {qbank.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select> */}
+      </div>
+
       <div className="grid gap-4">
         {filteredQBanks.map(qbank => (
           <Card
@@ -194,6 +166,7 @@ const SelectQBank = ({ qbanks, onSelect }: SelectQBankProps) => {
           </Card>
         ))}
       </div>
+
       <div className="flex justify-end">
         <Button onClick={handleConfirmSelection} disabled={!selectedQBank}>
           Lock Selection
