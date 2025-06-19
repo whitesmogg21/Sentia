@@ -93,6 +93,7 @@ const QuizContent = ({
   const { isFullscreen, toggleFullscreen } = useFullscreen();
   const { theme, setTheme } = useTheme();
   const [selectedColor, setSelectedColor] = useState(highlightColors[0]);
+  const [isFormulaOpen, setIsFormulaOpen] = useState(false);
 
   console.log({
     currentQuestion,
@@ -189,6 +190,8 @@ const performanceData = useEffect(() => {
   //   }), {});
   // }, [currentQuestions]);
 
+  console.log(isFormulaOpen)
+
   return (
     <div className="bg-background dark:bg-background min-h-screen">
       <div className={cn(
@@ -197,7 +200,7 @@ const performanceData = useEffect(() => {
       )}>
         <div className="container mx-auto p-6 flex flex-col">
           <div className="flex items-center justify-end gap-2 mb-4">
-            <FormulaTable />
+            <FormulaTable open={isFormulaOpen} setOpen={setIsFormulaOpen}/>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -275,6 +278,7 @@ const performanceData = useEffect(() => {
                   isAnswered={isAnswered}
                   isPaused={isPaused}
                   onAnswerClick={handleAnswerClick}
+                  isFormulaOpen={isFormulaOpen}
                 />
               </Suspense>
 
@@ -341,6 +345,7 @@ const performanceData = useEffect(() => {
           onForceQuit= {onQuit}
           onToggleFlag={onToggleFlag}
           // onJumpToQuestion={jumpToQuestion}
+          isFormulaOpen={isFormulaOpen}
         />
       </div>
 

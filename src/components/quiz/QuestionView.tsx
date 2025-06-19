@@ -11,6 +11,7 @@ interface QuestionViewProps {
   isAnswered: boolean;
   isPaused: boolean;
   onAnswerClick: (index: number) => void;
+  isFormulaOpen: boolean;
 }
 
 interface StrikethroughState {
@@ -24,7 +25,8 @@ const QuestionView = ({
   selectedAnswer,
   isAnswered,
   isPaused,
-  onAnswerClick
+  onAnswerClick,
+  isFormulaOpen
 }: QuestionViewProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const { getMediaItem } = useMediaLibrary();
@@ -59,7 +61,7 @@ const QuestionView = ({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't handle key presses if answered or paused
-      if (isAnswered || isPaused) return;
+      if (isAnswered || isPaused || isFormulaOpen) return;
 
       // Check for number keys 1-9 and 0 (for 10th option)
       if (e.key >= '1' && e.key <= '9') {
