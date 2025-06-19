@@ -295,7 +295,15 @@ const Dashboard = ({
   );
 
   const totalQuestions = useMemo(
-    () => qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0),
+    () => 
+      // qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0),
+
+    // this is gonna get unique questions with unique ids
+          new Set(
+        qbanks.flatMap((qbank) =>
+          qbank.questions.map((a) => a.id)
+        )
+      ).size,
     [qbanks]
   );
   const questionsAttempted = useMemo(
