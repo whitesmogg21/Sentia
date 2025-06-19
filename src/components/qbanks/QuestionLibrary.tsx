@@ -35,7 +35,7 @@ import { useFullscreen } from "@/hooks/use-fullscreen";
 import Pagination from "@/components/Pagintion";
 import { renderMarkdown } from "@/utils/markdownUtils";
 import { CSSTransition } from 'react-transition-group';
-
+import deepEqual from "@/utils/deepEqual";
 interface QuestionLibraryProps {
   qbanks: QBank[];
 }
@@ -192,89 +192,130 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     setSelectedTags(selectedTags.filter(tag => tag !== tagToRemove));
   };
 
-  const handleSubmit = () => {
-    if (!newQuestion.question || newQuestion.options?.some(opt => !opt)) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
+const handleSubmit = () => {
+  if (!newQuestion.question || newQuestion.options?.some(opt => !opt)) {
+    toast({
+      title: "Error",
+      description: "Please fill in all required fields",
+      variant: "destructive"
+    });
+    return;
+  }
 
-    if (selectedTags.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please add at least one tag",
-        variant: "destructive"
-      });
-      return;
+  if (selectedTags.length === 0) {
+    toast({
+      title: "Error",
+      description: "Please add at least one tag",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  // Create a stripped-down comparison object (no ID, qbankId, attempts)
+  const baseComparison = {
+    question: newQuestion.question!,
+    options: newQuestion.options!,
+    correctAnswer: newQuestion.correctAnswer!,
+    explanation: newQuestion.explanation?.trim() || "",
+    media: newQuestion.media?.type && newQuestion.media.url
+      ? {
+          type: newQuestion.media.type,
+          url: newQuestion.media.url,
+          showWith: newQuestion.media.showWith
+        }
+      : undefined
+  };
+
+  // ✅ Get all tags where this question already exists
+  const duplicateTags = selectedTags.filter(tag => {
+    const qbank = qbanks.find(qb => qb.id === tag);
+    if (!qbank) return false;
+
+    return qbank.questions.some(existing => {
+      const existingStripped = {
+        question: existing.question,
+        options: existing.options,
+        correctAnswer: existing.correctAnswer,
+        explanation: existing.explanation || "",
+        media: existing.media || undefined
+      };
+      return deepEqual(existingStripped, baseComparison);
+    });
+  });
+
+  const nonDuplicateTags = selectedTags.filter(tag => !duplicateTags.includes(tag));
+
+  if (nonDuplicateTags.length === 0) {
+    toast({
+      title: "Duplicate Question",
+      description: "This question already exists in all selected QBanks.",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  // ✅ Only add to non-duplicate tags
+  nonDuplicateTags.forEach(tag => {
+    let qbank = qbanks.find(qb => qb.id === tag);
+    if (!qbank) {
+      qbank = {
+        id: tag,
+        name: tag.charAt(0).toUpperCase() + tag.slice(1),
+        description: `Questions tagged with ${tag}`,
+        questions: []
+      };
+      qbanks.push(qbank);
     }
 
     const question: Question = {
-      id: Date.now(),
+      id: Date.now() + Math.random(), // Unique ID
       question: newQuestion.question!,
       options: newQuestion.options!,
       correctAnswer: newQuestion.correctAnswer!,
-      qbankId: selectedTags[0],
+      explanation: newQuestion.explanation?.trim(),
+      media: newQuestion.media?.type && newQuestion.media.url
+        ? {
+            type: newQuestion.media.type as 'image' | 'audio' | 'video',
+            url: newQuestion.media.url,
+            showWith: newQuestion.media.showWith as 'question' | 'answer'
+          }
+        : undefined,
+      qbankId: tag,
       tags: selectedTags,
       attempts: []
     };
 
-    if (newQuestion.explanation?.trim()) {
-      question.explanation = newQuestion.explanation;
-    }
-
-    if (newQuestion.media?.type && newQuestion.media.url) {
-      question.media = {
-        type: newQuestion.media.type as 'image' | 'audio' | 'video',
-        url: newQuestion.media.url,
-        showWith: newQuestion.media.showWith as 'question' | 'answer'
-      };
-    }
-
-    selectedTags.forEach(tag => {
-      let qbank = qbanks.find(qb => qb.id === tag);
-
-      if (!qbank) {
-        qbank = {
-          id: tag,
-          name: tag.charAt(0).toUpperCase() + tag.slice(1),
-          description: `Questions tagged with ${tag}`,
-          questions: []
-        };
-        qbanks.push(qbank);
-      }
-
-      qbank.questions.push({ ...question });
-    });
-
-    saveQBanksToStorage();
-
+    qbank.questions.push(question);
     updateQuestionMetrics(question.id, 'unused', false);
+  });
 
-    setIsOpen(false);
-    setNewQuestion({
-      question: "",
-      options: ["", "", "", ""],
-      correctAnswer: 0,
-      explanation: "",
-      tags: [],
-      media: {
-        type: "image",
-        url: "",
-        showWith: "question"
-      }
-    });
-    setSelectedTags([]);
+  saveQBanksToStorage();
 
-    toast({
-      title: "Success",
-      description: `Question added to ${selectedTags.length} question bank(s)`,
-    });
+  setIsOpen(false);
+  setNewQuestion({
+    question: "",
+    options: ["", "", "", ""],
+    correctAnswer: 0,
+    explanation: "",
+    tags: [],
+    media: {
+      type: "image",
+      url: "",
+      showWith: "question"
+    }
+  });
+  setSelectedTags([]);
 
-    setForceUpdate(f => f + 1);
-  };
+  console.log({ selectedTags, duplicateTags, nonDuplicateTags });
+
+  toast({
+    title: "Success",
+    description: `Question added to ${nonDuplicateTags.length} question bank(s).`,
+  });
+
+  setForceUpdate(f => f + 1);
+};
+
 
   const handleOptionChange = (index: number, value: string) => {
     setNewQuestion(prev => ({
@@ -358,116 +399,146 @@ const QuestionLibrary = ({ qbanks }: QuestionLibraryProps) => {
     return { isDuplicate, existingQBanks };
   };
   
-  const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const file = event.target.files?.[0];
-    if (!file) return;
+const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  event.preventDefault();
+  event.stopPropagation();
+  const file = event.target.files?.[0];
+  if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const rows = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1 });
+  const reader = new FileReader();
 
-        const questions = rows.slice(1)
-          .filter(row => row && row.length >= 2)
-          .map((row: any) => {
-            const [question, correctAnswer, otherChoices, category, explanation] = row;
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const rows = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1 });
 
-            // Modified tag handling to support semicolon-separated tags
-            let tags: string[] = ['general'];
-            if (category?.toString().trim()) {
-              // Split by semicolons, convert to lowercase, trim whitespace, and filter out empty tags
-              tags = category.toString()
-                .split(';')
-                .map(tag => tag.toLowerCase().trim())
-                .filter(Boolean);
+      let addedCount = 0;
+      let skippedCount = 0;
 
-              // If after filtering we have no valid tags, use 'general'
-              if (tags.length === 0) {
-                tags = ['general'];
-              }
+      const questions = rows.slice(1)
+        .filter(row => row && row.length >= 2)
+        .map((row: any) => {
+          const [question, correctAnswer, otherChoices, category, explanation] = row;
+
+          // Tag handling
+          let tags: string[] = ['general'];
+          if (category?.toString().trim()) {
+            tags = category.toString()
+              .split(';')
+              .map(tag => tag.toLowerCase().trim())
+              .filter(Boolean);
+            if (tags.length === 0) tags = ['general'];
+          }
+
+          const questionText = question.toString().trim();
+          const explanationText = explanation?.toString().trim() || undefined;
+
+          const options = [
+            correctAnswer.toString().trim(),
+            ...(otherChoices?.toString().split(/[;,]/).map(s => s.trim()) || [])
+          ].filter(Boolean);
+
+          const mediaMatch = questionText.match(/\/([^\/\s]+\.(png|jpg|jpeg|gif))/i);
+          const media = mediaMatch ? {
+            type: "image" as const,
+            url: mediaMatch[1],
+            showWith: "question" as const
+          } : undefined;
+
+          const newQuestionBase: Omit<Question, 'id' | 'qbankId'> = {
+            question: questionText,
+            options,
+            correctAnswer: 0,
+            tags,
+            explanation: explanationText,
+            media,
+            attempts: []
+          };
+
+          tags.forEach(tag => {
+            let qbank = qbanks.find(qb => qb.id === tag);
+            if (!qbank) {
+              qbank = {
+                id: tag,
+                name: tag.charAt(0).toUpperCase() + tag.slice(1),
+                description: `Questions tagged with ${tag}`,
+                questions: []
+              };
+              qbanks.push(qbank);
             }
 
-            const questionText = question.toString().trim();
-            const explanationText = explanation?.toString().trim() || undefined;
-
-            const options = [
-              correctAnswer.toString().trim(),
-              ...(otherChoices?.toString().split(/[;,]/).map(s => s.trim()) || [])
-            ].filter(Boolean);
-
-            const mediaMatch = questionText.match(/\/([^\/\s]+\.(png|jpg|jpeg|gif))/i);
-            const media = mediaMatch ? {
-              type: "image" as const,
-              url: mediaMatch[1],
-              showWith: "question" as const
-            } : undefined;
-
-            const newQuestion: Question = {
-              id: Date.now() + Math.random(),
-              question: questionText,
-              options,
-              correctAnswer: 0,
-              qbankId: tags[0],
-              tags,
-              explanation: explanationText,
-              media,
-              attempts: []
+            const strippedNew = {
+              question: newQuestionBase.question,
+              options: newQuestionBase.options,
+              correctAnswer: newQuestionBase.correctAnswer,
+              explanation: newQuestionBase.explanation || "",
+              media: newQuestionBase.media || undefined
             };
 
-            // Add the question to all relevant qbanks based on tags
-            tags.forEach(tag => {
-              let qbank = qbanks.find(qb => qb.id === tag);
-              if (!qbank) {
-                qbank = {
-                  id: tag,
-                  name: tag.charAt(0).toUpperCase() + tag.slice(1),
-                  description: `Questions tagged with ${tag}`,
-                  questions: []
-                };
-                qbanks.push(qbank);
-              }
-              qbank.questions.push({ ...newQuestion });
+            const isDuplicate = qbank.questions.some(existing => {
+              const strippedExisting = {
+                question: existing.question,
+                options: existing.options,
+                correctAnswer: existing.correctAnswer,
+                explanation: existing.explanation || "",
+                media: existing.media || undefined
+              };
+              return deepEqual(strippedExisting, strippedNew);
             });
 
-            return newQuestion;
+            if (!isDuplicate) {
+              const perTagQuestion: Question = {
+                ...newQuestionBase,
+                id: Date.now() + Math.random(),
+                qbankId: tag
+              };
+              qbank.questions.push(perTagQuestion);
+              addedCount++;
+            } else {
+              skippedCount++;
+            }
           });
 
-        saveQBanksToStorage();
-        console.log('Imported questions and saved qbanks:', qbanks.length);
-
-        toast({
-          title: "Success",
-          description: `${questions.length} questions imported successfully`,
+          return {
+            ...newQuestionBase,
+            id: Date.now() + Math.random(),
+            qbankId: tags[0]
+          };
         });
 
-        setForceUpdate(f => f + 1);
-      } catch (error) {
-        console.error('Excel import error:', error);
-        toast({
-          title: "Error",
-          description: error instanceof Error ? error.message : "Failed to import questions",
-          variant: "destructive"
-        });
-      }
-    };
+      saveQBanksToStorage();
+      console.log('Imported questions and saved qbanks:', qbanks.length);
 
-    reader.onerror = () => {
+      toast({
+        title: "Import Complete",
+        description: `${addedCount} question(s) added. ${skippedCount} duplicate(s) skipped.`,
+      });
+
+      setForceUpdate(f => f + 1);
+    } catch (error) {
+      console.error('Excel import error:', error);
       toast({
         title: "Error",
-        description: "Failed to read Excel file",
+        description: error instanceof Error ? error.message : "Failed to import questions",
         variant: "destructive"
       });
-    };
-
-    reader.readAsArrayBuffer(file);
-    event.target.value = '';
+    }
   };
+
+  reader.onerror = () => {
+    toast({
+      title: "Error",
+      description: "Failed to read Excel file",
+      variant: "destructive"
+    });
+  };
+
+  reader.readAsArrayBuffer(file);
+  event.target.value = '';
+};
 
 
   const handleSelectAllVisible = () => {
