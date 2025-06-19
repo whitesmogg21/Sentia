@@ -17,6 +17,7 @@ import { useFullscreen } from "@/hooks/use-fullscreen";
 import { TagPerformanceChart } from "./TagPerformanceChart";
 import { calculateAverageTimePerQuestion, formatTime } from "@/utils/timeUtils";
 import { ScoreOverTimeChart } from "./ScoreOverTimeChart";
+import { CalendarHeatmap } from "./charts/CalendarHeatmap";
 interface DashboardProps {
   qbanks: QBank[];
   quizHistory: QuizHistory[];
@@ -31,7 +32,7 @@ interface DashboardProps {
   timeLimitMin: number;
   setTimeLimitMin: (timeLimitMin: number) => void;
   sessionTimerToggle: boolean;
-  setSessionTimerToggle: (boolean )=> void;
+  setSessionTimerToggle: (boolean) => void;
 }
 
 const Dashboard = ({
@@ -221,7 +222,7 @@ const Dashboard = ({
   const filteredQuestions = selectedQBank?.questions || [];
   console.log(filteredQuestions.length);
 
-    // Add average time per question calculation
+  // Add average time per question calculation
   const averageTimePerQuestion = useMemo(() => {
     return calculateAverageTimePerQuestion(quizHistory);
   }, [quizHistory]);
@@ -294,7 +295,15 @@ const Dashboard = ({
   );
 
   const totalQuestions = useMemo(
-    () => qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0),
+    () => 
+      // qbanks.reduce((acc, qbank) => acc + qbank.questions.length, 0),
+
+    // this is gonna get unique questions with unique ids
+          new Set(
+        qbanks.flatMap((qbank) =>
+          qbank.questions.map((a) => a.id)
+        )
+      ).size,
     [qbanks]
   );
   const questionsAttempted = useMemo(
@@ -436,11 +445,10 @@ const Dashboard = ({
           <h2 className="text-xl font-bold">Available Question Banks</h2>
           <div className="grid gap-4">
             <Card
-              className={`p-4 cursor-pointer transition-colors ${
-                selectedQBank
+              className={`p-4 cursor-pointer transition-colors ${selectedQBank
                   ? "border-primary border-2"
                   : "hover:border-primary/50"
-              }`}
+                }`}
               onClick={selectedQBank ? handleUnlockQBank : handleQBankSelection}
               onDoubleClick={selectedQBank ? handleUnlockQBank : undefined}
             >
@@ -548,67 +556,65 @@ const Dashboard = ({
                 </div>
               )} */}
               {/* {majorTimerToggle && ( */}
-                <>
-                  {/* Session Timer Toggle */}
-                  <div className="space-y-2 pb-2">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="session-timer"
-                        checked={sessionTimerToggle}
-                        onCheckedChange={setSessionTimerToggle}
-                      />
-                      <Label htmlFor="session-timer">
-                        Enable Session Timer
-                      </Label>
-                    </div>
-                    <div
-                      className={`${
-                        sessionTimerToggle
-                          ? ""
-                          : "opacity-50 pointer-events-none"
-                      } space-y-2`}
-                    >
-                      <Label>Time per Session (minutes): {timeLimitMin}</Label>
-                      <Slider
-                        value={[timeLimitMin]}
-                        onValueChange={(value) => setTimeLimitMin(value[0])}
-                        min={5}
-                        max={300}
-                        step={5}
-                        className="w-full"
-                      />
-                    </div>
+              <>
+                {/* Session Timer Toggle */}
+                <div className="space-y-2 pb-2">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="session-timer"
+                      checked={sessionTimerToggle}
+                      onCheckedChange={setSessionTimerToggle}
+                    />
+                    <Label htmlFor="session-timer">
+                      Enable Session Timer
+                    </Label>
                   </div>
+                  <div
+                    className={`${sessionTimerToggle
+                        ? ""
+                        : "opacity-50 pointer-events-none"
+                      } space-y-2`}
+                  >
+                    <Label>Time per Session (minutes): {timeLimitMin}</Label>
+                    <Slider
+                      value={[timeLimitMin]}
+                      onValueChange={(value) => setTimeLimitMin(value[0])}
+                      min={5}
+                      max={300}
+                      step={5}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
 
-                  {/* Per-Question Timer Toggle */}
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Switch
-                        id="per-question-timer"
-                        checked={timerEnabled}
-                        onCheckedChange={setTimerEnabled}
-                      />
-                      <Label htmlFor="per-question-timer">
-                        Enable Per-Question Timer
-                      </Label>
-                    </div>
-                    <div
-                      className={`${
-                        timerEnabled ? "" : "opacity-50 pointer-events-none"
-                      } space-y-2`}
-                    >
-                      <Label>Time per Question (seconds): {timeLimit}</Label>
-                      <Slider
-                        value={[timeLimit]}
-                        onValueChange={(value) => setTimeLimit(value[0])}
-                        min={10}
-                        max={300}
-                        step={10}
-                        className="w-full"
-                      />
-                    </div>
+                {/* Per-Question Timer Toggle */}
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="per-question-timer"
+                      checked={timerEnabled}
+                      onCheckedChange={setTimerEnabled}
+                    />
+                    <Label htmlFor="per-question-timer">
+                      Enable Per-Question Timer
+                    </Label>
                   </div>
-                </>
+                  <div
+                    className={`${timerEnabled ? "" : "opacity-50 pointer-events-none"
+                      } space-y-2`}
+                  >
+                    <Label>Time per Question (seconds): {timeLimit}</Label>
+                    <Slider
+                      value={[timeLimit]}
+                      onValueChange={(value) => setTimeLimit(value[0])}
+                      min={10}
+                      max={300}
+                      step={10}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </>
               {/* )} */}
             </div>
             <Button
@@ -641,7 +647,7 @@ const Dashboard = ({
             <h3 className="text-sm font-medium mb-2">Total Quizzes Taken</h3>
             <p className="text-2xl font-bold">{quizHistory.length}</p>
           </Card>
-                    <Card className="p-4">
+          <Card className="p-4">
             <h3 className="text-sm font-medium mb-2">Avg Time Per Question</h3>
             <p className="text-2xl font-bold">{formatTime(averageTimePerQuestion)}</p>
           </Card>
@@ -649,13 +655,16 @@ const Dashboard = ({
       </div>
 
       {/* Tag Performance Radar Chart */}
-<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <div className="h-80">
           <TagPerformanceChart qbanks={qbanks} quizHistory={quizHistory} />
         </div>
         <div className="h-80">
           <ScoreOverTimeChart quizHistory={quizHistory} />
         </div>
+      </div>
+      <div className="heatmap w-[100%] flex justify-center">
+      <CalendarHeatmap data={quizHistory} />
       </div>
     </div>
   );

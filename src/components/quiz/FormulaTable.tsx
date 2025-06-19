@@ -14,8 +14,12 @@ interface Formula {
   name: string;
   formula: string;
 }
+interface FormulaTableProps {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+}
 
-const FormulaTable = () => {
+const FormulaTable = ({ open, setOpen }: FormulaTableProps) => {
   const [formulas, setFormulas] = useState<Formula[]>(() => {
     const saved = localStorage.getItem('formula-references');
     return saved ? JSON.parse(saved) : [];
@@ -63,7 +67,7 @@ const FormulaTable = () => {
   };
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button 
           variant="ghost" 

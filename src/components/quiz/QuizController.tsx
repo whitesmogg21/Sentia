@@ -19,6 +19,7 @@ interface QuizControllerProps {
   onQuit: () => void;
   onForceQuit: () => void;
   onToggleFlag: () => void;
+  isFormulaOpen: boolean;
 }
 
 const QuizController = ({
@@ -37,9 +38,11 @@ const QuizController = ({
   onQuit,
   onForceQuit,
   onToggleFlag,
+  isFormulaOpen
 }: QuizControllerProps) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if(isFormulaOpen) return;
       // Prevent default for space to avoid page scrolling
       if (e.key === ' ') {
         e.preventDefault();

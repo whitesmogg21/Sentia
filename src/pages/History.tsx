@@ -9,7 +9,7 @@ import {
 import { QuizHistory } from "../types/quiz";
 import { Button } from "@/components/ui/button";
 import { ArrowUpDown, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { resetMetrics } from "@/utils/metricsUtils";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import Pagination from "@/components/Pagintion";
@@ -51,6 +51,13 @@ const [percentageRange, setPercentageRange] = useState("all");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const [currentPage, setCurrentPage] = useState(1);
+
+  
+  const location = useLocation();
+  useEffect(()=>{
+    setDateFilter(location.state);
+    console.log(location.state)
+  },[])
 
 
   const handleSort = (column: typeof sortColumn) => {
