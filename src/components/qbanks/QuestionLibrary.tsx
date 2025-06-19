@@ -962,6 +962,7 @@ const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => 
                   )}
                 </Button>
               </TableHead>
+              <TableHead>Q Bank</TableHead>
               <TableHead className="cursor-pointer" onClick={() => handleSort('question')}>
                 Question
                 <ArrowUpDown className="ml-2 h-4 w-4 inline" />
@@ -1002,6 +1003,11 @@ const handleExcelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => 
                       }}
                       className="w-4 h-4"
                     />
+                  </TableCell>
+                                    <TableCell className="font-medium">
+                    <div className="prose prose-sm dark:prose-invert">
+                      {renderMarkdown(question.qbankId)}
+                    </div>
                   </TableCell>
                   <TableCell className="font-medium">
                     <div className="prose prose-sm dark:prose-invert">
