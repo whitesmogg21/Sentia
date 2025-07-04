@@ -18,6 +18,7 @@ import { TagPerformanceChart } from "./TagPerformanceChart";
 import { calculateAverageTimePerQuestion, formatTime } from "@/utils/timeUtils";
 import { ScoreOverTimeChart } from "./ScoreOverTimeChart";
 import { CalendarHeatmap } from "./charts/CalendarHeatmap";
+import { SavedPathManager } from "./savedpaths/SavedPathManager";
 interface DashboardProps {
   qbanks: QBank[];
   quizHistory: QuizHistory[];
@@ -664,7 +665,12 @@ const Dashboard = ({
         </div>
       </div>
       <div className="heatmap w-[100%] flex justify-center">
-      <CalendarHeatmap data={quizHistory} />
+        <CalendarHeatmap data={quizHistory} />
+      </div>
+
+      {/* Saved Paths Section */}
+      <div className="mt-8">
+        <SavedPathManager qbanks={qbanks} selectedQBank={selectedQBank} />
       </div>
     </div>
   );
