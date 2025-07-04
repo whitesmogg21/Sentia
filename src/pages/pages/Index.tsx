@@ -28,7 +28,6 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
     timerEnabled,
     timePerQuestion,
     isFlagged,
-    tutorMode,
     handleStartQuiz,
     handleAnswerTimeout,
     handleAnswerClick,
@@ -41,8 +40,6 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
   } = useQuiz({ onQuizComplete, onQuizStart, onQuizEnd });
 
   const [showQuitDialog, setShowQuitDialog] = useState(false);
-  const [timeLimitMin, setTimeLimitMin] = useState(5);
-  const [sessionTimerToggle, setSessionTimerToggle] = useState(false);
 
   const handleQuitClick = () => {
     setShowQuitDialog(true);
@@ -139,10 +136,6 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
         qbanks={qbanks}
         quizHistory={quizHistory}
         onStartQuiz={startQuiz}
-        timeLimitMin={timeLimitMin}
-        setTimeLimitMin={setTimeLimitMin}
-        sessionTimerToggle={sessionTimerToggle}
-        setSessionTimerToggle={setSessionTimerToggle}
       />
     );
   }
@@ -183,9 +176,6 @@ const Index = ({ quizHistory = [], onQuizComplete, onQuizStart, onQuizEnd }: Ind
       onTimeUp={handleAnswerTimeout}
       onToggleFlag={handleToggleFlag}
       onJumpToQuestion={jumpToQuestion}
-      sessionTimeLimit={timeLimitMin}
-      tutorMode={tutorMode}
-      currentQuestions={currentQuestions}
     />
   );
 };

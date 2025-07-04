@@ -196,8 +196,6 @@ const App = () => {
                       element={<SelectQBank qbanks={qbanks} onSelect={handleQBankSelect} />}
                     />
                     <Route path="/qbanks/audio" element={<AudioLibrary />} />
-                    <Route path="/media-library" element={<MediaLibrary qbanks={qbanks} />} />
-                    <Route path="/audio-library" element={<AudioLibrary />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </main>
