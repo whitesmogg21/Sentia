@@ -403,268 +403,316 @@ const Dashboard = ({
   // console.log(selectedQBank)
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center mb-2">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <div className="flex space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-            className="rounded-full"
-            title={theme === "light" ? "Dark mode" : "Light mode"}
-          >
-            {theme === "light" ? (
-              <Moon className="h-5 w-5" />
-            ) : (
-              <Sun className="h-5 w-5" />
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleFullscreen}
-            className="rounded-full"
-            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-          >
-            {isFullscreen ? (
-              <Minimize className="h-5 w-5" />
-            ) : (
-              <Maximize className="h-5 w-5" />
-            )}
-          </Button>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
+      {/* Header */}
+      <div className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <motion.h1 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
+            >
+              Dashboard
+            </motion.h1>
+            <div className="flex space-x-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+                className="rounded-full hover:bg-secondary/80 transition-all duration-300"
+                title={theme === "light" ? "Dark mode" : "Light mode"}
+              >
+                {theme === "light" ? (
+                  <Moon className="h-5 w-5" />
+                ) : (
+                  <Sun className="h-5 w-5" />
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleFullscreen}
+                className="rounded-full hover:bg-secondary/80 transition-all duration-300"
+                title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              >
+                {isFullscreen ? (
+                  <Minimize className="h-5 w-5" />
+                ) : (
+                  <Maximize className="h-5 w-5" />
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 mt-8">
+      <div className="container mx-auto px-6 py-8 space-y-8">
+        {/* Top Tag Tiles Section */}
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
           className="space-y-4"
         >
-          <h2 className="text-xl font-bold">Available Question Banks</h2>
-          <div className="grid gap-4">
-            <Card
-              className={`p-4 cursor-pointer transition-colors ${selectedQBank
-                  ? "border-primary border-2"
-                  : "hover:border-primary/50"
-                }`}
-              onClick={selectedQBank ? handleUnlockQBank : handleQBankSelection}
-              onDoubleClick={selectedQBank ? handleUnlockQBank : undefined}
-            >
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="font-bold">
-                    {selectedQBank ? selectedQBank.name : "Select QBank"}
-                  </h3>
-                  {selectedQBank && (
-                    <p className="text-sm text-gray-600">
-                      {selectedQBank.description}
-                    </p>
-                  )}
-                </div>
+          <h2 className="text-xl font-semibold text-foreground/90">Organized Study Paths</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {tagPerformance.slice(0, 10).map((tag, index) => (
+              <motion.div
+                key={tag.tag}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.1 * index }}
+                whileHover={{ scale: 1.02, y: -2 }}
+                className="group cursor-pointer"
+              >
+                <Card className="p-4 h-24 bg-gradient-to-br from-card via-card to-secondary/10 border-0 shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
+                  <div className="flex flex-col h-full justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className={`w-3 h-3 rounded-full ${tag.score >= 80 ? 'bg-success' : tag.score >= 60 ? 'bg-primary' : 'bg-error'}`} />
+                      <h3 className="font-medium text-sm truncate group-hover:text-primary transition-colors">
+                        {tag.tag}
+                      </h3>
+                    </div>
+                    <div className="flex justify-between items-end">
+                      <span className="text-2xl font-bold text-primary">
+                        {Math.round(tag.score)}%
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {tag.total} qs
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Performance Summary Cards */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+        >
+          <Card className="p-6 bg-gradient-to-br from-card via-card to-success/5 border-0 shadow-lg">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full bg-success" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Overall Accuracy</p>
+                <p className="text-3xl font-bold text-success">
+                  {overallAccuracyCalc.toFixed(1)}%
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-gradient-to-br from-card via-card to-primary/5 border-0 shadow-lg">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full bg-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Questions Attempted</p>
+                <p className="text-3xl font-bold text-primary">
+                  {questionsAttempted}
+                </p>
+                <p className="text-xs text-muted-foreground">of {totalQuestions}</p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-gradient-to-br from-card via-card to-accent/5 border-0 shadow-lg">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full bg-accent" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Quizzes</p>
+                <p className="text-3xl font-bold text-accent">
+                  {quizHistory.length}
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-6 bg-gradient-to-br from-card via-card to-secondary/10 border-0 shadow-lg">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 rounded-full bg-secondary/30 flex items-center justify-center">
+                <div className="w-6 h-6 rounded-full bg-secondary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Avg Time/Question</p>
+                <p className="text-3xl font-bold">
+                  {formatTime(averageTimePerQuestion)}
+                </p>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* QBank Selection and Quiz Config */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="lg:col-span-1"
+          >
+            <Card className="p-6 bg-gradient-to-br from-card via-card to-primary/5 border-0 shadow-lg">
+              <h3 className="text-lg font-semibold mb-4">Question Bank</h3>
+              <div
+                className={`p-4 rounded-xl cursor-pointer transition-all duration-300 ${selectedQBank
+                    ? "bg-primary/10 border-2 border-primary/30"
+                    : "bg-secondary/20 hover:bg-secondary/30 border border-border/50"
+                  }`}
+                onClick={selectedQBank ? handleUnlockQBank : handleQBankSelection}
+              >
+                <h4 className="font-medium">
+                  {selectedQBank ? selectedQBank.name : "Select QBank"}
+                </h4>
+                {selectedQBank && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {selectedQBank.description}
+                  </p>
+                )}
               </div>
             </Card>
-          </div>
-        </motion.div>
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="space-y-4"
-        >
-          <h2 className="text-xl font-bold">Quiz Configuration</h2>
-          <div className="space-y-4">
-            {/* <div>
-            <Label className="block text-sm font-medium mb-2">
-              Number of Questions (max: {filteredQuestions.length})
-            </Label>
-            <Input
-              type="number"
-              min={1}
-              max={filteredQuestions.length || 1}
-              value={questionCount > filteredQuestions.length ? filteredQuestions.length : questionCount}
-              onChange={(e) => {
-                const value = Number(e.target.value);
-                const validValue = Math.min(Math.max(1, value), filteredQuestions.length);
-                setQuestionCount(validValue);
-              }}
-              className="w-48"
-            />
-          </div> */}
-            <div>
-              <Label className="block text-sm font-medium mb-2">
-                Number of Questions ({filteredQuestions.length} available)
-              </Label>
-              <Input
-                type="number"
-                min={1}
-                max={filteredQuestions.length || 1}
-                value={
-                  questionCount > filteredQuestions.length
-                    ? filteredQuestions.length
-                    : questionCount
-                }
-                onChange={(e) => {
-                  const value = Number(e.target.value);
-                  const validValue = Math.min(
-                    Math.max(1, value),
-                    filteredQuestions.length
-                  );
-                  setQuestionCount(validValue);
-                }}
-                className="w-48"
-                disabled={filteredQuestions.length === 0}
-              />
-            </div>
-            {/* <div className="flex items-center space-x-2">
-              <Switch
-                id="strict-mode"
-                checked={strictMode}
-                onCheckedChange={setStrictMode}
-              />
-              <Label htmlFor="tutor-mode">Enable Strict Mode</Label>
-            </div> */}
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="tutor-mode"
-                checked={tutorMode}
-                onCheckedChange={setTutorMode}
-              />
-              <Label htmlFor="tutor-mode">Enable Tutor Mode</Label>
-            </div>
-            <div className="space-y-2">
-              {/* <div className="flex items-center space-x-2">
-                <Switch
-                  id="timer-mode"
-                  checked={majorTimerToggle}
-                  onCheckedChange={setMajorTimerToggle}
-                />
-                <Label htmlFor="timer-mode">Enable Timer</Label>
-              </div> */}
-              {/* {timerEnabled && (
-                <div className="space-y-2">
-                  <Label>Time per Question (seconds): {timeLimit}</Label>
-                  <Slider
-                    value={[timeLimit]}
-                    onValueChange={(value) => setTimeLimit(value[0])}
-                    min={10}
-                    max={300}
-                    step={10}
-                    className="w-full"
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="lg:col-span-2"
+          >
+            <Card className="p-6 bg-gradient-to-br from-card via-card to-secondary/5 border-0 shadow-lg">
+              <h3 className="text-lg font-semibold mb-6">Quiz Configuration</h3>
+              <div className="space-y-6">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Questions ({filteredQuestions.length} available)
+                  </Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={filteredQuestions.length || 1}
+                    value={questionCount > filteredQuestions.length ? filteredQuestions.length : questionCount}
+                    onChange={(e) => {
+                      const value = Number(e.target.value);
+                      const validValue = Math.min(Math.max(1, value), filteredQuestions.length);
+                      setQuestionCount(validValue);
+                    }}
+                    className="mt-2 bg-background/50"
+                    disabled={filteredQuestions.length === 0}
                   />
                 </div>
-              )} */}
-              {/* {majorTimerToggle && ( */}
-              <>
-                {/* Session Timer Toggle */}
-                <div className="space-y-2 pb-2">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="session-timer"
-                      checked={sessionTimerToggle}
-                      onCheckedChange={setSessionTimerToggle}
-                    />
-                    <Label htmlFor="session-timer">
-                      Enable Session Timer
-                    </Label>
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="tutor-mode" className="text-sm font-medium">Tutor Mode</Label>
+                  <Switch
+                    id="tutor-mode"
+                    checked={tutorMode}
+                    onCheckedChange={setTutorMode}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <Label className="text-sm font-medium">Session Timer</Label>
+                      <Switch
+                        checked={sessionTimerToggle}
+                        onCheckedChange={setSessionTimerToggle}
+                      />
+                    </div>
+                    {sessionTimerToggle && (
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">
+                          Duration: {timeLimitMin} minutes
+                        </Label>
+                        <Slider
+                          value={[timeLimitMin]}
+                          onValueChange={(value) => setTimeLimitMin(value[0])}
+                          min={5}
+                          max={300}
+                          step={5}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
                   </div>
-                  <div
-                    className={`${sessionTimerToggle
-                        ? ""
-                        : "opacity-50 pointer-events-none"
-                      } space-y-2`}
-                  >
-                    <Label>Time per Session (minutes): {timeLimitMin}</Label>
-                    <Slider
-                      value={[timeLimitMin]}
-                      onValueChange={(value) => setTimeLimitMin(value[0])}
-                      min={5}
-                      max={300}
-                      step={5}
-                      className="w-full"
-                    />
+
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <Label className="text-sm font-medium">Per-Question Timer</Label>
+                      <Switch
+                        checked={timerEnabled}
+                        onCheckedChange={setTimerEnabled}
+                      />
+                    </div>
+                    {timerEnabled && (
+                      <div className="space-y-2">
+                        <Label className="text-xs text-muted-foreground">
+                          Duration: {timeLimit} seconds
+                        </Label>
+                        <Slider
+                          value={[timeLimit]}
+                          onValueChange={(value) => setTimeLimit(value[0])}
+                          min={10}
+                          max={300}
+                          step={10}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Per-Question Timer Toggle */}
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="per-question-timer"
-                      checked={timerEnabled}
-                      onCheckedChange={setTimerEnabled}
-                    />
-                    <Label htmlFor="per-question-timer">
-                      Enable Per-Question Timer
-                    </Label>
-                  </div>
-                  <div
-                    className={`${timerEnabled ? "" : "opacity-50 pointer-events-none"
-                      } space-y-2`}
-                  >
-                    <Label>Time per Question (seconds): {timeLimit}</Label>
-                    <Slider
-                      value={[timeLimit]}
-                      onValueChange={(value) => setTimeLimit(value[0])}
-                      min={10}
-                      max={300}
-                      step={10}
-                      className="w-full"
-                    />
-                  </div>
-                </div>
-              </>
-              {/* )} */}
-            </div>
-            <Button
-              onClick={handleStartQuiz}
-              disabled={!selectedQBank || questionCount <= 0}
-              className="w-full"
-            >
-              Start Quiz
-            </Button>
-          </div>
+                <Button
+                  onClick={handleStartQuiz}
+                  disabled={!selectedQBank || questionCount <= 0}
+                  className="w-full h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg transition-all duration-300"
+                >
+                  Start Quiz
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="h-80"
+          >
+            <TagPerformanceChart qbanks={qbanks} quizHistory={quizHistory} />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="h-80"
+          >
+            <ScoreOverTimeChart quizHistory={quizHistory} />
+          </motion.div>
+        </div>
+
+        {/* Calendar Heatmap */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="flex justify-center"
+        >
+          <CalendarHeatmap data={quizHistory} />
         </motion.div>
-      </div>
-
-      <div className="mt-6 p-4 bg-card border rounded-lg shadow-sm">
-        <h2 className="text-xl font-bold mb-4">Your Performance Summary</h2>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="p-4">
-            <h3 className="text-sm font-medium mb-2">Overall Accuracy</h3>
-            <p className="text-2xl font-bold">
-              {overallAccuracyCalc.toFixed(1)}%
-            </p>
-          </Card>
-          <Card className="p-4">
-            <h3 className="text-sm font-medium mb-2">Questions Attempted</h3>
-            <p className="text-2xl font-bold">
-              {questionsAttempted} / {totalQuestions}
-            </p>
-          </Card>
-          <Card className="p-4">
-            <h3 className="text-sm font-medium mb-2">Total Quizzes Taken</h3>
-            <p className="text-2xl font-bold">{quizHistory.length}</p>
-          </Card>
-          <Card className="p-4">
-            <h3 className="text-sm font-medium mb-2">Avg Time Per Question</h3>
-            <p className="text-2xl font-bold">{formatTime(averageTimePerQuestion)}</p>
-          </Card>
-        </div>
-      </div>
-
-      {/* Tag Performance Radar Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <div className="h-80">
-          <TagPerformanceChart qbanks={qbanks} quizHistory={quizHistory} />
-        </div>
-        <div className="h-80">
-          <ScoreOverTimeChart quizHistory={quizHistory} />
-        </div>
-      </div>
-      <div className="heatmap w-[100%] flex justify-center">
-      <CalendarHeatmap data={quizHistory} />
       </div>
     </div>
   );
