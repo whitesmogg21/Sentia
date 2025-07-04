@@ -406,12 +406,12 @@ const Dashboard = ({
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       {/* Header */}
       <div className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex justify-between items-center">
             <motion.h1 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
+              className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent"
             >
               Dashboard
             </motion.h1>
@@ -447,39 +447,39 @@ const Dashboard = ({
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-8 space-y-8">
+      <div className="container mx-auto px-4 py-6 space-y-6">
         {/* Top Tag Tiles Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="space-y-4"
+          className="space-y-3"
         >
-          <h2 className="text-xl font-semibold text-foreground/90">Organized Study Paths</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {tagPerformance.slice(0, 10).map((tag, index) => (
+          <h2 className="text-lg font-semibold text-foreground/90">Organized Study Paths</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {tagPerformance.slice(0, 12).map((tag, index) => (
               <motion.div
                 key={tag.tag}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1 * index }}
+                transition={{ delay: 0.05 * index }}
                 whileHover={{ scale: 1.02, y: -2 }}
                 className="group cursor-pointer"
               >
-                <Card className="p-4 h-24 bg-gradient-to-br from-card via-card to-secondary/10 border-0 shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm">
+                <Card className="p-3 h-20 bg-gradient-to-br from-card via-card to-secondary/10 border-0 shadow-md hover:shadow-lg transition-all duration-300 backdrop-blur-sm">
                   <div className="flex flex-col h-full justify-between">
                     <div className="flex items-center space-x-2">
-                      <div className={`w-3 h-3 rounded-full ${tag.score >= 80 ? 'bg-success' : tag.score >= 60 ? 'bg-primary' : 'bg-error'}`} />
-                      <h3 className="font-medium text-sm truncate group-hover:text-primary transition-colors">
+                      <div className={`w-2.5 h-2.5 rounded-full ${tag.score >= 80 ? 'bg-success' : tag.score >= 60 ? 'bg-primary' : 'bg-error'}`} />
+                      <h3 className="font-medium text-xs truncate group-hover:text-primary transition-colors">
                         {tag.tag}
                       </h3>
                     </div>
                     <div className="flex justify-between items-end">
-                      <span className="text-2xl font-bold text-primary">
+                      <span className="text-xl font-bold text-primary">
                         {Math.round(tag.score)}%
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {tag.total} qs
+                        {tag.total}
                       </span>
                     </div>
                   </div>
@@ -494,30 +494,30 @@ const Dashboard = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
         >
-          <Card className="p-6 bg-gradient-to-br from-card via-card to-success/5 border-0 shadow-lg">
+          <Card className="p-4 bg-gradient-to-br from-card via-card to-success/5 border-0 shadow-md">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center">
-                <div className="w-6 h-6 rounded-full bg-success" />
+              <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
+                <div className="w-5 h-5 rounded-full bg-success" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Overall Accuracy</p>
-                <p className="text-3xl font-bold text-success">
+                <p className="text-xs text-muted-foreground">Overall Accuracy</p>
+                <p className="text-2xl font-bold text-success">
                   {overallAccuracyCalc.toFixed(1)}%
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-gradient-to-br from-card via-card to-primary/5 border-0 shadow-lg">
+          <Card className="p-4 bg-gradient-to-br from-card via-card to-primary/5 border-0 shadow-md">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                <div className="w-6 h-6 rounded-full bg-primary" />
+              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <div className="w-5 h-5 rounded-full bg-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Questions Attempted</p>
-                <p className="text-3xl font-bold text-primary">
+                <p className="text-xs text-muted-foreground">Questions Attempted</p>
+                <p className="text-xl font-bold text-primary">
                   {questionsAttempted}
                 </p>
                 <p className="text-xs text-muted-foreground">of {totalQuestions}</p>
@@ -525,28 +525,28 @@ const Dashboard = ({
             </div>
           </Card>
 
-          <Card className="p-6 bg-gradient-to-br from-card via-card to-accent/5 border-0 shadow-lg">
+          <Card className="p-4 bg-gradient-to-br from-card via-card to-accent/5 border-0 shadow-md">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center">
-                <div className="w-6 h-6 rounded-full bg-accent" />
+              <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                <div className="w-5 h-5 rounded-full bg-accent" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total Quizzes</p>
-                <p className="text-3xl font-bold text-accent">
+                <p className="text-xs text-muted-foreground">Total Quizzes</p>
+                <p className="text-2xl font-bold text-accent">
                   {quizHistory.length}
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6 bg-gradient-to-br from-card via-card to-secondary/10 border-0 shadow-lg">
+          <Card className="p-4 bg-gradient-to-br from-card via-card to-secondary/10 border-0 shadow-md">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-full bg-secondary/30 flex items-center justify-center">
-                <div className="w-6 h-6 rounded-full bg-secondary" />
+              <div className="w-10 h-10 rounded-full bg-secondary/30 flex items-center justify-center">
+                <div className="w-5 h-5 rounded-full bg-secondary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Avg Time/Question</p>
-                <p className="text-3xl font-bold">
+                <p className="text-xs text-muted-foreground">Avg Time/Question</p>
+                <p className="text-xl font-bold">
                   {formatTime(averageTimePerQuestion)}
                 </p>
               </div>
@@ -555,27 +555,27 @@ const Dashboard = ({
         </motion.div>
 
         {/* QBank Selection and Quiz Config */}
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
             className="lg:col-span-1"
           >
-            <Card className="p-6 bg-gradient-to-br from-card via-card to-primary/5 border-0 shadow-lg">
-              <h3 className="text-lg font-semibold mb-4">Question Bank</h3>
+            <Card className="p-4 bg-gradient-to-br from-card via-card to-primary/5 border-0 shadow-md">
+              <h3 className="text-sm font-semibold mb-3">Question Bank</h3>
               <div
-                className={`p-4 rounded-xl cursor-pointer transition-all duration-300 ${selectedQBank
+                className={`p-3 rounded-lg cursor-pointer transition-all duration-300 ${selectedQBank
                     ? "bg-primary/10 border-2 border-primary/30"
                     : "bg-secondary/20 hover:bg-secondary/30 border border-border/50"
                   }`}
                 onClick={selectedQBank ? handleUnlockQBank : handleQBankSelection}
               >
-                <h4 className="font-medium">
+                <h4 className="font-medium text-sm">
                   {selectedQBank ? selectedQBank.name : "Select QBank"}
                 </h4>
                 {selectedQBank && (
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {selectedQBank.description}
                   </p>
                 )}
@@ -589,11 +589,11 @@ const Dashboard = ({
             transition={{ delay: 0.3 }}
             className="lg:col-span-2"
           >
-            <Card className="p-6 bg-gradient-to-br from-card via-card to-secondary/5 border-0 shadow-lg">
-              <h3 className="text-lg font-semibold mb-6">Quiz Configuration</h3>
-              <div className="space-y-6">
+            <Card className="p-4 bg-gradient-to-br from-card via-card to-secondary/5 border-0 shadow-md">
+              <h3 className="text-sm font-semibold mb-4">Quiz Configuration</h3>
+              <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
+                  <Label className="text-xs font-medium text-muted-foreground">
                     Questions ({filteredQuestions.length} available)
                   </Label>
                   <Input
@@ -606,13 +606,13 @@ const Dashboard = ({
                       const validValue = Math.min(Math.max(1, value), filteredQuestions.length);
                       setQuestionCount(validValue);
                     }}
-                    className="mt-2 bg-background/50"
+                    className="mt-1 bg-background/50 h-8"
                     disabled={filteredQuestions.length === 0}
                   />
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="tutor-mode" className="text-sm font-medium">Tutor Mode</Label>
+                  <Label htmlFor="tutor-mode" className="text-xs font-medium">Tutor Mode</Label>
                   <Switch
                     id="tutor-mode"
                     checked={tutorMode}
@@ -620,17 +620,17 @@ const Dashboard = ({
                   />
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <Label className="text-sm font-medium">Session Timer</Label>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-xs font-medium">Session Timer</Label>
                       <Switch
                         checked={sessionTimerToggle}
                         onCheckedChange={setSessionTimerToggle}
                       />
                     </div>
                     {sessionTimerToggle && (
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">
                           Duration: {timeLimitMin} minutes
                         </Label>
@@ -647,15 +647,15 @@ const Dashboard = ({
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <Label className="text-sm font-medium">Per-Question Timer</Label>
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-xs font-medium">Per-Question Timer</Label>
                       <Switch
                         checked={timerEnabled}
                         onCheckedChange={setTimerEnabled}
                       />
                     </div>
                     {timerEnabled && (
-                      <div className="space-y-2">
+                      <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">
                           Duration: {timeLimit} seconds
                         </Label>
@@ -675,7 +675,7 @@ const Dashboard = ({
                 <Button
                   onClick={handleStartQuiz}
                   disabled={!selectedQBank || questionCount <= 0}
-                  className="w-full h-12 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg transition-all duration-300"
+                  className="w-full h-10 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md transition-all duration-300"
                 >
                   Start Quiz
                 </Button>
@@ -685,12 +685,12 @@ const Dashboard = ({
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="h-80"
+            className="h-72"
           >
             <TagPerformanceChart qbanks={qbanks} quizHistory={quizHistory} />
           </motion.div>
@@ -698,7 +698,7 @@ const Dashboard = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="h-80"
+            className="h-72"
           >
             <ScoreOverTimeChart quizHistory={quizHistory} />
           </motion.div>
@@ -711,7 +711,9 @@ const Dashboard = ({
           transition={{ delay: 0.6 }}
           className="flex justify-center"
         >
-          <CalendarHeatmap data={quizHistory} />
+          <div className="w-full max-w-4xl">
+            <CalendarHeatmap data={quizHistory} />
+          </div>
         </motion.div>
       </div>
     </div>
