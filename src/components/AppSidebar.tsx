@@ -93,7 +93,7 @@ export function AppSidebar() {
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = ({ isActive }: { isActive: boolean }) =>
-    isActive ? "bg-primary/10 text-primary font-medium border-r-2 border-primary" : "hover:bg-muted/50 transition-colors";
+    isActive ? "bg-primary/10 text-primary font-medium border-r-2 border-primary transition-all duration-200 ease-in-out" : "hover:bg-muted/50 transition-all duration-200 ease-in-out";
 
   const toggleFolder = (folderId: string) => {
     const newExpanded = new Set(expandedFolders);
@@ -133,7 +133,7 @@ export function AppSidebar() {
       <div key={folder.id} className="space-y-1">
         <SidebarMenuItem>
           <SidebarMenuButton
-            className={`group w-full justify-between hover:bg-accent/50 rounded-lg transition-colors ${
+            className={`group w-full justify-between hover:bg-accent/50 rounded-lg transition-all duration-200 ease-in-out ${
               level > 0 ? `ml-${level * 3} text-sm` : ""
             }`}
             onClick={() => hasChildren ? toggleFolder(folder.id) : handleFolderClick(folder)}
@@ -152,7 +152,7 @@ export function AppSidebar() {
             </div>
             {hasChildren && !isCollapsed && (
               <ChevronRight 
-                className={`h-3 w-3 transition-transform text-muted-foreground ${
+                className={`h-3 w-3 transition-transform duration-200 ease-in-out text-muted-foreground ${
                   isExpanded ? 'rotate-90' : ''
                 }`} 
               />
@@ -161,7 +161,7 @@ export function AppSidebar() {
         </SidebarMenuItem>
         
         {hasChildren && isExpanded && folder.children && !isCollapsed && (
-          <div className="space-y-1">
+          <div className="space-y-1 animate-accordion-down overflow-hidden">
             {folder.children.map(child => renderFolder(child, level + 1))}
           </div>
         )}
@@ -171,7 +171,8 @@ export function AppSidebar() {
 
   return (
     <Sidebar 
-      className={`${isCollapsed ? "w-16" : "w-64"} border-r border-border/50 bg-card/30 backdrop-blur-sm`}
+      className={`${isCollapsed ? "w-16" : "w-64"} border-r border-border/50 bg-card/30 backdrop-blur-sm transition-all duration-300 ease-in-out`}
+      collapsible="icon"
     >
       {/* Header */}
       <div className="p-4 border-b border-border/50">
@@ -265,13 +266,13 @@ export function AppSidebar() {
       <SidebarFooter className="p-3 border-t border-border/50">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="hover:bg-accent/50 rounded-lg">
+            <SidebarMenuButton className="hover:bg-accent/50 rounded-lg transition-all duration-200 ease-in-out">
               <User className="h-4 w-4" />
               {!isCollapsed && <span>Profile</span>}
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton className="hover:bg-accent/50 rounded-lg">
+            <SidebarMenuButton className="hover:bg-accent/50 rounded-lg transition-all duration-200 ease-in-out">
               <Settings className="h-4 w-4" />
               {!isCollapsed && <span>Settings</span>}
             </SidebarMenuButton>
